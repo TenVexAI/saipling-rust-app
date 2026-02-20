@@ -48,10 +48,10 @@ export function ResizeDivider({ onResize, direction = 'horizontal' }: ResizeDivi
     <div
       onMouseDown={handleMouseDown}
       style={{
-        width: isHorizontal ? '4px' : '100%',
-        height: isHorizontal ? '100%' : '4px',
+        width: isHorizontal ? '1px' : '100%',
+        height: isHorizontal ? '100%' : '1px',
         cursor: isHorizontal ? 'col-resize' : 'row-resize',
-        backgroundColor: dragging ? 'var(--accent)' : 'transparent',
+        backgroundColor: dragging ? 'var(--accent)' : 'var(--border-primary)',
         flexShrink: 0,
         position: 'relative',
         zIndex: 10,

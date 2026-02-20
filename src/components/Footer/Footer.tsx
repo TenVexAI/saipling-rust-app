@@ -39,12 +39,8 @@ export function Footer() {
       }}
     >
       <div className="flex items-center gap-3">
-        <span>v0.1.0</span>
         {contextParts.length > 0 && (
-          <>
-            <span style={{ color: 'var(--border-primary)' }}>│</span>
-            <span>{contextParts.join(' › ')}</span>
-          </>
+          <span>{contextParts.join(' › ')}</span>
         )}
       </div>
 

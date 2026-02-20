@@ -45,7 +45,7 @@ export function PhaseProgressBar() {
 
   return (
     <div
-      className="flex items-center justify-center gap-1 select-none shrink-0"
+      className="flex items-center justify-center select-none shrink-0"
       style={{
         height: 'var(--progress-bar-height)',
         backgroundColor: 'var(--bg-secondary)',
@@ -63,7 +63,7 @@ export function PhaseProgressBar() {
           <div key={phase.id} className="flex items-center">
             {i > 0 && (
               <div
-                className="w-8 h-px mx-1"
+                className="w-8 h-px"
                 style={{
                   backgroundColor:
                     status === 'complete' || getPhaseStatus(
@@ -77,8 +77,9 @@ export function PhaseProgressBar() {
             )}
             <button
               onClick={() => handlePhaseClick(phase.id)}
-              className="flex items-center gap-1.5 px-2 py-1 rounded text-xs transition-colors"
+              className="flex items-center gap-1.5 rounded text-xs transition-colors"
               style={{
+                padding: '2px 8px',
                 color: activePhase === phase.id ? 'var(--accent)' : status === 'not_started' ? 'var(--text-tertiary)' : 'var(--text-primary)',
                 backgroundColor: activePhase === phase.id ? 'var(--accent-subtle)' : 'transparent',
               }}

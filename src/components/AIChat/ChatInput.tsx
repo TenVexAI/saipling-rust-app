@@ -14,7 +14,10 @@ export function ChatInput({ onSend, disabled, placeholder }: ChatInputProps) {
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 250) + 'px';
+      const scrollH = textareaRef.current.scrollHeight;
+      const clamped = Math.min(scrollH, 250);
+      textareaRef.current.style.height = clamped + 'px';
+      textareaRef.current.style.overflowY = scrollH > 250 ? 'auto' : 'hidden';
     }
   }, [text]);
 
@@ -51,6 +54,7 @@ export function ChatInput({ onSend, disabled, placeholder }: ChatInputProps) {
           color: 'var(--text-primary)',
           maxHeight: '250px',
           lineHeight: '1.5',
+          overflowY: 'hidden',
           padding: '6px 6px',
         }}
       />

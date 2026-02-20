@@ -47,7 +47,7 @@ export function SettingsView() {
   };
 
   return (
-    <div className="overflow-y-auto h-full" style={{ backgroundColor: 'var(--bg-primary)' }}>
+    <div className="overflow-y-auto h-full relative" style={{ backgroundColor: 'var(--bg-primary)' }}>
       <div className="max-w-2xl" style={{ padding: '32px 40px' }}>
         <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)', marginBottom: '32px' }}>
           Settings
@@ -138,6 +138,12 @@ export function SettingsView() {
             ))}
           </div>
         </section>
+
+      </div>
+
+      {/* App Version */}
+      <div style={{ position: 'fixed', bottom: '36px', right: '16px' }}>
+        <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>SAiPLING v0.1.0</span>
       </div>
     </div>
   );

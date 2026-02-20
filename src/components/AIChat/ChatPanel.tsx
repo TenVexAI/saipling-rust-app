@@ -151,11 +151,10 @@ export function ChatPanel({ width }: ChatPanelProps) {
 
   return (
     <div
-      className="flex flex-col h-full shrink-0"
+      className="flex flex-col h-full shrink-0 overflow-hidden"
       style={{
         width: width ? `${width}px` : 'var(--right-panel-width)',
         backgroundColor: 'var(--bg-secondary)',
-        borderLeft: '1px solid var(--border-primary)',
       }}
     >
       {/* Header */}
@@ -207,7 +206,7 @@ export function ChatPanel({ width }: ChatPanelProps) {
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto">
         {messages.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-full px-6 text-center">
+          <div className="flex flex-col items-center justify-center h-full text-center" style={{ padding: '0 24px' }}>
             <MessageSquare size={32} style={{ color: 'var(--text-tertiary)' }} className="mb-3 opacity-30" />
             <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
               Ask Claude for help with your story. The AI will use the right skills based on what you're working on.

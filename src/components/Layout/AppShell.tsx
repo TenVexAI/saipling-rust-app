@@ -96,6 +96,7 @@ export function AppShell() {
             <div className="flex-1 min-h-0 overflow-hidden">
               <MainContent />
             </div>
+            {!focusMode && activeBookId && activeView !== 'settings' && <PhaseProgressBar />}
           </div>
 
           {!focusMode && showChat && (
@@ -107,7 +108,6 @@ export function AppShell() {
         </div>
       </div>
 
-      {!focusMode && activeBookId && <PhaseProgressBar />}
       {!focusMode && <Footer />}
     </div>
   );
