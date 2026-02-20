@@ -106,6 +106,7 @@ pub struct StreamError {
 }
 
 /// Call Claude API with streaming, emitting events to the frontend.
+/// If `cancel_flag` is provided and set to true, streaming will stop early.
 pub async fn stream_claude(
     app: &AppHandle,
     api_key: &str,
@@ -114,6 +115,7 @@ pub async fn stream_claude(
     messages: Vec<ClaudeMessage>,
     temperature: Option<f64>,
     conversation_id: &str,
+    cancel_flag: Option<std::sync::Arc<std::sync::atomic::AtomicBool>>,
 ) -> Result<String, AppError> {
     let client = Client::new();
 
@@ -146,8 +148,17 @@ pub async fn stream_claude(
     let mut output_tokens: u64 = 0;
     let mut stream = response.bytes_stream();
     let mut buffer = String::new();
+    let mut cancelled = false;
 
     while let Some(chunk_result) = stream.next().await {
+        // Check cancellation flag
+        if let Some(ref flag) = cancel_flag {
+            if flag.load(std::sync::atomic::Ordering::Relaxed) {
+                cancelled = true;
+                break;
+            }
+        }
+
         let chunk = chunk_result?;
         let chunk_str = String::from_utf8_lossy(&chunk);
         buffer.push_str(&chunk_str);
@@ -197,6 +208,10 @@ pub async fn stream_claude(
                 }
             }
         }
+    }
+
+    if cancelled {
+        full_text.push_str("\n\n[Cancelled]");
     }
 
     let _ = app.emit(&format!("claude:done:{}", conversation_id), StreamDone {

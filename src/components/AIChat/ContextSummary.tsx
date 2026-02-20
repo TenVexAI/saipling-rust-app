@@ -45,11 +45,12 @@ export function ContextSummary({ files, totalTokens }: ContextSummaryProps) {
             >
               <span className="truncate flex-1">{file.path}</span>
               <span
-                className="ml-2 px-1.5 py-0.5 rounded shrink-0"
+                className="ml-2 rounded shrink-0"
                 style={{
                   backgroundColor: file.mode === 'full' ? 'var(--accent-subtle)' : 'var(--bg-tertiary)',
                   color: file.mode === 'full' ? 'var(--accent)' : 'var(--text-tertiary)',
                   fontSize: '10px',
+                  padding: '2px 6px',
                 }}
               >
                 {file.mode}

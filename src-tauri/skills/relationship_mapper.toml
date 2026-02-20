@@ -2,7 +2,7 @@
 name = "relationship_mapper"
 display_name = "Relationship Mapper"
 description = "Maps and develops character relationships and dynamics"
-default_model = "claude-sonnet-4-5-20250929"
+default_model = "claude-sonnet-4-6"
 temperature = 0.7
 
 [context]

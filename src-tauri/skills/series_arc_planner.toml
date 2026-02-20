@@ -2,7 +2,7 @@
 name = "series_arc_planner"
 display_name = "Series Arc Planner"
 description = "Plans and maintains the overarching arc across multiple books"
-default_model = "claude-opus-4-0-20250514"
+default_model = "claude-opus-4-6"
 temperature = 0.7
 
 [context]

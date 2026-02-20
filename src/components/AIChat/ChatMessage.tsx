@@ -22,9 +22,10 @@ export function ChatMessage({ message }: ChatMessageProps) {
 
   return (
     <div
-      className="flex gap-3 px-4 py-3"
+      className="flex gap-3 py-3"
       style={{
         backgroundColor: isUser ? 'transparent' : 'var(--bg-secondary)',
+        padding: '8px 12px',
       }}
     >
       <div
@@ -37,7 +38,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
         {isUser ? <User size={14} /> : <Bot size={14} />}
       </div>
 
-      <div className="flex-1 min-w-0 text-sm" style={{ color: 'var(--text-primary)' }}>
+      <div className="flex-1 min-w-0 text-sm" style={{ color: isUser ? 'var(--text-secondary)' : 'var(--text-primary)' }}>
         {textContent && (
           <div className="prose-sm max-w-none">
             <ReactMarkdown remarkPlugins={[remarkGfm]}>

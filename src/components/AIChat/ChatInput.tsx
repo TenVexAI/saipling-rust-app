@@ -34,7 +34,7 @@ export function ChatInput({ onSend, disabled, placeholder }: ChatInputProps) {
   return (
     <div
       className="flex items-end gap-2 shrink-0"
-      style={{ borderTop: '1px solid var(--border-primary)', padding: '10px 10px' }}
+      style={{ borderTop: '1px solid var(--border-primary)', padding: '12px 16px' }}
     >
       <textarea
         ref={textareaRef}

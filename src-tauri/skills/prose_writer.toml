@@ -2,7 +2,7 @@
 name = "prose_writer"
 display_name = "Prose Writer"
 description = "Assists with drafting prose during the Bloom Phase, adapting to the writer's voice"
-default_model = "claude-sonnet-4-5-20250929"
+default_model = "claude-sonnet-4-6"
 temperature = 0.8
 
 [context]

@@ -2,7 +2,7 @@
 name = "brainstorm"
 display_name = "Brainstorm"
 description = "Open-ended creative exploration and idea generation"
-default_model = "claude-sonnet-4-5-20250929"
+default_model = "claude-sonnet-4-6"
 temperature = 0.9
 
 [context]

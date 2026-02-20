@@ -65,6 +65,7 @@ pub fn run() {
             agent_cmd::agent_quick,
             agent_cmd::agent_cancel,
             agent_cmd::estimate_context_tokens,
+            agent_cmd::list_available_skills,
             // Configuration
             config::get_config,
             config::update_config,

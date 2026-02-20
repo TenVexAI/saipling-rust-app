@@ -2,7 +2,7 @@
 name = "prose_editor"
 display_name = "Prose Editor"
 description = "Reviews and suggests improvements to existing draft prose"
-default_model = "claude-sonnet-4-5-20250929"
+default_model = "claude-sonnet-4-6"
 temperature = 0.5
 
 [context]

@@ -1,6 +1,6 @@
-import { useRef, useEffect, useCallback } from 'react';
+import { useRef, useEffect, useCallback, useState } from 'react';
 import { listen } from '@tauri-apps/api/event';
-import { MessageSquare, Trash2 } from 'lucide-react';
+import { MessageSquare, Trash2, StopCircle } from 'lucide-react';
 import { ChatMessage } from './ChatMessage';
 import { ChatInput } from './ChatInput';
 import { SkillSelector } from './SkillSelector';
@@ -8,7 +8,8 @@ import { ContextSummary } from './ContextSummary';
 import { AgentPlanCard } from './AgentPlanCard';
 import { useAIStore } from '../../stores/aiStore';
 import { useProjectStore } from '../../stores/projectStore';
-import { agentPlan, agentExecute } from '../../utils/tauri';
+import { agentPlan, agentExecute, agentCancel, listAvailableSkills } from '../../utils/tauri';
+import type { ContextFileInfo } from '../../types/ai';
 
 interface ChatPanelProps {
   width?: number;
@@ -25,8 +26,13 @@ export function ChatPanel({ width }: ChatPanelProps) {
   const setCurrentPlan = useAIStore((s) => s.setCurrentPlan);
   const setConversationId = useAIStore((s) => s.setConversationId);
   const setLastCost = useAIStore((s) => s.setLastCost);
+  const setAvailableSkills = useAIStore((s) => s.setAvailableSkills);
+  const conversationId = useAIStore((s) => s.conversationId);
+  const lastCost = useAIStore((s) => s.lastCost);
   const activeSkill = useAIStore((s) => s.activeSkill);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [contextFiles, setContextFiles] = useState<ContextFileInfo[]>([]);
+  const [contextTokens, setContextTokens] = useState(0);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -34,16 +40,22 @@ export function ChatPanel({ width }: ChatPanelProps) {
     }
   }, [messages]);
 
+  // Load available skills on mount
+  useEffect(() => {
+    listAvailableSkills()
+      .then((skills) => setAvailableSkills(skills))
+      .catch(() => {});
+  }, [setAvailableSkills]);
+
   const executeWithStreaming = useCallback(async (planId: string, history: { role: 'user' | 'assistant'; content: string }[]) => {
     setStreaming(true);
     setConversationId(planId);
 
-    // Listen for streaming events
     const unlistenChunk = await listen<{ text: string }>(`claude:chunk:${planId}`, (event) => {
       appendToLastAssistant(event.payload.text);
     });
     const unlistenDone = await listen<{ full_text: string; input_tokens: number; output_tokens: number }>(`claude:done:${planId}`, (event) => {
-      const cost = (event.payload.input_tokens * 0.003 + event.payload.output_tokens * 0.015) / 1000;
+      const cost = (event.payload.input_tokens * 3 + event.payload.output_tokens * 15) / 1_000_000;
       setLastCost(`$${cost.toFixed(4)}`);
       setStreaming(false);
       unlistenChunk();
@@ -77,7 +89,6 @@ export function ChatPanel({ width }: ChatPanelProps) {
   const handleSend = useCallback(async (text: string) => {
     const userMsg = { role: 'user' as const, content: text };
     addMessage(userMsg);
-    // Add empty assistant message that will be streamed into
     addMessage({ role: 'assistant', content: '' });
 
     const projectDir = useProjectStore.getState().projectDir;
@@ -96,7 +107,10 @@ export function ChatPanel({ width }: ChatPanelProps) {
         text,
       );
 
-      // Build conversation history for the API call
+      // Update context display
+      setContextFiles(plan.context_files);
+      setContextTokens(plan.total_tokens_est);
+
       const allMessages = useAIStore.getState().messages;
       const history = allMessages
         .filter(m => m.content.length > 0)
@@ -107,6 +121,16 @@ export function ChatPanel({ width }: ChatPanelProps) {
       appendToLastAssistant(`Error: ${String(e)}`);
     }
   }, [addMessage, appendToLastAssistant, activeSkill, executeWithStreaming]);
+
+  const handleCancel = useCallback(async () => {
+    if (conversationId) {
+      try {
+        await agentCancel(conversationId);
+      } catch {
+        // best-effort
+      }
+    }
+  }, [conversationId]);
 
   const handleApprovePlan = async () => {
     if (!currentPlan) return;
@@ -142,17 +166,34 @@ export function ChatPanel({ width }: ChatPanelProps) {
         <div className="flex items-center gap-2 text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
           <MessageSquare size={14} />
           AI Chat
+          {lastCost && (
+            <span className="font-normal" style={{ color: 'var(--text-tertiary)' }}>
+              ({lastCost})
+            </span>
+          )}
         </div>
-        {messages.length > 0 && (
-          <button
-            onClick={clearMessages}
-            className="p-1 rounded"
-            style={{ color: 'var(--text-tertiary)' }}
-            title="Clear conversation"
-          >
-            <Trash2 size={12} />
-          </button>
-        )}
+        <div className="flex items-center gap-1">
+          {isStreaming && (
+            <button
+              onClick={handleCancel}
+              className="p-1 rounded"
+              style={{ color: 'var(--color-error)' }}
+              title="Stop generation"
+            >
+              <StopCircle size={14} />
+            </button>
+          )}
+          {messages.length > 0 && (
+            <button
+              onClick={clearMessages}
+              className="p-1 rounded"
+              style={{ color: 'var(--text-tertiary)' }}
+              title="Clear conversation"
+            >
+              <Trash2 size={12} />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Skill Selector */}
@@ -161,7 +202,7 @@ export function ChatPanel({ width }: ChatPanelProps) {
       </div>
 
       {/* Context Summary */}
-      <ContextSummary files={[]} totalTokens={0} />
+      <ContextSummary files={contextFiles} totalTokens={contextTokens} />
 
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto">

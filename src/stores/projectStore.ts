@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import type { ProjectMetadata, BookMetadata, BookRef } from '../types/project';
+import type { Phase } from '../types/sapling';
 
-export type SidebarView = 'dashboard' | 'files' | 'book' | 'world' | 'characters' | 'notes' | 'settings';
+export type SidebarView = 'dashboard' | 'files' | 'book' | 'world' | 'characters' | 'notes' | 'settings' | 'phase';
 
 interface ProjectState {
   // Project
@@ -16,6 +17,7 @@ interface ProjectState {
   activeChapterId: string | null;
   activeSceneId: string | null;
   activeFilePath: string | null;
+  activePhase: Phase | null;
 
   // Sidebar
   sidebarExpanded: boolean;
@@ -29,6 +31,7 @@ interface ProjectState {
   setActiveChapter: (chapterId: string | null) => void;
   setActiveScene: (sceneId: string | null) => void;
   setActiveFile: (path: string | null) => void;
+  setActivePhase: (phase: Phase | null) => void;
   toggleSidebar: () => void;
   toggleRightPanel: () => void;
   setRightPanelOpen: (open: boolean) => void;
@@ -46,6 +49,7 @@ export const useProjectStore = create<ProjectState>((set) => ({
   activeChapterId: null,
   activeSceneId: null,
   activeFilePath: null,
+  activePhase: null,
 
   sidebarExpanded: false,
   rightPanelOpen: true,
@@ -59,6 +63,7 @@ export const useProjectStore = create<ProjectState>((set) => ({
     activeChapterId: null,
     activeSceneId: null,
     activeFilePath: null,
+    activePhase: null,
   }),
 
   clearProject: () => set({
@@ -70,6 +75,7 @@ export const useProjectStore = create<ProjectState>((set) => ({
     activeChapterId: null,
     activeSceneId: null,
     activeFilePath: null,
+    activePhase: null,
   }),
 
   setActiveView: (view) => set({ activeView: view }),
@@ -82,6 +88,7 @@ export const useProjectStore = create<ProjectState>((set) => ({
   setActiveChapter: (chapterId) => set({ activeChapterId: chapterId, activeSceneId: null }),
   setActiveScene: (sceneId) => set({ activeSceneId: sceneId }),
   setActiveFile: (path) => set({ activeFilePath: path }),
+  setActivePhase: (phase) => set({ activePhase: phase, activeView: 'phase', activeFilePath: null }),
   toggleSidebar: () => set((s) => ({ sidebarExpanded: !s.sidebarExpanded })),
   toggleRightPanel: () => set((s) => ({ rightPanelOpen: !s.rightPanelOpen })),
   setRightPanelOpen: (open) => set({ rightPanelOpen: open }),

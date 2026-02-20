@@ -126,6 +126,9 @@ export const agentCancel = (conversationId: string) =>
 export const estimateContextTokens = (projectDir: string, skill: string, scope: ContextScope) =>
   invoke<TokenEstimate>('estimate_context_tokens', { projectDir, skill, scope });
 
+export const listAvailableSkills = () =>
+  invoke<import('../types/ai').SkillMeta[]>('list_available_skills');
+
 // ─── Configuration ───
 export interface AppConfig {
   version: string;

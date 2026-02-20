@@ -2,28 +2,10 @@ import { ChevronDown } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useAIStore } from '../../stores/aiStore';
 
-const BUILTIN_SKILLS = [
-  { name: 'brainstorm', display_name: 'Brainstorm' },
-  { name: 'seed_developer', display_name: 'Seed Developer' },
-  { name: 'structure_analyst', display_name: 'Structure Analyst' },
-  { name: 'character_developer', display_name: 'Character Developer' },
-  { name: 'relationship_mapper', display_name: 'Relationship Mapper' },
-  { name: 'world_builder', display_name: 'World Builder' },
-  { name: 'scene_architect', display_name: 'Scene Architect' },
-  { name: 'prose_writer', display_name: 'Prose Writer' },
-  { name: 'prose_editor', display_name: 'Prose Editor' },
-  { name: 'describe', display_name: 'Describe' },
-  { name: 'dialogue_crafter', display_name: 'Dialogue Crafter' },
-  { name: 'consistency_checker', display_name: 'Consistency Checker' },
-  { name: 'researcher', display_name: 'Researcher' },
-  { name: 'series_arc_planner', display_name: 'Series Arc Planner' },
-  { name: 'genre_specialist', display_name: 'Genre Specialist' },
-  { name: 'front_back_matter_writer', display_name: 'Front/Back Matter Writer' },
-];
-
 export function SkillSelector() {
   const activeSkill = useAIStore((s) => s.activeSkill);
   const setActiveSkill = useAIStore((s) => s.setActiveSkill);
+  const availableSkills = useAIStore((s) => s.availableSkills);
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -37,7 +19,7 @@ export function SkillSelector() {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const activeName = BUILTIN_SKILLS.find((s) => s.name === activeSkill)?.display_name || 'Auto';
+  const activeName = availableSkills.find((s) => s.name === activeSkill)?.display_name || 'Auto';
 
   return (
     <div ref={ref} className="relative">
@@ -77,7 +59,7 @@ export function SkillSelector() {
           >
             Auto (context-based)
           </button>
-          {BUILTIN_SKILLS.map((skill) => (
+          {availableSkills.map((skill) => (
             <button
               key={skill.name}
               onClick={() => { setActiveSkill(skill.name); setOpen(false); }}

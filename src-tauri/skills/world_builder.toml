@@ -2,7 +2,7 @@
 name = "world_builder"
 display_name = "World Builder"
 description = "Develops world-building elements — locations, factions, technology, history, rules"
-default_model = "claude-sonnet-4-5-20250929"
+default_model = "claude-sonnet-4-6"
 temperature = 0.8
 
 [context]

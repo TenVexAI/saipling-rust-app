@@ -2,7 +2,7 @@
 name = "dialogue_crafter"
 display_name = "Dialogue Crafter"
 description = "Helps write character-distinct dialogue that serves the scene's goals"
-default_model = "claude-sonnet-4-5-20250929"
+default_model = "claude-sonnet-4-6"
 temperature = 0.8
 
 [context]

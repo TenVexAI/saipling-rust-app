@@ -2,7 +2,7 @@
 name = "structure_analyst"
 display_name = "Structure Analyst"
 description = "Develops and validates the 21-beat story structure during the Root Phase"
-default_model = "claude-sonnet-4-5-20250929"
+default_model = "claude-sonnet-4-6"
 temperature = 0.7
 
 [context]

@@ -2,7 +2,7 @@
 name = "consistency_checker"
 display_name = "Consistency Checker"
 description = "Scans for contradictions, timeline issues, and continuity errors"
-default_model = "claude-sonnet-4-5-20250929"
+default_model = "claude-sonnet-4-6"
 temperature = 0.3
 
 [context]

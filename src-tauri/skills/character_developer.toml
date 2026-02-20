@@ -2,7 +2,7 @@
 name = "character_developer"
 display_name = "Character Developer"
 description = "Develops character sheets and 8-point character journeys during the Sprout Phase"
-default_model = "claude-sonnet-4-5-20250929"
+default_model = "claude-sonnet-4-6"
 temperature = 0.8
 
 [context]

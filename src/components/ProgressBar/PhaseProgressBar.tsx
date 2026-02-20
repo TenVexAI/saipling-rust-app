@@ -1,4 +1,5 @@
 import { useProjectStore } from '../../stores/projectStore';
+import { useAIStore } from '../../stores/aiStore';
 import { PHASES } from '../../types/sapling';
 import type { Phase, PhaseStatus } from '../../types/sapling';
 
@@ -22,8 +23,25 @@ function StatusIcon({ status }: { status: PhaseStatus }) {
   return <span style={{ color: 'var(--text-tertiary)' }}>○</span>;
 }
 
+// Map each phase to its primary AI skill
+const PHASE_SKILLS: Record<Phase, string> = {
+  seed: 'seed_developer',
+  root: 'structure_analyst',
+  sprout: 'character_developer',
+  flourish: 'scene_architect',
+  bloom: 'prose_writer',
+};
+
 export function PhaseProgressBar() {
   const activeBookMeta = useProjectStore((s) => s.activeBookMeta);
+  const activePhase = useProjectStore((s) => s.activePhase);
+  const setActivePhase = useProjectStore((s) => s.setActivePhase);
+  const setActiveSkill = useAIStore((s) => s.setActiveSkill);
+
+  const handlePhaseClick = (phaseId: Phase) => {
+    setActivePhase(phaseId);
+    setActiveSkill(PHASE_SKILLS[phaseId]);
+  };
 
   return (
     <div
@@ -58,10 +76,11 @@ export function PhaseProgressBar() {
               />
             )}
             <button
+              onClick={() => handlePhaseClick(phase.id)}
               className="flex items-center gap-1.5 px-2 py-1 rounded text-xs transition-colors"
               style={{
-                color: status === 'not_started' ? 'var(--text-tertiary)' : 'var(--text-primary)',
-                backgroundColor: 'transparent',
+                color: activePhase === phase.id ? 'var(--accent)' : status === 'not_started' ? 'var(--text-tertiary)' : 'var(--text-primary)',
+                backgroundColor: activePhase === phase.id ? 'var(--accent-subtle)' : 'transparent',
               }}
               title={`${phase.label}: ${phase.question}`}
             >

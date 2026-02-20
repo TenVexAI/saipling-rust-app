@@ -2,7 +2,7 @@
 name = "seed_developer"
 display_name = "Seed Phase Developer"
 description = "Helps develop the six core elements of a story's foundation"
-default_model = "claude-sonnet-4-5-20250929"
+default_model = "claude-sonnet-4-6"
 temperature = 0.8
 
 [context]

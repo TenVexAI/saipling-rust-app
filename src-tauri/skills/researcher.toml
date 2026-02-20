@@ -2,7 +2,7 @@
 name = "researcher"
 display_name = "Researcher"
 description = "Helps research real-world topics to inform fiction"
-default_model = "claude-sonnet-4-5-20250929"
+default_model = "claude-sonnet-4-6"
 temperature = 0.5
 
 [context]

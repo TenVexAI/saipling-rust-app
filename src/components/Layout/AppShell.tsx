@@ -12,6 +12,7 @@ import { BookView } from '../BookView/BookView';
 import { WorldBrowser } from '../WorldView/WorldBrowser';
 import { CharacterList } from '../CharacterView/CharacterList';
 import { NotesBrowser } from '../NotesView/NotesBrowser';
+import { PhaseWorkflow } from '../PhaseWorkflow/PhaseWorkflow';
 import { ProseEditor } from '../Editor/ProseEditor';
 import { useProjectStore } from '../../stores/projectStore';
 import { useEditorStore } from '../../stores/editorStore';
@@ -51,6 +52,8 @@ function MainContent() {
       return <CharacterList />;
     case 'notes':
       return <NotesBrowser />;
+    case 'phase':
+      return <PhaseWorkflow />;
     default:
       return <Dashboard />;
   }

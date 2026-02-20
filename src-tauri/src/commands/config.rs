@@ -56,7 +56,7 @@ impl Default for AppConfig {
         Self {
             version: "1.0.0".to_string(),
             api_key_encrypted: String::new(),
-            default_model: "claude-sonnet-4-5-20250929".to_string(),
+            default_model: "claude-sonnet-4-6".to_string(),
             projects_root: docs.to_string_lossy().to_string(),
             theme: "darkPro".to_string(),
             editor: EditorConfig::default(),
@@ -130,14 +130,17 @@ pub async fn validate_api_key() -> Result<bool, AppError> {
         .header("anthropic-version", "2023-06-01")
         .header("content-type", "application/json")
         .json(&serde_json::json!({
-            "model": "claude-haiku-4-5-20241022",
+            "model": "claude-haiku-4-5-20251001",
             "max_tokens": 1,
             "messages": [{"role": "user", "content": "hi"}]
         }))
         .send()
         .await?;
 
-    Ok(res.status().is_success())
+    let status = res.status().as_u16();
+    // 401 = invalid key, 403 = forbidden → key is bad
+    // 200 = success, 400/404/429 = key is valid but request issue
+    Ok(status != 401 && status != 403)
 }
 
 pub fn get_api_key_internal(config: &AppConfig) -> Result<String, AppError> {
