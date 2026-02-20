@@ -66,13 +66,13 @@ impl Default for AppConfig {
 }
 
 fn dirs_next() -> Option<PathBuf> {
-    dirs::document_dir().map(|d| d.join("sAIpling"))
+    dirs::document_dir().map(|d| d.join("SAiPLING"))
 }
 
 fn config_dir() -> Result<PathBuf, AppError> {
     let docs = dirs::document_dir()
         .ok_or_else(|| AppError::Config("Cannot find Documents directory".into()))?;
-    Ok(docs.join("sAIpling").join(".saipling"))
+    Ok(docs.join("SAiPLING").join(".saipling"))
 }
 
 fn config_path() -> Result<PathBuf, AppError> {

@@ -43,11 +43,12 @@ export function SkillSelector() {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium w-full"
+        className="flex items-center justify-between rounded-md text-xs font-medium w-full"
         style={{
           backgroundColor: 'var(--bg-tertiary)',
           color: 'var(--text-secondary)',
           border: '1px solid var(--border-primary)',
+          padding: '6px 10px',
         }}
       >
         <span className="truncate">Skill: {activeName}</span>
@@ -65,11 +66,14 @@ export function SkillSelector() {
         >
           <button
             onClick={() => { setActiveSkill(null); setOpen(false); }}
-            className="w-full text-left px-3 py-1.5 text-xs transition-colors"
+            className="w-full text-left text-xs transition-colors"
             style={{
               color: !activeSkill ? 'var(--accent)' : 'var(--text-primary)',
               backgroundColor: !activeSkill ? 'var(--accent-subtle)' : 'transparent',
+              padding: '7px 12px',
             }}
+            onMouseEnter={(e) => { if (activeSkill) e.currentTarget.style.backgroundColor = 'var(--bg-hover)'; }}
+            onMouseLeave={(e) => { if (activeSkill) e.currentTarget.style.backgroundColor = 'transparent'; }}
           >
             Auto (context-based)
           </button>
@@ -77,11 +81,14 @@ export function SkillSelector() {
             <button
               key={skill.name}
               onClick={() => { setActiveSkill(skill.name); setOpen(false); }}
-              className="w-full text-left px-3 py-1.5 text-xs transition-colors"
+              className="w-full text-left text-xs transition-colors"
               style={{
                 color: activeSkill === skill.name ? 'var(--accent)' : 'var(--text-primary)',
                 backgroundColor: activeSkill === skill.name ? 'var(--accent-subtle)' : 'transparent',
+                padding: '7px 12px',
               }}
+              onMouseEnter={(e) => { if (activeSkill !== skill.name) e.currentTarget.style.backgroundColor = 'var(--bg-hover)'; }}
+              onMouseLeave={(e) => { if (activeSkill !== skill.name) e.currentTarget.style.backgroundColor = 'transparent'; }}
             >
               {skill.display_name}
             </button>

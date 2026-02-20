@@ -26,7 +26,7 @@ export function Welcome() {
 
   const handleOpen = async () => {
     try {
-      const selected = await open({ directory: true, title: 'Open sAIpling Project' });
+      const selected = await open({ directory: true, title: 'Open SAiPLING Project' });
       if (selected) {
         const meta = await openProject(selected as string);
         setProject(meta, selected as string);
@@ -62,31 +62,32 @@ export function Welcome() {
       className="flex items-center justify-center h-full"
       style={{ backgroundColor: 'var(--bg-primary)' }}
     >
-      <div className="w-full max-w-md p-8">
-        <div className="flex flex-col items-center mb-8">
-          <img src={logo} alt="sAIpling" className="w-16 h-16 mb-3" />
+      <div className="w-full max-w-sm" style={{ padding: '0 24px' }}>
+        <div className="flex flex-col items-center" style={{ marginBottom: '40px' }}>
+          <img src={logo} alt="SAiPLING" className="w-16 h-16" style={{ marginBottom: '12px' }} />
           <h1 className="text-2xl font-semibold" style={{ color: 'var(--text-primary)' }}>
-            sAIpling
+            SAiPLING
           </h1>
-          <p className="text-sm mt-1" style={{ color: 'var(--text-tertiary)' }}>
+          <p className="text-sm" style={{ color: 'var(--text-tertiary)', marginTop: '4px' }}>
             Novel writing with the Sapling Story Structure
           </p>
         </div>
 
         {error && (
-          <div className="mb-4 p-3 rounded-lg text-sm" style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--color-error)' }}>
+          <div className="rounded-lg text-sm" style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--color-error)', padding: '12px', marginBottom: '16px' }}>
             {error}
           </div>
         )}
 
         {!showCreate ? (
-          <div className="space-y-3">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <button
               onClick={() => setShowCreate(true)}
-              className="flex items-center gap-3 w-full px-4 py-3 rounded-lg text-sm font-medium transition-colors"
+              className="flex items-center gap-3 w-full rounded-lg text-sm font-medium transition-colors"
               style={{
                 backgroundColor: 'var(--accent)',
                 color: 'var(--text-inverse)',
+                padding: '12px 16px',
               }}
             >
               <Plus size={18} />
@@ -94,11 +95,12 @@ export function Welcome() {
             </button>
             <button
               onClick={handleOpen}
-              className="flex items-center gap-3 w-full px-4 py-3 rounded-lg text-sm font-medium transition-colors"
+              className="flex items-center gap-3 w-full rounded-lg text-sm font-medium transition-colors"
               style={{
                 backgroundColor: 'var(--bg-tertiary)',
                 color: 'var(--text-primary)',
                 border: '1px solid var(--border-primary)',
+                padding: '12px 16px',
               }}
             >
               <FolderOpen size={18} />
@@ -106,23 +108,23 @@ export function Welcome() {
             </button>
 
             {recents.length > 0 && (
-              <div className="mt-6">
-                <h3 className="flex items-center gap-2 text-xs font-semibold mb-2" style={{ color: 'var(--text-tertiary)' }}>
+              <div style={{ marginTop: '24px' }}>
+                <h3 className="flex items-center gap-2 text-xs font-semibold" style={{ color: 'var(--text-tertiary)', marginBottom: '12px' }}>
                   <Clock size={12} />
                   Recent Projects
                 </h3>
-                <div className="space-y-1">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                   {recents.slice(0, 5).map((r) => (
                     <button
                       key={r.path}
                       onClick={() => handleOpenRecent(r.path)}
-                      className="flex flex-col w-full px-3 py-2 rounded text-left transition-colors"
-                      style={{ color: 'var(--text-primary)' }}
+                      className="flex flex-col w-full rounded-lg text-left transition-colors"
+                      style={{ color: 'var(--text-primary)', padding: '10px 12px' }}
                       onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--bg-hover)')}
                       onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
                     >
                       <span className="text-sm font-medium">{r.name}</span>
-                      <span className="text-xs truncate" style={{ color: 'var(--text-tertiary)' }}>
+                      <span className="text-xs truncate" style={{ color: 'var(--text-tertiary)', marginTop: '2px' }}>
                         {r.path}
                       </span>
                     </button>

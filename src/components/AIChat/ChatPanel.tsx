@@ -7,7 +7,11 @@ import { ContextSummary } from './ContextSummary';
 import { AgentPlanCard } from './AgentPlanCard';
 import { useAIStore } from '../../stores/aiStore';
 
-export function ChatPanel() {
+interface ChatPanelProps {
+  width?: number;
+}
+
+export function ChatPanel({ width }: ChatPanelProps) {
   const messages = useAIStore((s) => s.messages);
   const isStreaming = useAIStore((s) => s.isStreaming);
   const currentPlan = useAIStore((s) => s.currentPlan);
@@ -45,9 +49,9 @@ export function ChatPanel() {
 
   return (
     <div
-      className="flex flex-col h-full"
+      className="flex flex-col h-full shrink-0"
       style={{
-        width: 'var(--right-panel-width)',
+        width: width ? `${width}px` : 'var(--right-panel-width)',
         backgroundColor: 'var(--bg-secondary)',
         borderLeft: '1px solid var(--border-primary)',
       }}

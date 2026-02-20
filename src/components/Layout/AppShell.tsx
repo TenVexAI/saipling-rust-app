@@ -1,8 +1,10 @@
+import { useState, useCallback } from 'react';
 import { TitleBar } from './TitleBar';
 import { Sidebar } from '../Sidebar/Sidebar';
 import { Footer } from '../Footer/Footer';
 import { PhaseProgressBar } from '../ProgressBar/PhaseProgressBar';
 import { ChatPanel } from '../AIChat/ChatPanel';
+import { ResizeDivider } from './ResizeDivider';
 import { Dashboard } from '../Dashboard/Dashboard';
 import { SettingsView } from '../Settings/SettingsView';
 import { useProjectStore } from '../../stores/projectStore';
@@ -68,6 +70,11 @@ export function AppShell() {
   const rightPanelOpen = useProjectStore((s) => s.rightPanelOpen);
   const activeView = useProjectStore((s) => s.activeView);
   const showChat = activeView !== 'settings' && rightPanelOpen;
+  const [chatWidth, setChatWidth] = useState(340);
+
+  const handleResize = useCallback((delta: number) => {
+    setChatWidth((prev) => Math.max(260, Math.min(600, prev - delta)));
+  }, []);
 
   return (
     <div className="flex flex-col h-full w-full overflow-hidden">
@@ -83,7 +90,12 @@ export function AppShell() {
             </div>
           </div>
 
-          {!focusMode && showChat && <ChatPanel />}
+          {!focusMode && showChat && (
+            <>
+              <ResizeDivider onResize={handleResize} />
+              <ChatPanel width={chatWidth} />
+            </>
+          )}
         </div>
       </div>
 

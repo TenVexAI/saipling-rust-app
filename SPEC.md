@@ -135,7 +135,7 @@ Then reference it in React components:
 
 ```tsx
 import logo from '@/assets/logo.png';
-// <img src={logo} alt="sAIpling" className="w-8 h-8" />
+// <img src={logo} alt="SAiPLING" className="w-8 h-8" />
 ```
 
 ### 2.4 Initial File Structure to Create
@@ -215,7 +215,7 @@ pnpm tauri build
 └───────────────────────┬──────────────────────────────┘
                         │ std::fs
              ┌──────────┴──────────┐
-             │  ~/Documents/sAIpling/
+             │  ~/Documents/SAiPLING/
              │  └── my-series/
              │      ├── project.json
              │      ├── series/
@@ -363,7 +363,7 @@ AI Approval Mode:
 ### 4.1 Application Root
 
 ```
-~/Documents/sAIpling/                      # Configurable in settings
+~/Documents/SAiPLING/                      # Configurable in settings
 ├── .saipling/                             # Application-level config
 │   ├── config.json                        # API key (encrypted), global preferences
 │   ├── skills/                            # Skill template overrides/customizations
@@ -381,7 +381,7 @@ AI Approval Mode:
   "version": "1.0.0",
   "api_key_encrypted": "...",
   "default_model": "claude-sonnet-4-5-20250929",
-  "projects_root": "~/Documents/sAIpling",
+  "projects_root": "~/Documents/SAiPLING",
   "theme": "darkPro",
   "editor": {
     "auto_save_interval_seconds": 30,
@@ -1077,7 +1077,7 @@ not_started → in_progress → complete
 
 ### 6.1 Overview
 
-The AI Agent System is the core intelligence layer of sAIpling. It sits between the user's intent and the Claude API, handling planning, context assembly, parallel execution, and result formatting.
+The AI Agent System is the core intelligence layer of SAiPLING. It sits between the user's intent and the Claude API, handling planning, context assembly, parallel execution, and result formatting.
 
 ### 6.2 Agent Orchestrator
 

@@ -34,36 +34,41 @@ export function ChatInput({ onSend, disabled, placeholder }: ChatInputProps) {
   return (
     <div
       className="flex items-end gap-2 shrink-0"
-      style={{ borderTop: '1px solid var(--border-primary)', padding: '12px 16px' }}
+      style={{ borderTop: '1px solid var(--border-primary)', padding: '10px 10px' }}
     >
       <textarea
         ref={textareaRef}
         value={text}
         onChange={(e) => setText(e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder={placeholder || 'Type a message...'}
+        placeholder={placeholder || 'Ask Claude...'}
         rows={1}
         disabled={disabled}
-        className="flex-1 resize-none px-3 py-2 rounded-lg text-sm"
+        className="flex-1 resize-none rounded-lg text-sm"
         style={{
           backgroundColor: 'var(--bg-input)',
           border: '1px solid var(--border-primary)',
           color: 'var(--text-primary)',
-          maxHeight: '150px',
+          maxHeight: '250px',
           lineHeight: '1.5',
+          padding: '6px 6px',
         }}
       />
       <button
         onClick={handleSend}
         disabled={!text.trim() || disabled}
-        className="p-2 rounded-lg shrink-0"
+        className="shrink-0 flex items-center justify-center transition-colors"
         style={{
-          backgroundColor: text.trim() && !disabled ? 'var(--accent)' : 'var(--bg-tertiary)',
-          color: text.trim() && !disabled ? 'var(--text-inverse)' : 'var(--text-tertiary)',
-          cursor: text.trim() && !disabled ? 'pointer' : 'not-allowed',
+          background: 'none',
+          border: 'none',
+          color: text.trim() && !disabled ? 'var(--accent)' : 'var(--text-tertiary)',
+          cursor: text.trim() && !disabled ? 'pointer' : 'default',
+          padding: '0 2px',
+          marginBottom: '2px',
+          alignSelf: 'flex-end',
         }}
       >
-        <Send size={16} />
+        <Send size={18} />
       </button>
     </div>
   );

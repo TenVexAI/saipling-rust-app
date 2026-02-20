@@ -9,7 +9,7 @@ export function TitleBar() {
   const appWindow = getCurrentWindow();
 
   const bookTitle = project?.books.find((b) => b.id === activeBookId)?.title;
-  const title = [project?.name, bookTitle].filter(Boolean).join(' — ') || 'sAIpling';
+  const title = [project?.name, bookTitle].filter(Boolean).join(' — ') || 'SAiPLING';
 
   const handleDragStart = (e: React.MouseEvent) => {
     // Only start drag if not clicking a button
@@ -29,7 +29,7 @@ export function TitleBar() {
       }}
     >
       <div className="flex items-center gap-2 flex-1 min-w-0">
-        <img src={logo} alt="sAIpling" className="w-5 h-5 shrink-0" />
+        <img src={logo} alt="SAiPLING" className="w-5 h-5 shrink-0" />
         <span
           className="text-xs truncate"
           style={{ color: 'var(--text-secondary)' }}

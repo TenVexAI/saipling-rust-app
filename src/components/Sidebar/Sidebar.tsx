@@ -47,7 +47,7 @@ export function Sidebar() {
               className="flex items-center gap-3 w-full rounded-md transition-colors"
               style={{
                 color: isActive ? 'var(--accent)' : disabled ? 'var(--text-tertiary)' : 'var(--text-secondary)',
-                backgroundColor: isActive ? 'var(--bg-active)' : 'transparent',
+                backgroundColor: 'transparent',
                 opacity: disabled ? 0.4 : 1,
                 cursor: disabled ? 'not-allowed' : 'pointer',
                 justifyContent: sidebarExpanded ? 'flex-start' : 'center',
@@ -70,7 +70,7 @@ export function Sidebar() {
           className="flex items-center gap-3 w-full rounded-md transition-colors"
           style={{
             color: activeView === 'settings' ? 'var(--accent)' : 'var(--text-secondary)',
-            backgroundColor: activeView === 'settings' ? 'var(--bg-active)' : 'transparent',
+            backgroundColor: 'transparent',
             justifyContent: sidebarExpanded ? 'flex-start' : 'center',
             padding: sidebarExpanded ? '8px 12px' : '10px 0',
           }}

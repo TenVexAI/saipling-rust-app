@@ -47,93 +47,98 @@ export function SettingsView() {
   };
 
   return (
-    <div className="p-6 overflow-y-auto h-full" style={{ backgroundColor: 'var(--bg-primary)' }}>
-      <h1 className="text-xl font-semibold mb-6" style={{ color: 'var(--text-primary)' }}>
-        Settings
-      </h1>
+    <div className="overflow-y-auto h-full" style={{ backgroundColor: 'var(--bg-primary)' }}>
+      <div className="max-w-2xl" style={{ padding: '32px 40px' }}>
+        <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)', marginBottom: '32px' }}>
+          Settings
+        </h1>
 
-      {/* API Key */}
-      <section className="mb-8">
-        <h2 className="flex items-center gap-2 text-sm font-semibold mb-3" style={{ color: 'var(--text-secondary)' }}>
-          <Key size={16} />
-          Anthropic API Key
-        </h2>
-        {hasKey && keyStatus !== 'invalid' ? (
-          <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--color-success)' }}>
-            <Check size={16} />
-            API key configured
-            <button
-              onClick={() => setHasKey(false)}
-              className="ml-2 text-xs underline"
-              style={{ color: 'var(--text-tertiary)' }}
-            >
-              Change
-            </button>
-          </div>
-        ) : (
-          <div className="flex gap-2 max-w-lg">
-            <input
-              type="password"
-              value={apiKey}
-              onChange={(e) => { setApiKeyInput(e.target.value); setKeyStatus('idle'); }}
-              placeholder="sk-ant-..."
-              className="flex-1 px-3 py-2 rounded-lg text-sm"
-              style={{
-                backgroundColor: 'var(--bg-input)',
-                border: `1px solid ${keyStatus === 'invalid' ? 'var(--color-error)' : 'var(--border-primary)'}`,
-                color: 'var(--text-primary)',
-              }}
-              onKeyDown={(e) => e.key === 'Enter' && handleSaveKey()}
-            />
-            <button
-              onClick={handleSaveKey}
-              disabled={keyStatus === 'validating' || !apiKey.trim()}
-              className="px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2"
-              style={{
-                backgroundColor: 'var(--accent)',
-                color: 'var(--text-inverse)',
-                opacity: keyStatus === 'validating' || !apiKey.trim() ? 0.6 : 1,
-              }}
-            >
-              {keyStatus === 'validating' ? <Loader2 size={14} className="animate-spin" /> : null}
-              {keyStatus === 'validating' ? 'Validating...' : 'Save'}
-            </button>
-          </div>
-        )}
-        {keyStatus === 'invalid' && (
-          <p className="text-xs mt-2" style={{ color: 'var(--color-error)' }}>
-            Invalid API key. Please check and try again.
-          </p>
-        )}
-      </section>
+        {/* API Key */}
+        <section style={{ marginBottom: '40px' }}>
+          <h2 className="flex items-center gap-2 text-sm font-semibold" style={{ color: 'var(--text-secondary)', marginBottom: '16px' }}>
+            <Key size={16} />
+            Anthropic API Key
+          </h2>
+          {hasKey && keyStatus !== 'invalid' ? (
+            <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--color-success)' }}>
+              <Check size={16} />
+              API key configured
+              <button
+                onClick={() => setHasKey(false)}
+                className="ml-2 text-xs underline"
+                style={{ color: 'var(--text-tertiary)' }}
+              >
+                Change
+              </button>
+            </div>
+          ) : (
+            <div className="flex gap-2">
+              <input
+                type="password"
+                value={apiKey}
+                onChange={(e) => { setApiKeyInput(e.target.value); setKeyStatus('idle'); }}
+                placeholder="sk-ant-..."
+                className="flex-1 rounded-lg text-sm"
+                style={{
+                  backgroundColor: 'var(--bg-input)',
+                  border: `1px solid ${keyStatus === 'invalid' ? 'var(--color-error)' : 'var(--border-primary)'}`,
+                  color: 'var(--text-primary)',
+                  padding: '8px 12px',
+                }}
+                onKeyDown={(e) => e.key === 'Enter' && handleSaveKey()}
+              />
+              <button
+                onClick={handleSaveKey}
+                disabled={keyStatus === 'validating' || !apiKey.trim()}
+                className="rounded-lg text-sm font-medium flex items-center gap-2"
+                style={{
+                  backgroundColor: 'var(--accent)',
+                  color: 'var(--text-inverse)',
+                  opacity: keyStatus === 'validating' || !apiKey.trim() ? 0.6 : 1,
+                  padding: '8px 16px',
+                }}
+              >
+                {keyStatus === 'validating' ? <Loader2 size={14} className="animate-spin" /> : null}
+                {keyStatus === 'validating' ? 'Validating...' : 'Save'}
+              </button>
+            </div>
+          )}
+          {keyStatus === 'invalid' && (
+            <p className="text-xs" style={{ color: 'var(--color-error)', marginTop: '8px' }}>
+              Invalid API key. Please check and try again.
+            </p>
+          )}
+        </section>
 
-      {/* Theme */}
-      <section className="mb-8">
-        <h2 className="flex items-center gap-2 text-sm font-semibold mb-3" style={{ color: 'var(--text-secondary)' }}>
-          <Palette size={16} />
-          Theme
-        </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-w-2xl">
-          {THEMES.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => handleThemeChange(t.id)}
-              className="text-left p-3 rounded-lg transition-colors"
-              style={{
-                backgroundColor: theme === t.id ? 'var(--accent-subtle)' : 'var(--bg-elevated)',
-                border: `2px solid ${theme === t.id ? 'var(--accent)' : 'var(--border-primary)'}`,
-              }}
-            >
-              <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                {t.label}
-              </span>
-              <p className="text-xs mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
-                {t.description}
-              </p>
-            </button>
-          ))}
-        </div>
-      </section>
+        {/* Theme */}
+        <section>
+          <h2 className="flex items-center gap-2 text-sm font-semibold" style={{ color: 'var(--text-secondary)', marginBottom: '16px' }}>
+            <Palette size={16} />
+            Theme
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" style={{ gap: '12px' }}>
+            {THEMES.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => handleThemeChange(t.id)}
+                className="text-left rounded-xl transition-all"
+                style={{
+                  backgroundColor: theme === t.id ? 'var(--accent-subtle)' : 'var(--bg-elevated)',
+                  border: `2px solid ${theme === t.id ? 'var(--accent)' : 'var(--border-primary)'}`,
+                  padding: '16px',
+                }}
+              >
+                <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                  {t.label}
+                </span>
+                <p className="text-xs" style={{ color: 'var(--text-tertiary)', marginTop: '4px' }}>
+                  {t.description}
+                </p>
+              </button>
+            ))}
+          </div>
+        </section>
+      </div>
     </div>
   );
 }
