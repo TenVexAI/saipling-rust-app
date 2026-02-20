@@ -4,11 +4,13 @@ import { TitleBar } from './components/Layout/TitleBar';
 import { Welcome } from './components/Welcome/Welcome';
 import { useProjectStore } from './stores/projectStore';
 import { useThemeStore } from './stores/themeStore';
+import { useFileWatcher } from './hooks/useFileWatcher';
 import { getConfig } from './utils/tauri';
 
 function App() {
   const project = useProjectStore((s) => s.project);
   const setTheme = useThemeStore((s) => s.setTheme);
+  useFileWatcher();
 
   useEffect(() => {
     getConfig().then((config) => {

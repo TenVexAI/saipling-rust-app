@@ -298,3 +298,11 @@ pub fn update_project_metadata(
     std::fs::write(&project_json, serde_json::to_string_pretty(&metadata)?)?;
     Ok(())
 }
+
+#[tauri::command]
+pub fn start_file_watcher(
+    app: tauri::AppHandle,
+    project_dir: PathBuf,
+) -> Result<(), AppError> {
+    crate::watcher::start_watcher(app, project_dir)
+}

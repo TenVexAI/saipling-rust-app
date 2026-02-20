@@ -73,6 +73,8 @@ pub fn run() {
             config::validate_api_key,
             // Export
             export::export_book,
+            // File watcher
+            project::start_file_watcher,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

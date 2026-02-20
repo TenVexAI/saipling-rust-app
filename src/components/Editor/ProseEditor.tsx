@@ -8,6 +8,7 @@ import Typography from '@tiptap/extension-typography';
 import { X, Save } from 'lucide-react';
 import { EditorToolbar } from './EditorToolbar';
 import { FrontmatterPanel } from './FrontmatterPanel';
+import { InlineAIToolbar } from './InlineAIToolbar';
 import { useEditorStore } from '../../stores/editorStore';
 import { useProjectStore } from '../../stores/projectStore';
 import { readFile, writeFile } from '../../utils/tauri';
@@ -26,6 +27,7 @@ export function ProseEditor({ filePath }: ProseEditorProps) {
   const setBody = useEditorStore((s) => s.setBody);
   const isDirty = useEditorStore((s) => s.isDirty);
   const isSaving = useEditorStore((s) => s.isSaving);
+  const focusMode = useEditorStore((s) => s.focusMode);
   const setActiveFile = useProjectStore((s) => s.setActiveFile);
   const initialContentRef = useRef<string>('');
   const frontmatterRef = useRef<Record<string, unknown>>({});
@@ -166,59 +168,66 @@ export function ProseEditor({ filePath }: ProseEditorProps) {
 
   return (
     <div className="flex flex-col h-full" style={{ backgroundColor: 'var(--bg-primary)' }}>
-      {/* File header */}
-      <div
-        className="flex items-center justify-between shrink-0"
-        style={{ padding: '8px 16px', borderBottom: '1px solid var(--border-secondary)', backgroundColor: 'var(--bg-elevated)' }}
-      >
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="text-xs truncate" style={{ color: 'var(--text-tertiary)' }}>{breadcrumb}</span>
-          <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>/</span>
-          <span className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>{fileName}</span>
-          {isDirty && <span className="text-xs" style={{ color: 'var(--accent)' }}>(unsaved)</span>}
-          {isSaving && <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>saving...</span>}
+      {/* File header — hidden in focus mode */}
+      {!focusMode && (
+        <div
+          className="flex items-center justify-between shrink-0"
+          style={{ padding: '8px 16px', borderBottom: '1px solid var(--border-secondary)', backgroundColor: 'var(--bg-elevated)' }}
+        >
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-xs truncate" style={{ color: 'var(--text-tertiary)' }}>{breadcrumb}</span>
+            <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>/</span>
+            <span className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>{fileName}</span>
+            {isDirty && <span className="text-xs" style={{ color: 'var(--accent)' }}>(unsaved)</span>}
+            {isSaving && <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>saving...</span>}
+          </div>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={saveFile}
+              disabled={!isDirty}
+              title="Save (Ctrl+S)"
+              className="flex items-center justify-center transition-colors"
+              style={{ width: '26px', height: '26px', borderRadius: '4px', background: 'none', border: 'none', cursor: isDirty ? 'pointer' : 'default', color: isDirty ? 'var(--accent)' : 'var(--text-tertiary)', opacity: isDirty ? 1 : 0.4 }}
+            >
+              <Save size={14} />
+            </button>
+            <button
+              onClick={() => setActiveFile(null)}
+              title="Close file"
+              className="flex items-center justify-center transition-colors"
+              style={{ width: '26px', height: '26px', borderRadius: '4px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-tertiary)' }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text-primary)')}
+              onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-tertiary)')}
+            >
+              <X size={14} />
+            </button>
+          </div>
         </div>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={saveFile}
-            disabled={!isDirty}
-            title="Save (Ctrl+S)"
-            className="flex items-center justify-center transition-colors"
-            style={{ width: '26px', height: '26px', borderRadius: '4px', background: 'none', border: 'none', cursor: isDirty ? 'pointer' : 'default', color: isDirty ? 'var(--accent)' : 'var(--text-tertiary)', opacity: isDirty ? 1 : 0.4 }}
-          >
-            <Save size={14} />
-          </button>
-          <button
-            onClick={() => setActiveFile(null)}
-            title="Close file"
-            className="flex items-center justify-center transition-colors"
-            style={{ width: '26px', height: '26px', borderRadius: '4px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-tertiary)' }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text-primary)')}
-            onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-tertiary)')}
-          >
-            <X size={14} />
-          </button>
-        </div>
-      </div>
+      )}
 
-      <FrontmatterPanel frontmatter={frontmatter} />
-      <EditorToolbar editor={editor} />
+      {!focusMode && <FrontmatterPanel frontmatter={frontmatter} />}
+      {!focusMode && <EditorToolbar editor={editor} />}
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto relative">
         <EditorContent editor={editor} style={{ height: '100%' }} />
+        {!focusMode && <InlineAIToolbar editor={editor} />}
       </div>
 
-      {/* Status bar */}
+      {/* Status bar — minimal in focus mode */}
       <div
         className="flex items-center justify-between shrink-0 text-xs"
         style={{
-          padding: '4px 16px',
-          borderTop: '1px solid var(--border-secondary)',
+          padding: focusMode ? '6px 24px' : '4px 16px',
+          borderTop: focusMode ? 'none' : '1px solid var(--border-secondary)',
           color: 'var(--text-tertiary)',
+          opacity: focusMode ? 0.4 : 1,
         }}
       >
         <span>{wordCount.toLocaleString()} words</span>
-        <span>{isDirty ? 'Unsaved changes' : 'Saved'}</span>
+        {focusMode
+          ? <span>Ctrl+Shift+F to exit focus mode</span>
+          : <span>{isDirty ? 'Unsaved changes' : 'Saved'}</span>
+        }
       </div>
     </div>
   );

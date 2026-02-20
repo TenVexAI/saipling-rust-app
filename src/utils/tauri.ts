@@ -161,6 +161,10 @@ export const setApiKey = (key: string) =>
 export const validateApiKey = () =>
   invoke<boolean>('validate_api_key');
 
+// ─── File Watcher ───
+export const startFileWatcher = (projectDir: string) =>
+  invoke<void>('start_file_watcher', { projectDir });
+
 // ─── Export ───
 export const exportBook = (projectDir: string, bookId: string, format: string, options: Record<string, unknown>, outputPath: string) =>
   invoke<string>('export_book', { projectDir, bookId, format, options, outputPath });

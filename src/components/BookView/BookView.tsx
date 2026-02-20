@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { BookOpen, Target, PenTool } from 'lucide-react';
+import { BookOpen, Target, PenTool, Download } from 'lucide-react';
 import { ChapterList } from './ChapterList';
 import { MatterList } from './MatterList';
 import { useProjectStore } from '../../stores/projectStore';
@@ -15,6 +15,7 @@ import {
   removeBackMatter,
 } from '../../utils/tauri';
 import type { BookMetadata, MatterEntry } from '../../types/project';
+import { ExportDialog } from './ExportDialog';
 
 export function BookView() {
   const project = useProjectStore((s) => s.project);
@@ -27,6 +28,7 @@ export function BookView() {
   const [frontMatter, setFrontMatter] = useState<MatterEntry[]>([]);
   const [backMatter, setBackMatter] = useState<MatterEntry[]>([]);
   const [loading, setLoading] = useState(false);
+  const [showExport, setShowExport] = useState(false);
 
   const bookId = activeBookId || project?.books[0]?.id || null;
 
@@ -178,8 +180,32 @@ export function BookView() {
               </div>
             )}
           </div>
+          <button
+            onClick={() => setShowExport(true)}
+            className="shrink-0 flex items-center gap-1.5 rounded-lg text-xs font-medium"
+            style={{
+              padding: '6px 12px',
+              backgroundColor: 'var(--bg-secondary)',
+              border: '1px solid var(--border-primary)',
+              color: 'var(--text-secondary)',
+              marginTop: '2px',
+            }}
+            title="Export book"
+          >
+            <Download size={13} />
+            Export
+          </button>
         </div>
       </div>
+
+      {showExport && (
+        <ExportDialog
+          projectDir={projectDir!}
+          bookId={bookId!}
+          bookTitle={bookMeta.title}
+          onClose={() => setShowExport(false)}
+        />
+      )}
 
       {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto" style={{ padding: '20px 28px' }}>
