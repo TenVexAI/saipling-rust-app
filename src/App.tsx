@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { AppShell } from './components/Layout/AppShell';
+import { TitleBar } from './components/Layout/TitleBar';
 import { Welcome } from './components/Welcome/Welcome';
 import { useProjectStore } from './stores/projectStore';
 import { useThemeStore } from './stores/themeStore';
@@ -20,7 +21,12 @@ function App() {
   }, [setTheme]);
 
   if (!project) {
-    return <Welcome />;
+    return (
+      <div className="flex flex-col h-full w-full overflow-hidden">
+        <TitleBar />
+        <Welcome />
+      </div>
+    );
   }
 
   return <AppShell />;

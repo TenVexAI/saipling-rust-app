@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { TitleBar } from './TitleBar';
 import { Sidebar } from '../Sidebar/Sidebar';
 import { Footer } from '../Footer/Footer';
@@ -12,18 +12,25 @@ import { BookView } from '../BookView/BookView';
 import { WorldBrowser } from '../WorldView/WorldBrowser';
 import { CharacterList } from '../CharacterView/CharacterList';
 import { NotesBrowser } from '../NotesView/NotesBrowser';
+import { ProseEditor } from '../Editor/ProseEditor';
 import { useProjectStore } from '../../stores/projectStore';
 import { useEditorStore } from '../../stores/editorStore';
 
 function MainContent() {
   const activeView = useProjectStore((s) => s.activeView);
+  const activeFilePath = useProjectStore((s) => s.activeFilePath);
   const focusMode = useEditorStore((s) => s.focusMode);
+
+  // If a file is selected and it's a markdown file, show the editor
+  if (activeFilePath && activeFilePath.endsWith('.md')) {
+    return <ProseEditor filePath={activeFilePath} />;
+  }
 
   if (focusMode) {
     return (
       <div className="flex-1 h-full" style={{ backgroundColor: 'var(--bg-primary)' }}>
         <div className="flex items-center justify-center h-full" style={{ color: 'var(--text-tertiary)' }}>
-          Editor (Focus Mode) — coming soon
+          <p className="text-sm">Open a file to write in focus mode (Ctrl+Shift+F to exit)</p>
         </div>
       </div>
     );
@@ -51,6 +58,7 @@ function MainContent() {
 
 export function AppShell() {
   const focusMode = useEditorStore((s) => s.focusMode);
+  const toggleFocusMode = useEditorStore((s) => s.toggleFocusMode);
   const activeBookId = useProjectStore((s) => s.activeBookId);
   const rightPanelOpen = useProjectStore((s) => s.rightPanelOpen);
   const activeView = useProjectStore((s) => s.activeView);
@@ -60,6 +68,18 @@ export function AppShell() {
   const handleResize = useCallback((delta: number) => {
     setChatWidth((prev) => Math.max(260, Math.min(600, prev - delta)));
   }, []);
+
+  // Focus mode keyboard shortcuts: F11 or Ctrl+Shift+F
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'F11' || ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'F')) {
+        e.preventDefault();
+        toggleFocusMode();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [toggleFocusMode]);
 
   return (
     <div className="flex flex-col h-full w-full overflow-hidden">

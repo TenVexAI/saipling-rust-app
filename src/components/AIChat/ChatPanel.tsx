@@ -1,4 +1,5 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useCallback } from 'react';
+import { listen } from '@tauri-apps/api/event';
 import { MessageSquare, Trash2 } from 'lucide-react';
 import { ChatMessage } from './ChatMessage';
 import { ChatInput } from './ChatInput';
@@ -6,6 +7,8 @@ import { SkillSelector } from './SkillSelector';
 import { ContextSummary } from './ContextSummary';
 import { AgentPlanCard } from './AgentPlanCard';
 import { useAIStore } from '../../stores/aiStore';
+import { useProjectStore } from '../../stores/projectStore';
+import { agentPlan, agentExecute } from '../../utils/tauri';
 
 interface ChatPanelProps {
   width?: number;
@@ -16,8 +19,13 @@ export function ChatPanel({ width }: ChatPanelProps) {
   const isStreaming = useAIStore((s) => s.isStreaming);
   const currentPlan = useAIStore((s) => s.currentPlan);
   const addMessage = useAIStore((s) => s.addMessage);
+  const appendToLastAssistant = useAIStore((s) => s.appendToLastAssistant);
   const clearMessages = useAIStore((s) => s.clearMessages);
+  const setStreaming = useAIStore((s) => s.setStreaming);
   const setCurrentPlan = useAIStore((s) => s.setCurrentPlan);
+  const setConversationId = useAIStore((s) => s.setConversationId);
+  const setLastCost = useAIStore((s) => s.setLastCost);
+  const activeSkill = useAIStore((s) => s.activeSkill);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -26,21 +34,91 @@ export function ChatPanel({ width }: ChatPanelProps) {
     }
   }, [messages]);
 
-  const handleSend = (text: string) => {
-    addMessage({ role: 'user', content: text });
-    // TODO: Wire to agent_plan or agent_quick based on approval mode
-    // For now, show a placeholder response
-    setTimeout(() => {
-      addMessage({
-        role: 'assistant',
-        content: 'AI responses will work once an API key is configured and the agent system is connected. Try Settings → API Key first.',
-      });
-    }, 500);
-  };
+  const executeWithStreaming = useCallback(async (planId: string, history: { role: 'user' | 'assistant'; content: string }[]) => {
+    setStreaming(true);
+    setConversationId(planId);
 
-  const handleApprovePlan = () => {
-    // TODO: Call agent_execute with the plan
+    // Listen for streaming events
+    const unlistenChunk = await listen<{ text: string }>(`claude:chunk:${planId}`, (event) => {
+      appendToLastAssistant(event.payload.text);
+    });
+    const unlistenDone = await listen<{ full_text: string; input_tokens: number; output_tokens: number }>(`claude:done:${planId}`, (event) => {
+      const cost = (event.payload.input_tokens * 0.003 + event.payload.output_tokens * 0.015) / 1000;
+      setLastCost(`$${cost.toFixed(4)}`);
+      setStreaming(false);
+      unlistenChunk();
+      unlistenDone();
+      unlistenError();
+    });
+    const unlistenError = await listen<{ error: string }>(`claude:error:${planId}`, (event) => {
+      appendToLastAssistant(`\n\n⚠️ Error: ${event.payload.error}`);
+      setStreaming(false);
+      unlistenChunk();
+      unlistenDone();
+      unlistenError();
+    });
+
+    try {
+      await agentExecute(planId, history.map(m => ({ role: m.role, content: m.content })));
+    } catch (e) {
+      const errMsg = String(e);
+      if (errMsg.includes('API key not set') || errMsg.includes('ApiKeyNotSet')) {
+        appendToLastAssistant('Please set your Claude API key in Settings first.');
+      } else {
+        appendToLastAssistant(`Error: ${errMsg}`);
+      }
+      setStreaming(false);
+      unlistenChunk();
+      unlistenDone();
+      unlistenError();
+    }
+  }, [setStreaming, setConversationId, appendToLastAssistant, setLastCost]);
+
+  const handleSend = useCallback(async (text: string) => {
+    const userMsg = { role: 'user' as const, content: text };
+    addMessage(userMsg);
+    // Add empty assistant message that will be streamed into
+    addMessage({ role: 'assistant', content: '' });
+
+    const projectDir = useProjectStore.getState().projectDir;
+    const bookId = useProjectStore.getState().activeBookId;
+
+    if (!projectDir) {
+      appendToLastAssistant('Please open a project first.');
+      return;
+    }
+
+    try {
+      const plan = await agentPlan(
+        projectDir,
+        activeSkill || '',
+        { book: bookId || undefined },
+        text,
+      );
+
+      // Build conversation history for the API call
+      const allMessages = useAIStore.getState().messages;
+      const history = allMessages
+        .filter(m => m.content.length > 0)
+        .map(m => ({ role: m.role, content: m.content }));
+
+      await executeWithStreaming(plan.plan_id, history);
+    } catch (e) {
+      appendToLastAssistant(`Error: ${String(e)}`);
+    }
+  }, [addMessage, appendToLastAssistant, activeSkill, executeWithStreaming]);
+
+  const handleApprovePlan = async () => {
+    if (!currentPlan) return;
     setCurrentPlan(null);
+    addMessage({ role: 'assistant', content: '' });
+
+    const allMessages = useAIStore.getState().messages;
+    const history = allMessages
+      .filter(m => m.content.length > 0)
+      .map(m => ({ role: m.role, content: m.content }));
+
+    await executeWithStreaming(currentPlan.plan_id, history);
   };
 
   const handleCancelPlan = () => {

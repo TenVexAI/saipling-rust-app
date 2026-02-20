@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { FolderOpen, Plus, Clock } from 'lucide-react';
-import logo from '../../assets/logo.png';
+import { AnimatedLogo } from './AnimatedLogo';
 import { useProjectStore } from '../../stores/projectStore';
 import { getRecentProjects, createProject, openProject, getConfig } from '../../utils/tauri';
 import { open } from '@tauri-apps/plugin-dialog';
@@ -63,13 +63,15 @@ export function Welcome() {
       style={{ backgroundColor: 'var(--bg-primary)' }}
     >
       <div className="w-full max-w-sm" style={{ padding: '0 24px' }}>
-        <div className="flex flex-col items-center" style={{ marginBottom: '40px' }}>
-          <img src={logo} alt="SAiPLING" className="w-16 h-16" style={{ marginBottom: '12px' }} />
+        <div className="flex flex-col items-center" style={{ marginBottom: '20px' }}>
+          <div style={{ marginBottom: '4px' }}>
+            <AnimatedLogo size={300} />
+          </div>
           <h1 className="text-2xl font-semibold" style={{ color: 'var(--text-primary)' }}>
             SAiPLING
           </h1>
           <p className="text-sm" style={{ color: 'var(--text-tertiary)', marginTop: '4px' }}>
-            Novel writing with the Sapling Story Structure
+            Novel writing with Claude and the Sapling Method
           </p>
         </div>
 
@@ -134,72 +136,76 @@ export function Welcome() {
             )}
           </div>
         ) : (
-          <div className="space-y-4">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div>
-              <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
+              <label className="block text-xs font-medium" style={{ color: 'var(--text-secondary)', marginBottom: '6px' }}>
                 Project Name
               </label>
               <input
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 placeholder="My Novel"
-                className="w-full px-3 py-2 rounded-lg text-sm"
+                className="w-full rounded-lg text-sm"
                 style={{
                   backgroundColor: 'var(--bg-input)',
                   border: '1px solid var(--border-primary)',
                   color: 'var(--text-primary)',
+                  padding: '10px 12px',
                 }}
                 autoFocus
               />
             </div>
             <div>
-              <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
+              <label className="block text-xs font-medium" style={{ color: 'var(--text-secondary)', marginBottom: '6px' }}>
                 Genre (optional)
               </label>
               <input
                 value={newGenre}
                 onChange={(e) => setNewGenre(e.target.value)}
                 placeholder="e.g. noir / science fiction"
-                className="w-full px-3 py-2 rounded-lg text-sm"
+                className="w-full rounded-lg text-sm"
                 style={{
                   backgroundColor: 'var(--bg-input)',
                   border: '1px solid var(--border-primary)',
                   color: 'var(--text-primary)',
+                  padding: '10px 12px',
                 }}
               />
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center" style={{ gap: '8px' }}>
               <input
                 type="checkbox"
                 id="isSeries"
                 checked={isSeries}
                 onChange={(e) => setIsSeries(e.target.checked)}
-                className="rounded"
+                style={{ borderRadius: '4px' }}
               />
               <label htmlFor="isSeries" className="text-sm" style={{ color: 'var(--text-secondary)' }}>
                 This is a multi-book series
               </label>
             </div>
-            <div className="flex gap-2 pt-2">
+            <div className="flex" style={{ gap: '8px', paddingTop: '4px' }}>
               <button
                 onClick={handleCreate}
                 disabled={!newName.trim()}
-                className="flex-1 px-4 py-2 rounded-lg text-sm font-medium"
+                className="flex-1 rounded-lg text-sm font-medium"
                 style={{
                   backgroundColor: 'var(--accent)',
                   color: 'var(--text-inverse)',
                   opacity: newName.trim() ? 1 : 0.5,
+                  padding: '10px 16px',
                 }}
               >
                 Create
               </button>
               <button
                 onClick={() => setShowCreate(false)}
-                className="px-4 py-2 rounded-lg text-sm"
+                className="rounded-lg text-sm"
                 style={{
                   backgroundColor: 'var(--bg-tertiary)',
                   color: 'var(--text-primary)',
                   border: '1px solid var(--border-primary)',
+                  padding: '10px 16px',
                 }}
               >
                 Cancel
