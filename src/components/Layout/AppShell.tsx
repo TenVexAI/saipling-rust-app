@@ -7,6 +7,11 @@ import { ChatPanel } from '../AIChat/ChatPanel';
 import { ResizeDivider } from './ResizeDivider';
 import { Dashboard } from '../Dashboard/Dashboard';
 import { SettingsView } from '../Settings/SettingsView';
+import { ProjectExplorer } from '../ProjectExplorer/ProjectExplorer';
+import { BookView } from '../BookView/BookView';
+import { WorldBrowser } from '../WorldView/WorldBrowser';
+import { CharacterList } from '../CharacterView/CharacterList';
+import { NotesBrowser } from '../NotesView/NotesBrowser';
 import { useProjectStore } from '../../stores/projectStore';
 import { useEditorStore } from '../../stores/editorStore';
 
@@ -30,35 +35,15 @@ function MainContent() {
     case 'settings':
       return <SettingsView />;
     case 'files':
-      return (
-        <div className="flex items-center justify-center h-full" style={{ color: 'var(--text-tertiary)' }}>
-          Project Explorer — coming soon
-        </div>
-      );
+      return <ProjectExplorer />;
     case 'book':
-      return (
-        <div className="flex items-center justify-center h-full" style={{ color: 'var(--text-tertiary)' }}>
-          Book View — coming soon
-        </div>
-      );
+      return <BookView />;
     case 'world':
-      return (
-        <div className="flex items-center justify-center h-full" style={{ color: 'var(--text-tertiary)' }}>
-          World Browser — coming soon
-        </div>
-      );
+      return <WorldBrowser />;
     case 'characters':
-      return (
-        <div className="flex items-center justify-center h-full" style={{ color: 'var(--text-tertiary)' }}>
-          Characters — coming soon
-        </div>
-      );
+      return <CharacterList />;
     case 'notes':
-      return (
-        <div className="flex items-center justify-center h-full" style={{ color: 'var(--text-tertiary)' }}>
-          Notes — coming soon
-        </div>
-      );
+      return <NotesBrowser />;
     default:
       return <Dashboard />;
   }

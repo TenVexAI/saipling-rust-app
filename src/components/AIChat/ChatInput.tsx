@@ -14,7 +14,7 @@ export function ChatInput({ onSend, disabled, placeholder }: ChatInputProps) {
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 150) + 'px';
+      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 250) + 'px';
     }
   }, [text]);
 
