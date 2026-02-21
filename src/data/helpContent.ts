@@ -16,6 +16,7 @@ export interface HelpSubsection {
   content: string;
   bullets?: string[];
   table?: { label: string; desc: string }[];
+  subsections?: HelpSubsection[];
 }
 
 export interface HelpSection {
@@ -145,50 +146,52 @@ const saplingMethod: HelpSection = {
       title: 'Phase 2: Root — Story Structure',
       content:
         'The Root Phase takes the Core Elements from the Seed Phase and builds the architectural blueprint of the story. This is where the plot gets its skeleton — the major beats, turning points, and act structure that carry the narrative from beginning to end.\n\nThe framework uses a 21-beat structure divided across three acts, drawing on proven storytelling principles (Three-Act Structure, Save the Cat, the Hero\'s Journey) while remaining flexible for creative variation.\n\nThe deliverable is a Story Structure Outline — a beat-by-beat roadmap of the entire plot.',
-    },
-    {
-      id: 'phase-2-act-one',
-      title: 'Act One: The Known World (~25%)',
-      content:
-        'This act establishes the protagonist\'s ordinary life, disrupts it, and pushes them into the unknown.',
-      table: [
-        { label: 'Opening Image', desc: 'First impression of protagonist and world — sets tone, mood, and expectations.' },
-        { label: 'Daily Life', desc: 'Protagonist\'s routine existence — shows who the character is before the story changes them.' },
-        { label: 'Inciting Incident', desc: 'Event that disrupts the status quo — the thing that makes this day different from every other day.' },
-        { label: 'Reluctance Moment', desc: 'Protagonist resists the call to change — shows attachment to their current life/identity.' },
-        { label: 'Point of Departure', desc: 'Commitment to the journey — the decision or forced circumstance that launches the story.' },
-        { label: 'First Challenge', desc: 'Initial test of protagonist\'s abilities — early taste of what they\'re up against.' },
-        { label: 'End of Known World', desc: 'Final break from familiar territory — the door closes behind them.' },
-      ],
-    },
-    {
-      id: 'phase-2-act-two',
-      title: 'Act Two: The Unknown World (~50%)',
-      content:
-        'The longest act. The protagonist navigates a changed reality, builds alliances, faces escalating challenges, and approaches the ultimate test.',
-      table: [
-        { label: 'New Reality', desc: 'Adjustment to changed circumstances — learning the rules of the new situation.' },
-        { label: 'Initial Progress', desc: 'First successes in the new world — early wins that build confidence and reader investment.' },
-        { label: 'Strengthening Allies', desc: 'Building relationships and support — deepening the character web.' },
-        { label: 'Midpoint Shift', desc: 'Major revelation or change in direction — the story pivots and everything changes.' },
-        { label: 'Growing Opposition', desc: 'Escalating conflicts and challenges — stakes rise, enemies strengthen, complications multiply.' },
-        { label: 'Moment of Doubt', desc: 'Crisis of confidence — the character questions whether they can or should succeed.' },
-        { label: 'Renewed Determination', desc: 'Recommitment to the goal — something reignites the character\'s drive.' },
-        { label: 'Ultimate Challenge', desc: 'The approach to the final test — all threads converging toward the climax.' },
-      ],
-    },
-    {
-      id: 'phase-2-act-three',
-      title: 'Act Three: The Transformed World (~25%)',
-      content:
-        'The story reaches its climax and resolves. The character is transformed by their journey.',
-      table: [
-        { label: 'Darkest Moment', desc: 'All seems lost — the lowest point with maximum despair before the turn.' },
-        { label: 'Final Decision', desc: 'Ultimate choice that defines the protagonist — the thematic heart of the story.' },
-        { label: 'Climactic Confrontation', desc: 'Direct face-off with the central conflict — the scene the entire story has been building toward.' },
-        { label: 'Resolution', desc: 'Outcome of the confrontation — what happens as a result of the climax.' },
-        { label: 'Transformed Reality', desc: 'New status quo after the journey — the world changed by everything that happened.' },
-        { label: 'Closing Image', desc: 'Final impression showing change — mirrors the Opening Image to show how far the character has come.' },
+      subsections: [
+        {
+          id: 'phase-2-act-one',
+          title: 'Act One: The Known World (~25%)',
+          content:
+            'This act establishes the protagonist\'s ordinary life, disrupts it, and pushes them into the unknown.',
+          table: [
+            { label: 'Opening Image', desc: 'First impression of protagonist and world — sets tone, mood, and expectations.' },
+            { label: 'Daily Life', desc: 'Protagonist\'s routine existence — shows who the character is before the story changes them.' },
+            { label: 'Inciting Incident', desc: 'Event that disrupts the status quo — the thing that makes this day different from every other day.' },
+            { label: 'Reluctance Moment', desc: 'Protagonist resists the call to change — shows attachment to their current life/identity.' },
+            { label: 'Point of Departure', desc: 'Commitment to the journey — the decision or forced circumstance that launches the story.' },
+            { label: 'First Challenge', desc: 'Initial test of protagonist\'s abilities — early taste of what they\'re up against.' },
+            { label: 'End of Known World', desc: 'Final break from familiar territory — the door closes behind them.' },
+          ],
+        },
+        {
+          id: 'phase-2-act-two',
+          title: 'Act Two: The Unknown World (~50%)',
+          content:
+            'The longest act. The protagonist navigates a changed reality, builds alliances, faces escalating challenges, and approaches the ultimate test.',
+          table: [
+            { label: 'New Reality', desc: 'Adjustment to changed circumstances — learning the rules of the new situation.' },
+            { label: 'Initial Progress', desc: 'First successes in the new world — early wins that build confidence and reader investment.' },
+            { label: 'Strengthening Allies', desc: 'Building relationships and support — deepening the character web.' },
+            { label: 'Midpoint Shift', desc: 'Major revelation or change in direction — the story pivots and everything changes.' },
+            { label: 'Growing Opposition', desc: 'Escalating conflicts and challenges — stakes rise, enemies strengthen, complications multiply.' },
+            { label: 'Moment of Doubt', desc: 'Crisis of confidence — the character questions whether they can or should succeed.' },
+            { label: 'Renewed Determination', desc: 'Recommitment to the goal — something reignites the character\'s drive.' },
+            { label: 'Ultimate Challenge', desc: 'The approach to the final test — all threads converging toward the climax.' },
+          ],
+        },
+        {
+          id: 'phase-2-act-three',
+          title: 'Act Three: The Transformed World (~25%)',
+          content:
+            'The story reaches its climax and resolves. The character is transformed by their journey.',
+          table: [
+            { label: 'Darkest Moment', desc: 'All seems lost — the lowest point with maximum despair before the turn.' },
+            { label: 'Final Decision', desc: 'Ultimate choice that defines the protagonist — the thematic heart of the story.' },
+            { label: 'Climactic Confrontation', desc: 'Direct face-off with the central conflict — the scene the entire story has been building toward.' },
+            { label: 'Resolution', desc: 'Outcome of the confrontation — what happens as a result of the climax.' },
+            { label: 'Transformed Reality', desc: 'New status quo after the journey — the world changed by everything that happened.' },
+            { label: 'Closing Image', desc: 'Final impression showing change — mirrors the Opening Image to show how far the character has come.' },
+          ],
+        },
       ],
     },
     {

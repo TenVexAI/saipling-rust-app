@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Key, Check, Loader2, Palette, Info } from 'lucide-react';
+import { emit } from '@tauri-apps/api/event';
 import { useThemeStore } from '../../stores/themeStore';
 import { THEMES } from '../../types/theme';
 import { getConfig, setApiKey, validateApiKey, updateConfig, type AppConfig } from '../../utils/tauri';
@@ -40,6 +41,7 @@ export function SettingsView() {
 
   const handleThemeChange = async (themeId: typeof theme) => {
     setTheme(themeId);
+    emit('theme-changed', { theme: themeId }).catch(() => {});
     if (config) {
       const updated = { ...config, theme: themeId };
       setConfig(updated);

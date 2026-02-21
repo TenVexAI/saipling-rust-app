@@ -24,10 +24,20 @@ export function HelpWindow() {
           newExpanded.add(section.id);
           break;
         }
-        if (section.subsections?.some((sub) => sub.id === targetId)) {
-          newExpanded.add(section.id);
-          newExpanded.add(targetId);
-          break;
+        if (section.subsections) {
+          for (const sub of section.subsections) {
+            if (sub.id === targetId) {
+              newExpanded.add(section.id);
+              newExpanded.add(sub.id);
+              break;
+            }
+            if (sub.subsections?.some((nested) => nested.id === targetId)) {
+              newExpanded.add(section.id);
+              newExpanded.add(sub.id);
+              newExpanded.add(targetId);
+              break;
+            }
+          }
         }
       }
       return newExpanded;
@@ -75,6 +85,17 @@ export function HelpWindow() {
     return () => { unlisten?.(); };
   }, [expandToSection, scrollToSection]);
 
+  // Listen for theme changes from the main window
+  useEffect(() => {
+    let unlisten: (() => void) | undefined;
+    import('@tauri-apps/api/event').then(({ listen }) => {
+      listen<{ theme: string }>('theme-changed', (event) => {
+        setTheme(event.payload.theme as Parameters<typeof setTheme>[0]);
+      }).then((u) => { unlisten = u; });
+    });
+    return () => { unlisten?.(); };
+  }, [setTheme]);
+
   const toggleSection = (id: string) => {
     setExpandedSections((prev) => {
       const next = new Set(prev);
@@ -91,7 +112,10 @@ export function HelpWindow() {
     const all = new Set<string>();
     for (const section of HELP_SECTIONS) {
       all.add(section.id);
-      section.subsections?.forEach((sub) => all.add(sub.id));
+      section.subsections?.forEach((sub) => {
+        all.add(sub.id);
+        sub.subsections?.forEach((nested) => all.add(nested.id));
+      });
     }
     setExpandedSections(all);
   };
@@ -105,13 +129,13 @@ export function HelpWindow() {
     ? HELP_SECTIONS.map((section) => {
         const q = searchQuery.toLowerCase();
         const sectionMatch = section.title.toLowerCase().includes(q) || section.content.toLowerCase().includes(q);
-        const matchingSubs = section.subsections?.filter(
-          (sub) =>
-            sub.title.toLowerCase().includes(q) ||
-            sub.content.toLowerCase().includes(q) ||
-            sub.bullets?.some((b) => b.toLowerCase().includes(q)) ||
-            sub.table?.some((t) => t.label.toLowerCase().includes(q) || t.desc.toLowerCase().includes(q))
-        );
+        const matchesSubsection = (sub: HelpSubsection): boolean =>
+          sub.title.toLowerCase().includes(q) ||
+          sub.content.toLowerCase().includes(q) ||
+          sub.bullets?.some((b) => b.toLowerCase().includes(q)) === true ||
+          sub.table?.some((t) => t.label.toLowerCase().includes(q) || t.desc.toLowerCase().includes(q)) === true ||
+          sub.subsections?.some(matchesSubsection) === true;
+        const matchingSubs = section.subsections?.filter(matchesSubsection);
         if (sectionMatch || (matchingSubs && matchingSubs.length > 0)) {
           return { ...section, subsections: sectionMatch ? section.subsections : matchingSubs };
         }
@@ -299,6 +323,7 @@ function SectionBlock({ section, expanded, expandedSubs, activeId, onToggle, dep
               key={sub.id}
               sub={sub}
               expanded={expandedSubs.has(sub.id)}
+              expandedSubs={expandedSubs}
               activeId={activeId}
               onToggle={onToggle}
             />
@@ -313,11 +338,12 @@ function SectionBlock({ section, expanded, expandedSubs, activeId, onToggle, dep
 interface SubsectionBlockProps {
   sub: HelpSubsection;
   expanded: boolean;
+  expandedSubs: Set<string>;
   activeId: string | null;
   onToggle: (id: string) => void;
 }
 
-function SubsectionBlock({ sub, expanded, activeId, onToggle }: SubsectionBlockProps) {
+function SubsectionBlock({ sub, expanded, expandedSubs, activeId, onToggle }: SubsectionBlockProps) {
   const isActive = activeId === sub.id;
 
   return (
@@ -352,6 +378,18 @@ function SubsectionBlock({ sub, expanded, activeId, onToggle }: SubsectionBlockP
       {expanded && (
         <div style={{ paddingLeft: '24px', paddingRight: '8px', paddingTop: '6px', paddingBottom: '6px' }}>
           <ContentBlock content={sub.content} bullets={sub.bullets} table={sub.table} />
+
+          {/* Nested subsections (e.g. Acts under Phase 2) */}
+          {sub.subsections?.map((nested) => (
+            <SubsectionBlock
+              key={nested.id}
+              sub={nested}
+              expanded={expandedSubs.has(nested.id)}
+              expandedSubs={expandedSubs}
+              activeId={activeId}
+              onToggle={onToggle}
+            />
+          ))}
         </div>
       )}
     </div>
