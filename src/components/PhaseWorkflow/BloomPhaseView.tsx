@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import { PenTool, Check, Circle, Loader2 } from 'lucide-react';
+import { PenTool, Check, Circle, Loader2, Info } from 'lucide-react';
 import { PhaseIcon } from './PhaseIcon';
 import { useProjectStore } from '../../stores/projectStore';
 import { getBookMetadata } from '../../utils/tauri';
+import { openHelpWindow } from '../../utils/helpWindow';
 import type { BookMetadata } from '../../types/project';
 
 export function BloomPhaseView() {
@@ -38,10 +39,22 @@ export function BloomPhaseView() {
       <div className="shrink-0" style={{ padding: '24px 28px 20px', borderBottom: '1px solid var(--border-secondary)' }}>
         <div className="flex items-center gap-3">
           <PhaseIcon phase="bloom" size={50} />
-          <div>
-            <h1 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
-              Bloom Phase — Draft Manuscript
-            </h1>
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
+                Bloom Phase — Draft Manuscript
+              </h1>
+              <button
+                onClick={() => openHelpWindow('phase-5-bloom')}
+                className="flex items-center justify-center rounded-full transition-colors"
+                style={{ color: 'var(--text-tertiary)', width: '22px', height: '22px', background: 'none', border: 'none', cursor: 'pointer' }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--accent)')}
+                onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-tertiary)')}
+                title="Learn about the Bloom Phase"
+              >
+                <Info size={15} />
+              </button>
+            </div>
             <p className="text-xs" style={{ color: 'var(--text-tertiary)', marginTop: '2px' }}>
               How does this read? Write scene by scene, or let Claude draft for you.
             </p>

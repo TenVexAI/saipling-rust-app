@@ -1,7 +1,8 @@
 import {
-  LayoutDashboard, FolderOpen, BookOpen, Globe, Users, StickyNote, Settings,
+  LayoutDashboard, FolderOpen, BookOpen, Globe, Users, StickyNote, Settings, HelpCircle,
 } from 'lucide-react';
 import { useProjectStore, type SidebarView } from '../../stores/projectStore';
+import { openHelpWindow } from '../../utils/helpWindow';
 
 interface NavItem {
   id: SidebarView;
@@ -64,7 +65,21 @@ export function Sidebar() {
         })}
       </div>
 
-      <div className="pb-3 px-1.5">
+      <div className="pb-3 px-1.5 flex flex-col gap-1">
+        <button
+          onClick={() => openHelpWindow()}
+          className="flex items-center gap-3 w-full rounded-md transition-colors"
+          style={{
+            color: 'var(--text-secondary)',
+            backgroundColor: 'transparent',
+            justifyContent: sidebarExpanded ? 'flex-start' : 'center',
+            padding: sidebarExpanded ? '8px 12px' : '10px 0',
+          }}
+          title="Help"
+        >
+          <HelpCircle size={20} />
+          {sidebarExpanded && <span className="text-sm">Help</span>}
+        </button>
         <button
           onClick={() => setActiveView('settings')}
           className="flex items-center gap-3 w-full rounded-md transition-colors"

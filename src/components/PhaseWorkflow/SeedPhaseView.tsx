@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Check, Circle, Loader2 } from 'lucide-react';
+import { Check, Circle, Loader2, Info } from 'lucide-react';
 import { useProjectStore } from '../../stores/projectStore';
 import { readFile } from '../../utils/tauri';
+import { openHelpWindow } from '../../utils/helpWindow';
 import { PhaseIcon } from './PhaseIcon';
 
 const SEED_ELEMENTS = [
@@ -74,10 +75,22 @@ export function SeedPhaseView() {
       <div className="shrink-0" style={{ padding: '24px 28px 20px', borderBottom: '1px solid var(--border-secondary)' }}>
         <div className="flex items-center gap-3">
           <PhaseIcon phase="seed" size={50} />
-          <div>
-            <h1 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
-              Seed Phase — Story Foundation
-            </h1>
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
+                Seed Phase — Story Foundation
+              </h1>
+              <button
+                onClick={() => openHelpWindow('phase-1-seed')}
+                className="flex items-center justify-center rounded-full transition-colors"
+                style={{ color: 'var(--text-tertiary)', width: '22px', height: '22px', background: 'none', border: 'none', cursor: 'pointer' }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--accent)')}
+                onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-tertiary)')}
+                title="Learn about the Seed Phase"
+              >
+                <Info size={15} />
+              </button>
+            </div>
             <p className="text-xs" style={{ color: 'var(--text-tertiary)', marginTop: '2px' }}>
               What is this story about? Define the 6 core elements.
             </p>

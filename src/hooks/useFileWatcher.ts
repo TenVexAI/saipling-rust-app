@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { listen } from '@tauri-apps/api/event';
-import { startFileWatcher } from '../utils/tauri';
+import { startFileWatcher, getBookMetadata } from '../utils/tauri';
 import { useProjectStore } from '../stores/projectStore';
 
 /**
@@ -37,14 +37,11 @@ export function useFileWatcher() {
         const path = event.payload.path;
         // If a book.json or project.json changed externally, could trigger reload
         if (path.endsWith('book.json') || path.endsWith('project.json')) {
-          // Trigger a refresh of the active book metadata
           const store = useProjectStore.getState();
           if (store.activeBookId && store.projectDir) {
-            import('../utils/tauri').then(({ getBookMetadata }) => {
-              getBookMetadata(store.projectDir!, store.activeBookId!).then((meta) => {
-                store.setActiveBook(store.activeBookId!, meta);
-              }).catch(() => {});
-            });
+            getBookMetadata(store.projectDir, store.activeBookId).then((meta) => {
+              store.setActiveBook(store.activeBookId!, meta);
+            }).catch(() => {});
           }
         }
       });

@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Key, Check, Loader2, Palette } from 'lucide-react';
+import { Key, Check, Loader2, Palette, Info } from 'lucide-react';
 import { useThemeStore } from '../../stores/themeStore';
 import { THEMES } from '../../types/theme';
 import { getConfig, setApiKey, validateApiKey, updateConfig, type AppConfig } from '../../utils/tauri';
+import { openHelpWindow } from '../../utils/helpWindow';
 
 export function SettingsView() {
   const { theme, setTheme } = useThemeStore();
@@ -58,6 +59,16 @@ export function SettingsView() {
           <h2 className="flex items-center gap-2 text-sm font-semibold" style={{ color: 'var(--text-secondary)', marginBottom: '16px' }}>
             <Key size={16} />
             Anthropic API Key
+            <button
+              onClick={() => openHelpWindow('api-key-how-to-get')}
+              className="ml-1 flex items-center justify-center rounded-full transition-colors"
+              style={{ color: 'var(--text-tertiary)', width: '20px', height: '20px', background: 'none', border: 'none', cursor: 'pointer' }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--accent)')}
+              onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-tertiary)')}
+              title="How to get an API key"
+            >
+              <Info size={14} />
+            </button>
           </h2>
           {hasKey && keyStatus !== 'invalid' ? (
             <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--color-success)' }}>
