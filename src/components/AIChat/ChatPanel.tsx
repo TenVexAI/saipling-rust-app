@@ -9,9 +9,10 @@ import { AgentPlanCard } from './AgentPlanCard';
 import { SaiplingChatLogo } from './SaiplingChatLogo';
 import { useAIStore } from '../../stores/aiStore';
 import { useProjectStore } from '../../stores/projectStore';
-import { agentPlan, agentExecute, agentCancel, listAvailableSkills } from '../../utils/tauri';
+import { agentPlan, agentExecute, agentCancel, listAvailableSkills, getConfig } from '../../utils/tauri';
 import { trackCost } from '../../utils/projectCost';
 import { saveCurrentChat } from '../../utils/projectChat';
+import { calculateCost } from '../../utils/modelPricing';
 import type { ContextFileInfo } from '../../types/ai';
 
 interface ChatPanelProps {
@@ -37,6 +38,7 @@ export function ChatPanel({ width }: ChatPanelProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [contextFiles, setContextFiles] = useState<ContextFileInfo[]>([]);
   const [contextTokens, setContextTokens] = useState(0);
+  const [modelFamily, setModelFamily] = useState('Sonnet');
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -44,7 +46,16 @@ export function ChatPanel({ width }: ChatPanelProps) {
     }
   }, [messages]);
 
-  // Load available skills on mount
+  // Load preferred model family and available skills on mount
+  useEffect(() => {
+    getConfig().then((c) => {
+      const id = c.default_model || '';
+      if (id.includes('opus')) setModelFamily('Opus');
+      else if (id.includes('haiku')) setModelFamily('Haiku');
+      else setModelFamily('Sonnet');
+    }).catch(() => {});
+  }, []);
+
   useEffect(() => {
     listAvailableSkills()
       .then((skills) => setAvailableSkills(skills))
@@ -58,8 +69,8 @@ export function ChatPanel({ width }: ChatPanelProps) {
     const unlistenChunk = await listen<{ text: string }>(`claude:chunk:${planId}`, (event) => {
       appendToLastAssistant(event.payload.text);
     });
-    const unlistenDone = await listen<{ full_text: string; input_tokens: number; output_tokens: number }>(`claude:done:${planId}`, (event) => {
-      const cost = (event.payload.input_tokens * 3 + event.payload.output_tokens * 15) / 1_000_000;
+    const unlistenDone = await listen<{ full_text: string; input_tokens: number; output_tokens: number; model: string }>(`claude:done:${planId}`, (event) => {
+      const cost = calculateCost(event.payload.model, event.payload.input_tokens, event.payload.output_tokens);
       setLastCost(`$${cost.toFixed(4)}`);
       addSessionCost(cost);
       trackCost(cost);
@@ -174,7 +185,7 @@ export function ChatPanel({ width }: ChatPanelProps) {
           AI Chat
           {sessionCost > 0 && (
             <span className="font-normal" style={{ color: 'var(--text-tertiary)' }}>
-              (session: ${sessionCost.toFixed(4)})
+              ({modelFamily}: ${sessionCost.toFixed(4)})
             </span>
           )}
         </div>

@@ -7,4 +7,5 @@ pub mod chapter;
 pub mod matter;
 pub mod agent;
 pub mod config;
+pub mod models;
 pub mod export;

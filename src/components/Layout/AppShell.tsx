@@ -7,6 +7,7 @@ import { ChatPanel } from '../AIChat/ChatPanel';
 import { ResizeDivider } from './ResizeDivider';
 import { Dashboard } from '../Dashboard/Dashboard';
 import { SettingsView } from '../Settings/SettingsView';
+import { SkillSettings } from '../Settings/SkillSettings';
 import { ContextSettings } from '../ContextSettings/ContextSettings';
 import { BookView } from '../BookView/BookView';
 import { WorldBrowser } from '../WorldView/WorldBrowser';
@@ -16,6 +17,8 @@ import { PhaseWorkflow } from '../PhaseWorkflow/PhaseWorkflow';
 import { ProseEditor } from '../Editor/ProseEditor';
 import { useProjectStore } from '../../stores/projectStore';
 import { useEditorStore } from '../../stores/editorStore';
+import { getModelsConfig } from '../../utils/tauri';
+import { setModelsConfig } from '../../utils/modelPricing';
 
 function MainContent() {
   const activeView = useProjectStore((s) => s.activeView);
@@ -42,6 +45,8 @@ function MainContent() {
       return <Dashboard />;
     case 'settings':
       return <SettingsView />;
+    case 'skill_settings':
+      return <SkillSettings />;
     case 'files':
       return <ContextSettings />;
     case 'book':
@@ -65,11 +70,16 @@ export function AppShell() {
   const activeBookId = useProjectStore((s) => s.activeBookId);
   const rightPanelOpen = useProjectStore((s) => s.rightPanelOpen);
   const activeView = useProjectStore((s) => s.activeView);
-  const showChat = activeView !== 'settings' && rightPanelOpen;
+  const showChat = activeView !== 'settings' && activeView !== 'skill_settings' && rightPanelOpen;
   const [chatWidth, setChatWidth] = useState(340);
 
   const handleResize = useCallback((delta: number) => {
     setChatWidth((prev) => Math.max(260, Math.min(600, prev - delta)));
+  }, []);
+
+  // Load models config on mount
+  useEffect(() => {
+    getModelsConfig().then(setModelsConfig).catch(() => {});
   }, []);
 
   // Focus mode keyboard shortcuts: F11 or Ctrl+Shift+F

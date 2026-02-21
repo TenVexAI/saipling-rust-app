@@ -1,0 +1,64 @@
+# SAiPLING AI Model Configuration
+# Edit this file to add models or update pricing.
+# Pricing is in USD per million tokens.
+# Models with max_context > 200000 have separate pricing tiers for prompts above 200K tokens.
+
+[[models]]
+id = "claude-opus-4-6"
+display_name = "Claude Opus 4.6"
+description = "Most intelligent model for building agents and coding"
+max_context = 1000000
+
+[models.pricing.standard]
+input = 5.0
+output = 25.0
+
+[models.pricing.long_context]
+input = 10.0
+output = 37.50
+
+[models.pricing.cache_write]
+standard = 6.25
+long_context = 12.50
+
+[models.pricing.cache_read]
+standard = 0.50
+long_context = 1.0
+
+[[models]]
+id = "claude-sonnet-4-6"
+display_name = "Claude Sonnet 4.6"
+description = "Optimal balance of intelligence, cost, and speed"
+max_context = 1000000
+
+[models.pricing.standard]
+input = 3.0
+output = 15.0
+
+[models.pricing.long_context]
+input = 6.0
+output = 22.50
+
+[models.pricing.cache_write]
+standard = 3.75
+long_context = 7.50
+
+[models.pricing.cache_read]
+standard = 0.30
+long_context = 0.60
+
+[[models]]
+id = "claude-haiku-4-5"
+display_name = "Claude Haiku 4.5"
+description = "Fastest, most cost-efficient model"
+max_context = 200000
+
+[models.pricing.standard]
+input = 1.0
+output = 5.0
+
+[models.pricing.cache_write]
+standard = 1.25
+
+[models.pricing.cache_read]
+standard = 0.10

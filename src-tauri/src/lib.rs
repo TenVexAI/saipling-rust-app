@@ -5,7 +5,7 @@ mod agent;
 mod watcher;
 
 use commands::{
-    project, book, filesystem, draft, attachment, chapter, matter, agent as agent_cmd, config, export,
+    project, book, filesystem, draft, attachment, chapter, matter, agent as agent_cmd, config, models, export,
 };
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -68,11 +68,15 @@ pub fn run() {
             agent_cmd::agent_cancel,
             agent_cmd::estimate_context_tokens,
             agent_cmd::list_available_skills,
+            agent_cmd::get_skill_settings,
             // Configuration
             config::get_config,
             config::update_config,
             config::set_api_key,
             config::validate_api_key,
+            // Models
+            models::get_models_config,
+            models::get_models_config_path,
             // Export
             export::export_book,
             // File watcher

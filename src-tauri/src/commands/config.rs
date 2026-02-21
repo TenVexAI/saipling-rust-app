@@ -1,6 +1,19 @@
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::path::PathBuf;
 use crate::error::AppError;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SkillOverride {
+    #[serde(default = "default_auto")]
+    pub model: String,
+    #[serde(default)]
+    pub max_context_tokens: Option<u64>,
+}
+
+fn default_auto() -> String {
+    "auto".to_string()
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EditorConfig {
@@ -48,6 +61,8 @@ pub struct AppConfig {
     pub theme: String,
     pub editor: EditorConfig,
     pub ai: AiConfig,
+    #[serde(default)]
+    pub skill_overrides: HashMap<String, SkillOverride>,
 }
 
 impl Default for AppConfig {
@@ -61,6 +76,7 @@ impl Default for AppConfig {
             theme: "darkPro".to_string(),
             editor: EditorConfig::default(),
             ai: AiConfig::default(),
+            skill_overrides: HashMap::new(),
         }
     }
 }

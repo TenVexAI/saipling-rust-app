@@ -51,4 +51,49 @@ export interface ApplyBlock {
 
 export type ApprovalMode = 'always_recommend' | 'smart' | 'always_execute';
 
-export type ModelId = 'claude-haiku-4-5-20241022' | 'claude-sonnet-4-5-20250929' | 'claude-opus-4-20250514';
+export type ModelId = 'claude-opus-4-6' | 'claude-sonnet-4-6' | 'claude-haiku-4-5';
+
+export interface SkillSettingsEntry {
+  name: string;
+  display_name: string;
+  description: string;
+  default_model: string;
+  effective_model: string;
+  default_max_context_tokens: number;
+  effective_max_context_tokens: number;
+  temperature: number;
+}
+
+export interface SkillOverride {
+  model: string;
+  max_context_tokens?: number;
+}
+
+export interface ModelPricingTier {
+  input: number;
+  output: number;
+}
+
+export interface CachePricingTier {
+  standard: number;
+  long_context?: number;
+}
+
+export interface ModelPricing {
+  standard: ModelPricingTier;
+  long_context?: ModelPricingTier;
+  cache_write?: CachePricingTier;
+  cache_read?: CachePricingTier;
+}
+
+export interface ModelEntry {
+  id: string;
+  display_name: string;
+  description: string;
+  max_context: number;
+  pricing: ModelPricing;
+}
+
+export interface ModelsConfig {
+  models: ModelEntry[];
+}

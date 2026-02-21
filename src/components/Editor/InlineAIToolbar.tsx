@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Wand2, RefreshCw, Scissors, Expand, ArrowUpRight } from 'lucide-react';
 import { useAIStore } from '../../stores/aiStore';
 import { agentQuick } from '../../utils/tauri';
+import { trackCost } from '../../utils/projectCost';
 import { useProjectStore } from '../../stores/projectStore';
 import type { Editor } from '@tiptap/react';
 
@@ -99,9 +100,15 @@ export function InlineAIToolbar({ editor }: InlineAIToolbarProps) {
         `${action.prompt}\n\n---\n${selectedText}\n---`,
       );
 
-      if (result && typeof result === 'string') {
+      // Track cost from the quick result
+      if (result.cost > 0) {
+        useAIStore.getState().addSessionCost(result.cost);
+        trackCost(result.cost);
+      }
+
+      if (result.text) {
         // Clean the result — remove any surrounding quotes or markdown fencing
-        let cleaned = result.trim();
+        let cleaned = result.text.trim();
         if (cleaned.startsWith('```') && cleaned.endsWith('```')) {
           cleaned = cleaned.slice(3, -3).trim();
         }

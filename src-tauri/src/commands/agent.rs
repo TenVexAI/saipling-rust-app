@@ -10,6 +10,32 @@ use crate::context::assembler::assemble_context;
 use crate::context::tokens::{estimate_tokens, estimate_cost, format_cost};
 use crate::agent::claude::{stream_claude, ClaudeMessage};
 
+// ─── Resolve effective model for a skill (override → config default → skill default) ───
+
+fn resolve_skill_model(skill_name: &str, skill_default_model: &str) -> String {
+    let config = match get_config() {
+        Ok(c) => c,
+        Err(_) => return skill_default_model.to_string(),
+    };
+    if let Some(ov) = config.skill_overrides.get(skill_name) {
+        if ov.model != "auto" && !ov.model.is_empty() {
+            return ov.model.clone();
+        }
+    }
+    config.default_model
+}
+
+fn resolve_skill_max_tokens(skill_name: &str, skill_default: u64) -> u64 {
+    if let Ok(config) = get_config() {
+        if let Some(ov) = config.skill_overrides.get(skill_name) {
+            if let Some(max_tokens) = ov.max_context_tokens {
+                return max_tokens;
+            }
+        }
+    }
+    skill_default
+}
+
 // ─── Shared state for plans and cancellation ───
 
 #[derive(Debug, Clone)]
@@ -144,7 +170,7 @@ pub async fn agent_plan(
     let skill_name = if intent.is_empty() { "brainstorm".to_string() } else { intent };
     let skills_path = skills_dir();
 
-    let skill_def = load_skill(&skill_name, &skills_path).unwrap_or_else(|_| {
+    let mut skill_def = load_skill(&skill_name, &skills_path).unwrap_or_else(|_| {
         crate::context::skills::SkillDefinition {
             skill: crate::context::skills::SkillMeta {
                 name: "brainstorm".to_string(),
@@ -165,6 +191,9 @@ pub async fn agent_plan(
         }
     });
 
+    // Apply max_context_tokens override if set
+    skill_def.context.max_context_tokens = resolve_skill_max_tokens(&skill_name, skill_def.context.max_context_tokens);
+
     // Assemble context using the skill definition
     let assembled = assemble_context(
         &skill_def,
@@ -182,10 +211,13 @@ pub async fn agent_plan(
         }
     }).collect();
 
+    // Resolve effective model: skill override → config default → skill default
+    let preferred_model = resolve_skill_model(&skill_name, &skill_def.skill.default_model);
+
     // Substitute template variables in the system prompt
     let system_prompt = substitute_prompt_vars(&assembled.system_prompt, &project_dir, &scope);
     let total_tokens = estimate_tokens(&system_prompt).unwrap_or(system_prompt.len() / 4) as u64;
-    let cost = estimate_cost(total_tokens, 4096, &skill_def.skill.default_model);
+    let cost = estimate_cost(total_tokens, 4096, &preferred_model);
 
     // Store the plan state so agent_execute can retrieve it
     let plan_state = PlanState {
@@ -193,7 +225,7 @@ pub async fn agent_plan(
         project_dir: project_dir.clone(),
         scope: scope.clone(),
         system_prompt,
-        model: skill_def.skill.default_model.clone(),
+        model: preferred_model.clone(),
         temperature: skill_def.skill.temperature,
     };
 
@@ -209,7 +241,7 @@ pub async fn agent_plan(
     Ok(AgentPlan {
         plan_id,
         skills: vec![skill_def.skill.name],
-        model: skill_def.skill.default_model,
+        model: preferred_model,
         context_files,
         total_tokens_est: total_tokens,
         estimated_cost: format!("~{}", format_cost(cost)),
@@ -268,7 +300,16 @@ pub async fn agent_execute(
         flags.remove(&plan_id);
     }
 
-    result
+    result.map(|r| r.text)
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct QuickResult {
+    pub text: String,
+    pub input_tokens: u64,
+    pub output_tokens: u64,
+    pub model: String,
+    pub cost: f64,
 }
 
 #[tauri::command]
@@ -280,7 +321,7 @@ pub async fn agent_quick(
     selected_text: Option<String>,
     action: String,
     message: String,
-) -> Result<String, AppError> {
+) -> Result<QuickResult, AppError> {
     let config = get_config()?;
     let api_key = get_api_key_internal(&config)?;
     if api_key.is_empty() {
@@ -288,7 +329,8 @@ pub async fn agent_quick(
     }
 
     let skills_path = skills_dir();
-    let skill_def = load_skill(&skill, &skills_path)?;
+    let mut skill_def = load_skill(&skill, &skills_path)?;
+    skill_def.context.max_context_tokens = resolve_skill_max_tokens(&skill, skill_def.context.max_context_tokens);
 
     let assembled = assemble_context(
         &skill_def,
@@ -312,10 +354,12 @@ pub async fn agent_quick(
         content: user_message,
     }];
 
+    let preferred_model = resolve_skill_model(&skill, &skill_def.skill.default_model);
+
     let result = stream_claude(
         &app,
         &api_key,
-        &skill_def.skill.default_model,
+        &preferred_model,
         &system_prompt,
         messages,
         Some(skill_def.skill.temperature),
@@ -324,7 +368,15 @@ pub async fn agent_quick(
     )
     .await?;
 
-    Ok(result)
+    let cost = estimate_cost(result.input_tokens, result.output_tokens, &result.model);
+
+    Ok(QuickResult {
+        text: result.text,
+        input_tokens: result.input_tokens,
+        output_tokens: result.output_tokens,
+        model: result.model,
+        cost,
+    })
 }
 
 #[tauri::command]
@@ -344,7 +396,10 @@ pub fn estimate_context_tokens(
     scope: ContextScope,
 ) -> Result<TokenEstimate, AppError> {
     let skills_path = skills_dir();
-    let skill_def = load_skill(&skill, &skills_path).ok();
+    let skill_def = load_skill(&skill, &skills_path).ok().map(|mut sd| {
+        sd.context.max_context_tokens = resolve_skill_max_tokens(&skill, sd.context.max_context_tokens);
+        sd
+    });
 
     // Use the assembler to get actual context
     let assembled = if let Some(ref sd) = skill_def {
@@ -359,8 +414,9 @@ pub fn estimate_context_tokens(
         .unwrap_or(200);
 
     let total = system_tokens + context_tokens;
-    let model = skill_def.as_ref().map(|s| s.skill.default_model.as_str()).unwrap_or("claude-sonnet-4-6");
-    let cost = estimate_cost(total, 4096, model);
+    let skill_default = skill_def.as_ref().map(|s| s.skill.default_model.as_str()).unwrap_or("claude-sonnet-4-6");
+    let preferred_model = resolve_skill_model(&skill, skill_default);
+    let cost = estimate_cost(total, 4096, &preferred_model);
 
     Ok(TokenEstimate {
         system_tokens,
@@ -374,4 +430,56 @@ pub fn estimate_context_tokens(
 pub fn list_available_skills() -> Result<Vec<SkillMeta>, AppError> {
     let skills_path = skills_dir();
     list_skills(&skills_path)
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SkillSettingsEntry {
+    pub name: String,
+    pub display_name: String,
+    pub description: String,
+    pub default_model: String,
+    pub effective_model: String,
+    pub default_max_context_tokens: u64,
+    pub effective_max_context_tokens: u64,
+    pub temperature: f64,
+}
+
+#[tauri::command]
+pub fn get_skill_settings() -> Result<Vec<SkillSettingsEntry>, AppError> {
+    let skills_path = skills_dir();
+    let skills = list_skills(&skills_path)?;
+    let config = get_config().unwrap_or_default();
+
+    let mut entries = Vec::new();
+    for skill_meta in &skills {
+        // Load full skill definition to get max_context_tokens
+        let skill_def = load_skill(&skill_meta.name, &skills_path).ok();
+        let default_max_tokens = skill_def.as_ref().map(|s| s.context.max_context_tokens).unwrap_or(20000);
+
+        let ov = config.skill_overrides.get(&skill_meta.name);
+        let effective_model = if let Some(ov) = ov {
+            if ov.model != "auto" && !ov.model.is_empty() {
+                ov.model.clone()
+            } else {
+                config.default_model.clone()
+            }
+        } else {
+            config.default_model.clone()
+        };
+        let effective_max_tokens = ov
+            .and_then(|o| o.max_context_tokens)
+            .unwrap_or(default_max_tokens);
+
+        entries.push(SkillSettingsEntry {
+            name: skill_meta.name.clone(),
+            display_name: skill_meta.display_name.clone(),
+            description: skill_meta.description.clone(),
+            default_model: skill_meta.default_model.clone(),
+            effective_model,
+            default_max_context_tokens: default_max_tokens,
+            effective_max_context_tokens: effective_max_tokens,
+            temperature: skill_meta.temperature,
+        });
+    }
+    Ok(entries)
 }

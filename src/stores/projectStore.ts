@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import type { ProjectMetadata, BookMetadata, BookRef } from '../types/project';
 import type { Phase } from '../types/sapling';
 
-export type SidebarView = 'dashboard' | 'files' | 'book' | 'world' | 'characters' | 'notes' | 'settings' | 'phase';
+export type SidebarView = 'dashboard' | 'files' | 'book' | 'world' | 'characters' | 'notes' | 'settings' | 'skill_settings' | 'phase';
 
 interface ProjectState {
   // Project

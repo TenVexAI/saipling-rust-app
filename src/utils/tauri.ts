@@ -3,7 +3,7 @@ import type {
   ProjectMetadata, RecentProject, BookMetadata, FileContent, FileEntry,
   WordCountSummary, DraftSnapshot, MatterEntry,
 } from '../types/project';
-import type { AgentPlan, ContextScope, Message, TokenEstimate } from '../types/ai';
+import type { AgentPlan, ContextScope, Message, TokenEstimate, ModelsConfig, SkillSettingsEntry, SkillOverride } from '../types/ai';
 
 // ─── Project Management ───
 export const createProject = (name: string, isSeries: boolean, genre: string | null, description: string | null, directory: string) =>
@@ -123,8 +123,16 @@ export const agentPlan = (projectDir: string, intent: string, scope: ContextScop
 export const agentExecute = (planId: string, conversationHistory: Message[]) =>
   invoke<string>('agent_execute', { planId, conversationHistory });
 
+export interface QuickResult {
+  text: string;
+  input_tokens: number;
+  output_tokens: number;
+  model: string;
+  cost: number;
+}
+
 export const agentQuick = (projectDir: string, skill: string, scope: ContextScope, selectedText: string | null, action: string, message: string) =>
-  invoke<string>('agent_quick', { projectDir, skill, scope, selectedText, action, message });
+  invoke<QuickResult>('agent_quick', { projectDir, skill, scope, selectedText, action, message });
 
 export const agentCancel = (conversationId: string) =>
   invoke<void>('agent_cancel', { conversationId });
@@ -153,6 +161,7 @@ export interface AppConfig {
     stream_responses: boolean;
     approval_mode: string;
   };
+  skill_overrides: Record<string, SkillOverride>;
 }
 
 export const getConfig = () =>
@@ -166,6 +175,18 @@ export const setApiKey = (key: string) =>
 
 export const validateApiKey = () =>
   invoke<boolean>('validate_api_key');
+
+// ─── Models Config ───
+
+export const getModelsConfig = () =>
+  invoke<ModelsConfig>('get_models_config');
+
+export const getModelsConfigPath = () =>
+  invoke<string>('get_models_config_path');
+
+// ─── Skill Settings ───
+export const getSkillSettings = () =>
+  invoke<SkillSettingsEntry[]>('get_skill_settings');
 
 // ─── File Watcher ───
 export const startFileWatcher = (projectDir: string) =>

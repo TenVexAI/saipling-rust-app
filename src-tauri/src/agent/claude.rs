@@ -98,11 +98,20 @@ pub struct StreamDone {
     pub full_text: String,
     pub input_tokens: u64,
     pub output_tokens: u64,
+    pub model: String,
 }
 
 #[derive(Debug, Clone, Serialize)]
 pub struct StreamError {
     pub error: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct StreamResult {
+    pub text: String,
+    pub input_tokens: u64,
+    pub output_tokens: u64,
+    pub model: String,
 }
 
 /// Call Claude API with streaming, emitting events to the frontend.
@@ -116,7 +125,7 @@ pub async fn stream_claude(
     temperature: Option<f64>,
     conversation_id: &str,
     cancel_flag: Option<std::sync::Arc<std::sync::atomic::AtomicBool>>,
-) -> Result<String, AppError> {
+) -> Result<StreamResult, AppError> {
     let client = Client::new();
 
     let request = ClaudeRequest {
@@ -146,6 +155,7 @@ pub async fn stream_claude(
     let mut full_text = String::new();
     let mut input_tokens: u64 = 0;
     let mut output_tokens: u64 = 0;
+    let mut actual_model = model.to_string();
     let mut stream = response.bytes_stream();
     let mut buffer = String::new();
     let mut cancelled = false;
@@ -188,6 +198,7 @@ pub async fn stream_claude(
                             }
                         }
                         StreamEvent::MessageStart { message } => {
+                            actual_model = message.model;
                             if let Some(usage) = message.usage {
                                 input_tokens = usage.input_tokens.unwrap_or(0);
                             }
@@ -218,7 +229,13 @@ pub async fn stream_claude(
         full_text: full_text.clone(),
         input_tokens,
         output_tokens,
+        model: actual_model.clone(),
     });
 
-    Ok(full_text)
+    Ok(StreamResult {
+        text: full_text,
+        input_tokens,
+        output_tokens,
+        model: actual_model,
+    })
 }

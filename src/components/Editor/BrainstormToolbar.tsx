@@ -4,6 +4,8 @@ import { listen } from '@tauri-apps/api/event';
 import { useProjectStore } from '../../stores/projectStore';
 import { useAIStore } from '../../stores/aiStore';
 import { listDirectory, agentPlan, agentExecute, agentCancel, writeFile, updateProjectMetadata } from '../../utils/tauri';
+import { trackCost } from '../../utils/projectCost';
+import { calculateCost } from '../../utils/modelPricing';
 import type { FileEntry } from '../../types/project';
 import type { AgentPlan } from '../../types/ai';
 
@@ -107,10 +109,13 @@ export function BrainstormToolbar({ currentFilePath }: BrainstormToolbarProps) {
     const unlistenChunk = await listen<{ text: string }>(`claude:chunk:${plan.plan_id}`, (event) => {
       streamedRef.current += event.payload.text;
     });
-    const unlistenDone = await listen<{ full_text: string }>(`claude:done:${plan.plan_id}`, async (event) => {
+    const unlistenDone = await listen<{ full_text: string; input_tokens: number; output_tokens: number; model: string }>(`claude:done:${plan.plan_id}`, async (event) => {
       unlistenChunk();
       unlistenDone();
       unlistenError();
+      const cost = calculateCost(event.payload.model, event.payload.input_tokens, event.payload.output_tokens);
+      useAIStore.getState().addSessionCost(cost);
+      trackCost(cost);
       await handleGenerationComplete(event.payload.full_text);
     });
     const unlistenError = await listen<{ error: string }>(`claude:error:${plan.plan_id}`, (event) => {
