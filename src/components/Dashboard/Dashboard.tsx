@@ -89,7 +89,7 @@ export function Dashboard() {
                 style={{
                   color: 'var(--text-tertiary)',
                   padding: '6px 12px',
-                  border: '1px solid var(--border-primary)',
+                  border: '1px solid var(--color-error)',
                   backgroundColor: 'transparent',
                   cursor: 'pointer',
                   whiteSpace: 'nowrap',
