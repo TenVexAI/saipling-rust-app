@@ -49,6 +49,11 @@ body {
   background: var(--bg-selection);
 }
 
+/* Interactive elements — always show pointer cursor */
+button, select, [role="button"] {
+  cursor: pointer;
+}
+
 /* Focus styles */
 :focus-visible {
   outline: 2px solid var(--border-focus);
