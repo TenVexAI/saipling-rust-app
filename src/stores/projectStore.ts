@@ -78,7 +78,7 @@ export const useProjectStore = create<ProjectState>((set) => ({
     activePhase: null,
   }),
 
-  setActiveView: (view) => set({ activeView: view }),
+  setActiveView: (view) => set({ activeView: view, activeFilePath: null }),
   setActiveBook: (bookId, meta) => set({
     activeBookId: bookId,
     activeBookMeta: meta ?? null,

@@ -81,8 +81,20 @@ export function ProseEditor({ filePath }: ProseEditorProps) {
         editor.commands.setContent(html);
         markSaved();
       }
-    } catch (e) {
-      setError(String(e));
+    } catch {
+      // File doesn't exist yet — create it and open with empty content
+      try {
+        await writeFile(filePath, {}, '');
+        setFrontmatter({});
+        frontmatterRef.current = {};
+        initialContentRef.current = '';
+        if (editor) {
+          editor.commands.setContent('');
+          markSaved();
+        }
+      } catch (writeErr) {
+        setError(String(writeErr));
+      }
     }
     setLoading(false);
   }, [filePath, editor, markSaved]);
@@ -126,6 +138,19 @@ export function ProseEditor({ filePath }: ProseEditorProps) {
       }
     };
   }, [editor, saveFile]);
+
+  // Save on unmount if dirty
+  useEffect(() => {
+    return () => {
+      if (useEditorStore.getState().isDirty && editor) {
+        const html = editor.getHTML();
+        const markdown = htmlToMarkdown(html);
+        writeFile(filePathRef.current, frontmatterRef.current, markdown).catch((e) =>
+          console.error('Save on close failed:', e)
+        );
+      }
+    };
+  }, [editor]);
 
   // Ctrl+S save
   useEffect(() => {
