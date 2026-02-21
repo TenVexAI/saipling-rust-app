@@ -19,6 +19,7 @@ interface ProjectState {
   activeFilePath: string | null;
   activePhase: Phase | null;
   contextExpandFolder: string | null;
+  totalProjectCost: number;
 
   // Sidebar
   sidebarExpanded: boolean;
@@ -34,6 +35,8 @@ interface ProjectState {
   setActiveFile: (path: string | null) => void;
   setActivePhase: (phase: Phase | null) => void;
   setContextExpandFolder: (folder: string | null) => void;
+  setTotalProjectCost: (cost: number) => void;
+  addProjectCost: (cost: number) => void;
   toggleSidebar: () => void;
   toggleRightPanel: () => void;
   setRightPanelOpen: (open: boolean) => void;
@@ -53,6 +56,7 @@ export const useProjectStore = create<ProjectState>((set) => ({
   activeFilePath: null,
   activePhase: null,
   contextExpandFolder: null,
+  totalProjectCost: 0,
 
   sidebarExpanded: false,
   rightPanelOpen: true,
@@ -81,7 +85,7 @@ export const useProjectStore = create<ProjectState>((set) => ({
     activePhase: null,
   }),
 
-  setActiveView: (view) => set({ activeView: view, activeFilePath: null, contextExpandFolder: null }),
+  setActiveView: (view) => set({ activeView: view, activeFilePath: null, contextExpandFolder: null, activePhase: null }),
   setActiveBook: (bookId, meta) => set({
     activeBookId: bookId,
     activeBookMeta: meta ?? null,
@@ -92,6 +96,8 @@ export const useProjectStore = create<ProjectState>((set) => ({
   setActiveScene: (sceneId) => set({ activeSceneId: sceneId }),
   setActiveFile: (path) => set({ activeFilePath: path }),
   setContextExpandFolder: (folder) => set({ contextExpandFolder: folder }),
+  setTotalProjectCost: (cost) => set({ totalProjectCost: cost }),
+  addProjectCost: (cost) => set((s) => ({ totalProjectCost: s.totalProjectCost + cost })),
   setActivePhase: (phase) => set({ activePhase: phase, activeView: 'phase', activeFilePath: null }),
   toggleSidebar: () => set((s) => ({ sidebarExpanded: !s.sidebarExpanded })),
   toggleRightPanel: () => set((s) => ({ rightPanelOpen: !s.rightPanelOpen })),

@@ -10,6 +10,8 @@ import { SaiplingChatLogo } from './SaiplingChatLogo';
 import { useAIStore } from '../../stores/aiStore';
 import { useProjectStore } from '../../stores/projectStore';
 import { agentPlan, agentExecute, agentCancel, listAvailableSkills } from '../../utils/tauri';
+import { trackCost } from '../../utils/projectCost';
+import { saveCurrentChat } from '../../utils/projectChat';
 import type { ContextFileInfo } from '../../types/ai';
 
 interface ChatPanelProps {
@@ -27,9 +29,10 @@ export function ChatPanel({ width }: ChatPanelProps) {
   const setCurrentPlan = useAIStore((s) => s.setCurrentPlan);
   const setConversationId = useAIStore((s) => s.setConversationId);
   const setLastCost = useAIStore((s) => s.setLastCost);
+  const addSessionCost = useAIStore((s) => s.addSessionCost);
   const setAvailableSkills = useAIStore((s) => s.setAvailableSkills);
   const conversationId = useAIStore((s) => s.conversationId);
-  const lastCost = useAIStore((s) => s.lastCost);
+  const sessionCost = useAIStore((s) => s.sessionCost);
   const activeSkill = useAIStore((s) => s.activeSkill);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [contextFiles, setContextFiles] = useState<ContextFileInfo[]>([]);
@@ -58,7 +61,10 @@ export function ChatPanel({ width }: ChatPanelProps) {
     const unlistenDone = await listen<{ full_text: string; input_tokens: number; output_tokens: number }>(`claude:done:${planId}`, (event) => {
       const cost = (event.payload.input_tokens * 3 + event.payload.output_tokens * 15) / 1_000_000;
       setLastCost(`$${cost.toFixed(4)}`);
+      addSessionCost(cost);
+      trackCost(cost);
       setStreaming(false);
+      saveCurrentChat();
       unlistenChunk();
       unlistenDone();
       unlistenError();
@@ -85,7 +91,7 @@ export function ChatPanel({ width }: ChatPanelProps) {
       unlistenDone();
       unlistenError();
     }
-  }, [setStreaming, setConversationId, appendToLastAssistant, setLastCost]);
+  }, [setStreaming, setConversationId, appendToLastAssistant, setLastCost, addSessionCost]);
 
   const handleSend = useCallback(async (text: string) => {
     const userMsg = { role: 'user' as const, content: text };
@@ -166,9 +172,9 @@ export function ChatPanel({ width }: ChatPanelProps) {
         <div className="flex items-center gap-2 text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
           <MessageSquare size={14} />
           AI Chat
-          {lastCost && (
+          {sessionCost > 0 && (
             <span className="font-normal" style={{ color: 'var(--text-tertiary)' }}>
-              ({lastCost})
+              (session: ${sessionCost.toFixed(4)})
             </span>
           )}
         </div>

@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useProjectStore } from '../../stores/projectStore';
 import { useAIStore } from '../../stores/aiStore';
+import { listDirectory } from '../../utils/tauri';
+import { saveProjectChat } from '../../utils/projectChat';
 import { BookOpen, Plus, Lightbulb, LogOut, Pencil, Trash2 } from 'lucide-react';
 import { SaiplingDashLogo } from './SaiplingDashLogo';
 import { EditProjectModal } from './EditProjectModal';
@@ -9,16 +11,33 @@ import { DeleteProjectModal } from './DeleteProjectModal';
 export function Dashboard() {
   const project = useProjectStore((s) => s.project);
   const projectDir = useProjectStore((s) => s.projectDir);
-  const clearProject = useProjectStore((s) => s.clearProject);
+  const clearProjectStore = useProjectStore((s) => s.clearProject);
   const setActiveFile = useProjectStore((s) => s.setActiveFile);
   const setActiveSkill = useAIStore((s) => s.setActiveSkill);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [overviewPath, setOverviewPath] = useState<string | null>(null);
+
+  const handleExitProject = async () => {
+    if (projectDir) await saveProjectChat(projectDir);
+    clearProjectStore();
+  };
+
+  useEffect(() => {
+    if (!projectDir) return;
+    const overviewDir = `${projectDir}\\project_overview`;
+    listDirectory(overviewDir)
+      .then((entries) => {
+        const overview = entries.find((e) => /^project_overview(_v\d+)?\.md$/.test(e.name));
+        setOverviewPath(overview ? overview.path : null);
+      })
+      .catch(() => setOverviewPath(null));
+  }, [projectDir]);
 
   const handleBrainstorm = () => {
     if (!projectDir) return;
     setActiveSkill('brainstorm');
-    setActiveFile(`${projectDir}\\project_overview\\project_brainstorm_notes.md`);
+    setActiveFile(overviewPath ?? `${projectDir}\\project_overview\\project_brainstorm_notes.md`);
   };
 
   if (!project) {
@@ -33,65 +52,69 @@ export function Dashboard() {
     <div className="overflow-y-auto h-full" style={{ backgroundColor: 'var(--bg-primary)' }}>
       <div className="max-w-4xl mx-auto" style={{ padding: '32px 40px' }}>
         {/* Header */}
-        <div className="flex items-start justify-between" style={{ marginBottom: '32px' }}>
-          <div className="flex items-center gap-4">
+        <div className="flex items-start gap-4" style={{ marginBottom: '32px' }}>
+          <div className="shrink-0">
             <SaiplingDashLogo size={60} />
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
-                  {project.name}
-                </h1>
-                <button
-                  onClick={() => setShowEditModal(true)}
-                  className="flex items-center justify-center transition-colors"
-                  style={{ color: 'var(--text-tertiary)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--accent)')}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-tertiary)')}
-                  title="Edit project name and description"
-                >
-                  <Pencil size={14} />
-                </button>
-                <button
-                  onClick={() => setShowDeleteModal(true)}
-                  className="flex items-center justify-center transition-colors"
-                  style={{ color: 'var(--text-tertiary)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--color-error)')}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-tertiary)')}
-                  title="Delete project"
-                >
-                  <Trash2 size={14} />
-                </button>
-              </div>
-              {project.description && (
-                <p className="text-sm" style={{ color: 'var(--text-tertiary)', marginTop: '2px' }}>
-                  {project.description}
-                </p>
-              )}
-            </div>
           </div>
-          <button
-            onClick={clearProject}
-            className="flex items-center gap-2 rounded-lg text-xs font-medium transition-colors"
-            style={{
-              color: 'var(--text-tertiary)',
-              padding: '6px 12px',
-              border: '1px solid var(--border-primary)',
-              backgroundColor: 'transparent',
-              cursor: 'pointer',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)';
-              e.currentTarget.style.color = 'var(--text-primary)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent';
-              e.currentTarget.style.color = 'var(--text-tertiary)';
-            }}
-            title="Close project and return to start"
-          >
-            <LogOut size={14} />
-            Exit Project
-          </button>
+          <div className="flex-1 min-w-0">
+            {/* Title row: name + edit/delete icons + exit button floated right */}
+            <div className="flex items-center gap-2" style={{ marginBottom: '4px' }}>
+              <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
+                {project.name.length > 35 ? `${project.name.slice(0, 35)}…` : project.name}
+              </h1>
+              <button
+                onClick={() => setShowEditModal(true)}
+                className="flex items-center justify-center transition-colors shrink-0"
+                style={{ color: 'var(--text-tertiary)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--accent)')}
+                onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-tertiary)')}
+                title="Edit project name and description"
+              >
+                <Pencil size={14} />
+              </button>
+              <button
+                onClick={() => setShowDeleteModal(true)}
+                className="flex items-center justify-center transition-colors shrink-0"
+                style={{ color: 'var(--text-tertiary)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--color-error)')}
+                onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-tertiary)')}
+                title="Delete project"
+              >
+                <Trash2 size={14} />
+              </button>
+              <div className="flex-1" />
+              <button
+                onClick={handleExitProject}
+                className="flex items-center gap-2 rounded-lg text-xs font-medium transition-colors shrink-0"
+                style={{
+                  color: 'var(--text-tertiary)',
+                  padding: '6px 12px',
+                  border: '1px solid var(--border-primary)',
+                  backgroundColor: 'transparent',
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)';
+                  e.currentTarget.style.color = 'var(--text-primary)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.color = 'var(--text-tertiary)';
+                }}
+                title="Close project and return to start"
+              >
+                <LogOut size={14} />
+                Exit Project
+              </button>
+            </div>
+            {/* Description below the title row, spanning full width */}
+            {project.description && (
+              <p className="text-sm" style={{ color: 'var(--text-tertiary)', marginTop: '2px', lineHeight: '1.5' }}>
+                {project.description.length > 500 ? `${project.description.slice(0, 500)}…` : project.description}
+              </p>
+            )}
+          </div>
         </div>
 
         {/* Quick Actions */}
@@ -105,8 +128,8 @@ export function Dashboard() {
               padding: '10px 20px',
             }}
           >
-            <Lightbulb size={16} />
-            Brainstorm
+            {!overviewPath && <Lightbulb size={16} />}
+            {overviewPath ? 'Project Overview' : 'Brainstorm'}
           </button>
           <button
             className="flex items-center gap-2 rounded-lg text-sm font-medium transition-colors"

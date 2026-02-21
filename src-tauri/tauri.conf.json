@@ -15,8 +15,8 @@
         "title": "sAIpling",
         "width": 1280,
         "height": 800,
-        "minWidth": 900,
-        "minHeight": 600,
+        "minWidth": 1200,
+        "minHeight": 700,
         "decorations": false
       }
     ],

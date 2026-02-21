@@ -83,6 +83,12 @@ export function PhaseProgressBar() {
                 color: activePhase === phase.id ? 'var(--accent)' : status === 'not_started' ? 'var(--text-tertiary)' : 'var(--text-primary)',
                 backgroundColor: activePhase === phase.id ? 'var(--accent-subtle)' : 'transparent',
               }}
+              onMouseEnter={(e) => {
+                if (activePhase !== phase.id) e.currentTarget.style.backgroundColor = 'var(--bg-hover)';
+              }}
+              onMouseLeave={(e) => {
+                if (activePhase !== phase.id) e.currentTarget.style.backgroundColor = 'transparent';
+              }}
               title={`${phase.label}: ${phase.question}`}
             >
               <StatusIcon status={status} />

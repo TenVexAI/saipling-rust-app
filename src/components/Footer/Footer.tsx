@@ -1,16 +1,15 @@
 import { useProjectStore } from '../../stores/projectStore';
 import { useEditorStore } from '../../stores/editorStore';
-import { useAIStore } from '../../stores/aiStore';
 
 export function Footer() {
   const project = useProjectStore((s) => s.project);
   const activeBookId = useProjectStore((s) => s.activeBookId);
   const activeChapterId = useProjectStore((s) => s.activeChapterId);
   const activeSceneId = useProjectStore((s) => s.activeSceneId);
+  const totalProjectCost = useProjectStore((s) => s.totalProjectCost);
   const wordCount = useEditorStore((s) => s.wordCount);
   const isDirty = useEditorStore((s) => s.isDirty);
   const isSaving = useEditorStore((s) => s.isSaving);
-  const lastCost = useAIStore((s) => s.lastCost);
 
   const bookTitle = project?.books.find((b) => b.id === activeBookId)?.title;
 
@@ -48,10 +47,10 @@ export function Footer() {
         {wordCount > 0 && (
           <span>{wordCount.toLocaleString()} words</span>
         )}
-        {lastCost && (
+        {totalProjectCost > 0 && (
           <>
             <span style={{ color: 'var(--border-primary)' }}>│</span>
-            <span>~{lastCost}</span>
+            <span>AI: ${totalProjectCost.toFixed(4)}</span>
           </>
         )}
         <span style={{ color: 'var(--border-primary)' }}>│</span>

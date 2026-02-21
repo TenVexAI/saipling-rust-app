@@ -1,8 +1,14 @@
+use std::collections::HashSet;
 use std::path::PathBuf;
 use serde::Serialize;
 use crate::error::AppError;
 use super::skills::SkillDefinition;
 use super::tokens::estimate_tokens;
+
+/// Normalize a relative path to always use forward slashes for display consistency.
+fn normalize_rel_path(rel: &std::path::Path) -> String {
+    rel.display().to_string().replace('\\', "/")
+}
 
 #[derive(Debug, Clone, Serialize)]
 pub struct AssembledContext {
@@ -99,6 +105,7 @@ pub fn assemble_context(
     let mut total_tokens: u64 = 0;
     let mut files_loaded = Vec::new();
     let mut context_parts: Vec<String> = Vec::new();
+    let mut loaded_canonical: HashSet<PathBuf> = HashSet::new();
 
     // 1. Always-include files
     for pattern in &skill.context.always_include {
@@ -107,15 +114,21 @@ pub fn assemble_context(
             if total_tokens >= max_tokens {
                 break;
             }
+            let canonical = path.canonicalize().unwrap_or_else(|_| path.clone());
+            if loaded_canonical.contains(&canonical) {
+                continue;
+            }
             if let Some((content, tokens)) = load_file(&path, max_tokens - total_tokens) {
                 let rel = path.strip_prefix(project_dir).unwrap_or(&path);
-                context_parts.push(format!("--- {} ---\n{}", rel.display(), content));
+                let rel_str = normalize_rel_path(rel);
+                context_parts.push(format!("--- {} ---\n{}", rel_str, content));
                 files_loaded.push(LoadedFile {
-                    path: rel.display().to_string(),
+                    path: rel_str,
                     mode: "full".to_string(),
                     tokens,
                 });
                 total_tokens += tokens;
+                loaded_canonical.insert(canonical);
             }
         }
     }
@@ -129,15 +142,21 @@ pub fn assemble_context(
                     if total_tokens >= max_tokens {
                         break;
                     }
+                    let canonical = path.canonicalize().unwrap_or_else(|_| path.clone());
+                    if loaded_canonical.contains(&canonical) {
+                        continue;
+                    }
                     if let Some((content, tokens)) = load_file(&path, max_tokens - total_tokens) {
                         let rel = path.strip_prefix(project_dir).unwrap_or(&path);
-                        context_parts.push(format!("--- {} ---\n{}", rel.display(), content));
+                        let rel_str = normalize_rel_path(rel);
+                        context_parts.push(format!("--- {} ---\n{}", rel_str, content));
                         files_loaded.push(LoadedFile {
-                            path: rel.display().to_string(),
+                            path: rel_str,
                             mode: "full".to_string(),
                             tokens,
                         });
                         total_tokens += tokens;
+                        loaded_canonical.insert(canonical);
                     }
                 }
             }
@@ -152,15 +171,21 @@ pub fn assemble_context(
                 if total_tokens >= max_tokens {
                     break;
                 }
+                let canonical = path.canonicalize().unwrap_or_else(|_| path.clone());
+                if loaded_canonical.contains(&canonical) {
+                    continue;
+                }
                 if let Some((content, tokens)) = load_file(&path, max_tokens - total_tokens) {
                     let rel = path.strip_prefix(project_dir).unwrap_or(&path);
-                    context_parts.push(format!("--- {} ---\n{}", rel.display(), content));
+                    let rel_str = normalize_rel_path(rel);
+                    context_parts.push(format!("--- {} ---\n{}", rel_str, content));
                     files_loaded.push(LoadedFile {
-                        path: rel.display().to_string(),
+                        path: rel_str,
                         mode: "full".to_string(),
                         tokens,
                     });
                     total_tokens += tokens;
+                    loaded_canonical.insert(canonical);
                 }
             }
         }

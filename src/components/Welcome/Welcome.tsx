@@ -3,11 +3,14 @@ import { FolderOpen, Plus, Clock } from 'lucide-react';
 import { AnimatedLogo } from './AnimatedLogo';
 import { useProjectStore } from '../../stores/projectStore';
 import { getRecentProjects, createProject, openProject, getConfig } from '../../utils/tauri';
+import { loadProjectCost } from '../../utils/projectCost';
+import { loadProjectChat } from '../../utils/projectChat';
 import { open } from '@tauri-apps/plugin-dialog';
 import type { RecentProject } from '../../types/project';
 
 export function Welcome() {
   const setProject = useProjectStore((s) => s.setProject);
+  const setTotalProjectCost = useProjectStore((s) => s.setTotalProjectCost);
   const [recents, setRecents] = useState<RecentProject[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
@@ -29,6 +32,8 @@ export function Welcome() {
       if (selected) {
         const meta = await openProject(selected as string);
         setProject(meta, selected as string);
+        loadProjectCost(selected as string).then(setTotalProjectCost);
+        loadProjectChat(selected as string);
       }
     } catch (e) {
       setError(String(e));
@@ -42,6 +47,8 @@ export function Welcome() {
       const dir = `${config.projects_root}\\${newName.trim().toLowerCase().replace(/\s+/g, '-')}`;
       const meta = await createProject(newName.trim(), false, null, newDescription.trim() || null, dir);
       setProject(meta, dir);
+      setTotalProjectCost(0);
+      loadProjectChat(dir);
     } catch (e) {
       setError(String(e));
     }
@@ -51,6 +58,8 @@ export function Welcome() {
     try {
       const meta = await openProject(path);
       setProject(meta, path);
+      loadProjectCost(path).then(setTotalProjectCost);
+      loadProjectChat(path);
     } catch (e) {
       setError(String(e));
     }
