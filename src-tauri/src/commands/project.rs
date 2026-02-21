@@ -68,6 +68,8 @@ pub struct ProjectMetadata {
     pub name: String,
     pub author: String,
     pub genre: String,
+    #[serde(default)]
+    pub description: String,
     pub created: DateTime<Utc>,
     pub modified: DateTime<Utc>,
     #[serde(default)]
@@ -122,12 +124,14 @@ pub fn create_project(
     name: String,
     is_series: bool,
     genre: Option<String>,
+    description: Option<String>,
     directory: PathBuf,
 ) -> Result<ProjectMetadata, AppError> {
     std::fs::create_dir_all(&directory)?;
 
     // Create directory structure
     let dirs = [
+        "project_overview",
         "series",
         "world",
         "world/locations",
@@ -147,11 +151,13 @@ pub fn create_project(
     }
 
     let now = Utc::now();
+    let desc = description.clone().unwrap_or_default();
     let metadata = ProjectMetadata {
         version: "1.0.0".to_string(),
         name: name.clone(),
         author: String::new(),
         genre: genre.unwrap_or_default(),
+        description: desc.clone(),
         created: now,
         modified: now,
         series_phase_progress: std::collections::HashMap::new(),
@@ -162,6 +168,17 @@ pub fn create_project(
 
     let project_json = directory.join("project.json");
     std::fs::write(&project_json, serde_json::to_string_pretty(&metadata)?)?;
+
+    // Create brainstorm notes file in project_overview
+    let brainstorm_content = if desc.is_empty() {
+        format!("# {}\n\n", name)
+    } else {
+        format!("# {}\n\n{}\n\n", name, desc)
+    };
+    std::fs::write(
+        directory.join("project_overview/project_brainstorm_notes.md"),
+        brainstorm_content,
+    )?;
 
     // Create empty series foundation
     std::fs::write(
@@ -296,6 +313,26 @@ pub fn update_project_metadata(
 ) -> Result<(), AppError> {
     let project_json = project_dir.join("project.json");
     std::fs::write(&project_json, serde_json::to_string_pretty(&metadata)?)?;
+    Ok(())
+}
+
+#[tauri::command]
+pub fn delete_project(directory: PathBuf) -> Result<(), AppError> {
+    // Remove from recent projects
+    let rp_path = recent_projects_path()?;
+    if rp_path.exists() {
+        let data = std::fs::read_to_string(&rp_path)?;
+        let mut recents: Vec<RecentProject> = serde_json::from_str(&data)?;
+        let path_str = directory.to_string_lossy().to_string();
+        recents.retain(|r| r.path != path_str);
+        std::fs::write(&rp_path, serde_json::to_string_pretty(&recents)?)?;
+    }
+
+    // Delete the project directory
+    if directory.exists() {
+        std::fs::remove_dir_all(&directory)?;
+    }
+
     Ok(())
 }
 

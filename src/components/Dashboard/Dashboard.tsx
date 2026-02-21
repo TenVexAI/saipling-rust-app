@@ -1,10 +1,25 @@
+import { useState } from 'react';
 import { useProjectStore } from '../../stores/projectStore';
-import { BookOpen, Plus, ArrowRight, LogOut } from 'lucide-react';
+import { useAIStore } from '../../stores/aiStore';
+import { BookOpen, Plus, Lightbulb, LogOut, Pencil, Trash2 } from 'lucide-react';
 import { SaiplingDashLogo } from './SaiplingDashLogo';
+import { EditProjectModal } from './EditProjectModal';
+import { DeleteProjectModal } from './DeleteProjectModal';
 
 export function Dashboard() {
   const project = useProjectStore((s) => s.project);
+  const projectDir = useProjectStore((s) => s.projectDir);
   const clearProject = useProjectStore((s) => s.clearProject);
+  const setActiveFile = useProjectStore((s) => s.setActiveFile);
+  const setActiveSkill = useAIStore((s) => s.setActiveSkill);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  const handleBrainstorm = () => {
+    if (!projectDir) return;
+    setActiveSkill('brainstorm');
+    setActiveFile(`${projectDir}\\project_overview\\project_brainstorm_notes.md`);
+  };
 
   if (!project) {
     return (
@@ -22,12 +37,34 @@ export function Dashboard() {
           <div className="flex items-center gap-4">
             <SaiplingDashLogo size={60} />
             <div>
-              <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
-                {project.name}
-              </h1>
-              {project.genre && (
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
+                  {project.name}
+                </h1>
+                <button
+                  onClick={() => setShowEditModal(true)}
+                  className="flex items-center justify-center transition-colors"
+                  style={{ color: 'var(--text-tertiary)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--accent)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-tertiary)')}
+                  title="Edit project name and description"
+                >
+                  <Pencil size={14} />
+                </button>
+                <button
+                  onClick={() => setShowDeleteModal(true)}
+                  className="flex items-center justify-center transition-colors"
+                  style={{ color: 'var(--text-tertiary)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--color-error)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-tertiary)')}
+                  title="Delete project"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+              {project.description && (
                 <p className="text-sm" style={{ color: 'var(--text-tertiary)', marginTop: '2px' }}>
-                  {project.genre}
+                  {project.description}
                 </p>
               )}
             </div>
@@ -60,6 +97,7 @@ export function Dashboard() {
         {/* Quick Actions */}
         <div className="flex gap-3" style={{ marginBottom: '40px' }}>
           <button
+            onClick={handleBrainstorm}
             className="flex items-center gap-2 rounded-lg text-sm font-medium transition-colors"
             style={{
               backgroundColor: 'var(--accent)',
@@ -67,8 +105,8 @@ export function Dashboard() {
               padding: '10px 20px',
             }}
           >
-            <ArrowRight size={16} />
-            Continue Writing
+            <Lightbulb size={16} />
+            Brainstorm
           </button>
           <button
             className="flex items-center gap-2 rounded-lg text-sm font-medium transition-colors"
@@ -143,6 +181,13 @@ export function Dashboard() {
           </div>
         </div>
       </div>
+
+      {showEditModal && (
+        <EditProjectModal onClose={() => setShowEditModal(false)} />
+      )}
+      {showDeleteModal && (
+        <DeleteProjectModal onClose={() => setShowDeleteModal(false)} />
+      )}
     </div>
   );
 }

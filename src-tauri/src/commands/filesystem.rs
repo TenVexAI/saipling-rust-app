@@ -287,3 +287,34 @@ pub fn get_book_word_count(project_dir: PathBuf, book_id: String) -> Result<Word
 
     Ok(WordCountSummary { book_total, target, chapters })
 }
+
+#[tauri::command]
+pub fn reveal_in_explorer(path: PathBuf) -> Result<(), AppError> {
+    let target = if path.is_dir() {
+        path
+    } else {
+        path.parent().map(|p| p.to_path_buf()).unwrap_or(path)
+    };
+    #[cfg(target_os = "windows")]
+    {
+        std::process::Command::new("explorer")
+            .arg(&target)
+            .spawn()
+            .map_err(|e| AppError::Io(e))?;
+    }
+    #[cfg(target_os = "macos")]
+    {
+        std::process::Command::new("open")
+            .arg(&target)
+            .spawn()
+            .map_err(|e| AppError::Io(e))?;
+    }
+    #[cfg(target_os = "linux")]
+    {
+        std::process::Command::new("xdg-open")
+            .arg(&target)
+            .spawn()
+            .map_err(|e| AppError::Io(e))?;
+    }
+    Ok(())
+}

@@ -6,8 +6,8 @@ import type {
 import type { AgentPlan, ContextScope, Message, TokenEstimate } from '../types/ai';
 
 // ─── Project Management ───
-export const createProject = (name: string, isSeries: boolean, genre: string | null, directory: string) =>
-  invoke<ProjectMetadata>('create_project', { name, isSeries, genre, directory });
+export const createProject = (name: string, isSeries: boolean, genre: string | null, description: string | null, directory: string) =>
+  invoke<ProjectMetadata>('create_project', { name, isSeries, genre, description, directory });
 
 export const openProject = (directory: string) =>
   invoke<ProjectMetadata>('open_project', { directory });
@@ -20,6 +20,9 @@ export const getProjectMetadata = (projectDir: string) =>
 
 export const updateProjectMetadata = (projectDir: string, metadata: ProjectMetadata) =>
   invoke<void>('update_project_metadata', { projectDir, metadata });
+
+export const deleteProject = (directory: string) =>
+  invoke<void>('delete_project', { directory });
 
 // ─── Book Management ───
 export const createBook = (projectDir: string, title: string) =>
@@ -55,6 +58,9 @@ export const renameEntry = (from: string, to: string) =>
 
 export const deleteEntry = (path: string) =>
   invoke<void>('delete_entry', { path });
+
+export const revealInExplorer = (path: string) =>
+  invoke<void>('reveal_in_explorer', { path });
 
 export const moveEntry = (from: string, to: string) =>
   invoke<void>('move_entry', { from, to });

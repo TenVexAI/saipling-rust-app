@@ -7,7 +7,7 @@ import { ChatPanel } from '../AIChat/ChatPanel';
 import { ResizeDivider } from './ResizeDivider';
 import { Dashboard } from '../Dashboard/Dashboard';
 import { SettingsView } from '../Settings/SettingsView';
-import { ProjectExplorer } from '../ProjectExplorer/ProjectExplorer';
+import { ContextSettings } from '../ContextSettings/ContextSettings';
 import { BookView } from '../BookView/BookView';
 import { WorldBrowser } from '../WorldView/WorldBrowser';
 import { CharacterList } from '../CharacterView/CharacterList';
@@ -43,7 +43,7 @@ function MainContent() {
     case 'settings':
       return <SettingsView />;
     case 'files':
-      return <ProjectExplorer />;
+      return <ContextSettings />;
     case 'book':
       return <BookView />;
     case 'world':

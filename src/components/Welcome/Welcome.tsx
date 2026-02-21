@@ -12,8 +12,7 @@ export function Welcome() {
   const [loaded, setLoaded] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState('');
-  const [newGenre, setNewGenre] = useState('');
-  const [isSeries, setIsSeries] = useState(false);
+  const [newDescription, setNewDescription] = useState('');
   const [error, setError] = useState('');
 
   if (!loaded) {
@@ -41,7 +40,7 @@ export function Welcome() {
     try {
       const config = await getConfig();
       const dir = `${config.projects_root}\\${newName.trim().toLowerCase().replace(/\s+/g, '-')}`;
-      const meta = await createProject(newName.trim(), isSeries, newGenre || null, dir);
+      const meta = await createProject(newName.trim(), false, null, newDescription.trim() || null, dir);
       setProject(meta, dir);
     } catch (e) {
       setError(String(e));
@@ -144,7 +143,7 @@ export function Welcome() {
               <input
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
-                placeholder="My Novel"
+                placeholder="Project or Novel Name"
                 className="w-full rounded-lg text-sm"
                 style={{
                   backgroundColor: 'var(--bg-input)',
@@ -157,12 +156,12 @@ export function Welcome() {
             </div>
             <div>
               <label className="block text-xs font-medium" style={{ color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                Genre (optional)
+                Short Description (optional)
               </label>
               <input
-                value={newGenre}
-                onChange={(e) => setNewGenre(e.target.value)}
-                placeholder="e.g. noir / science fiction"
+                value={newDescription}
+                onChange={(e) => setNewDescription(e.target.value)}
+                placeholder="A brief description of your project"
                 className="w-full rounded-lg text-sm"
                 style={{
                   backgroundColor: 'var(--bg-input)',
@@ -171,18 +170,6 @@ export function Welcome() {
                   padding: '10px 12px',
                 }}
               />
-            </div>
-            <div className="flex items-center" style={{ gap: '8px' }}>
-              <input
-                type="checkbox"
-                id="isSeries"
-                checked={isSeries}
-                onChange={(e) => setIsSeries(e.target.checked)}
-                style={{ borderRadius: '4px' }}
-              />
-              <label htmlFor="isSeries" className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                This is a multi-book series
-              </label>
             </div>
             <div className="flex" style={{ gap: '8px', paddingTop: '4px' }}>
               <button

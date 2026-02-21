@@ -3,6 +3,7 @@ export interface ProjectMetadata {
   name: string;
   author: string;
   genre: string;
+  description: string;
   created: string;
   modified: string;
   series_phase_progress: Record<string, PhaseProgress>;

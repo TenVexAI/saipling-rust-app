@@ -9,6 +9,7 @@ import { X, Save } from 'lucide-react';
 import { EditorToolbar } from './EditorToolbar';
 import { FrontmatterPanel } from './FrontmatterPanel';
 import { InlineAIToolbar } from './InlineAIToolbar';
+import { BrainstormToolbar } from './BrainstormToolbar';
 import { useEditorStore } from '../../stores/editorStore';
 import { useProjectStore } from '../../stores/projectStore';
 import { readFile, writeFile } from '../../utils/tauri';
@@ -33,6 +34,8 @@ export function ProseEditor({ filePath }: ProseEditorProps) {
   const frontmatterRef = useRef<Record<string, unknown>>({});
   const filePathRef = useRef(filePath);
   const autoSaveTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const isBrainstormFile = /[\\/]project_overview[\\/]/.test(filePath);
 
   const editor = useEditor({
     extensions: [
@@ -230,6 +233,7 @@ export function ProseEditor({ filePath }: ProseEditorProps) {
         </div>
       )}
 
+      {!focusMode && isBrainstormFile && <BrainstormToolbar currentFilePath={filePath} />}
       {!focusMode && <FrontmatterPanel frontmatter={frontmatter} />}
       {!focusMode && <EditorToolbar editor={editor} />}
 

@@ -22,12 +22,14 @@ pub fn run() {
             project::get_recent_projects,
             project::get_project_metadata,
             project::update_project_metadata,
+            project::delete_project,
             // Book management
             book::create_book,
             book::get_book_metadata,
             book::update_book_metadata,
             book::reorder_books,
             // File system
+            filesystem::reveal_in_explorer,
             filesystem::read_file,
             filesystem::write_file,
             filesystem::create_from_template,

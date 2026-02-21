@@ -18,6 +18,7 @@ interface ProjectState {
   activeSceneId: string | null;
   activeFilePath: string | null;
   activePhase: Phase | null;
+  contextExpandFolder: string | null;
 
   // Sidebar
   sidebarExpanded: boolean;
@@ -32,6 +33,7 @@ interface ProjectState {
   setActiveScene: (sceneId: string | null) => void;
   setActiveFile: (path: string | null) => void;
   setActivePhase: (phase: Phase | null) => void;
+  setContextExpandFolder: (folder: string | null) => void;
   toggleSidebar: () => void;
   toggleRightPanel: () => void;
   setRightPanelOpen: (open: boolean) => void;
@@ -50,6 +52,7 @@ export const useProjectStore = create<ProjectState>((set) => ({
   activeSceneId: null,
   activeFilePath: null,
   activePhase: null,
+  contextExpandFolder: null,
 
   sidebarExpanded: false,
   rightPanelOpen: true,
@@ -78,7 +81,7 @@ export const useProjectStore = create<ProjectState>((set) => ({
     activePhase: null,
   }),
 
-  setActiveView: (view) => set({ activeView: view, activeFilePath: null }),
+  setActiveView: (view) => set({ activeView: view, activeFilePath: null, contextExpandFolder: null }),
   setActiveBook: (bookId, meta) => set({
     activeBookId: bookId,
     activeBookMeta: meta ?? null,
@@ -88,6 +91,7 @@ export const useProjectStore = create<ProjectState>((set) => ({
   setActiveChapter: (chapterId) => set({ activeChapterId: chapterId, activeSceneId: null }),
   setActiveScene: (sceneId) => set({ activeSceneId: sceneId }),
   setActiveFile: (path) => set({ activeFilePath: path }),
+  setContextExpandFolder: (folder) => set({ contextExpandFolder: folder }),
   setActivePhase: (phase) => set({ activePhase: phase, activeView: 'phase', activeFilePath: null }),
   toggleSidebar: () => set((s) => ({ sidebarExpanded: !s.sidebarExpanded })),
   toggleRightPanel: () => set((s) => ({ rightPanelOpen: !s.rightPanelOpen })),
