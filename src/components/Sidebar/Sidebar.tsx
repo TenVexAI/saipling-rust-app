@@ -47,7 +47,7 @@ export function Sidebar() {
               disabled={disabled}
               className="flex items-center gap-3 w-full rounded-md transition-colors"
               style={{
-                color: isActive ? 'var(--accent)' : disabled ? 'var(--text-tertiary)' : 'var(--text-secondary)',
+                color: isActive ? '#3cf281' : disabled ? 'var(--text-tertiary)' : 'var(--text-secondary)',
                 backgroundColor: 'transparent',
                 opacity: disabled ? 0.4 : 1,
                 cursor: disabled ? 'not-allowed' : 'pointer',
@@ -84,7 +84,7 @@ export function Sidebar() {
           onClick={() => setActiveView('settings')}
           className="flex items-center gap-3 w-full rounded-md transition-colors"
           style={{
-            color: activeView === 'settings' ? 'var(--accent)' : 'var(--text-secondary)',
+            color: activeView === 'settings' ? '#3cf281' : 'var(--text-secondary)',
             backgroundColor: 'transparent',
             justifyContent: sidebarExpanded ? 'flex-start' : 'center',
             padding: sidebarExpanded ? '8px 12px' : '10px 0',

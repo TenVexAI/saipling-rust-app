@@ -1,5 +1,6 @@
 import { useProjectStore } from '../../stores/projectStore';
-import { BookOpen, Plus, ArrowRight, Sparkles, LogOut } from 'lucide-react';
+import { BookOpen, Plus, ArrowRight, LogOut } from 'lucide-react';
+import { SaiplingDashLogo } from './SaiplingDashLogo';
 
 export function Dashboard() {
   const project = useProjectStore((s) => s.project);
@@ -17,43 +18,43 @@ export function Dashboard() {
     <div className="overflow-y-auto h-full" style={{ backgroundColor: 'var(--bg-primary)' }}>
       <div className="max-w-4xl mx-auto" style={{ padding: '32px 40px' }}>
         {/* Header */}
-        <div style={{ marginBottom: '32px' }}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3" style={{ marginBottom: '4px' }}>
-              <Sparkles size={20} style={{ color: 'var(--color-magenta)' }} />
+        <div className="flex items-start justify-between" style={{ marginBottom: '32px' }}>
+          <div className="flex items-center gap-4">
+            <SaiplingDashLogo size={60} />
+            <div>
               <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
                 {project.name}
               </h1>
+              {project.genre && (
+                <p className="text-sm" style={{ color: 'var(--text-tertiary)', marginTop: '2px' }}>
+                  {project.genre}
+                </p>
+              )}
             </div>
-            <button
-              onClick={clearProject}
-              className="flex items-center gap-2 rounded-lg text-xs font-medium transition-colors"
-              style={{
-                color: 'var(--text-tertiary)',
-                padding: '6px 12px',
-                border: '1px solid var(--border-primary)',
-                backgroundColor: 'transparent',
-                cursor: 'pointer',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)';
-                e.currentTarget.style.color = 'var(--text-primary)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-                e.currentTarget.style.color = 'var(--text-tertiary)';
-              }}
-              title="Close project and return to start"
-            >
-              <LogOut size={14} />
-              Exit Project
-            </button>
           </div>
-          {project.genre && (
-            <p className="text-sm" style={{ color: 'var(--text-tertiary)', marginLeft: '32px' }}>
-              {project.genre}
-            </p>
-          )}
+          <button
+            onClick={clearProject}
+            className="flex items-center gap-2 rounded-lg text-xs font-medium transition-colors"
+            style={{
+              color: 'var(--text-tertiary)',
+              padding: '6px 12px',
+              border: '1px solid var(--border-primary)',
+              backgroundColor: 'transparent',
+              cursor: 'pointer',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)';
+              e.currentTarget.style.color = 'var(--text-primary)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+              e.currentTarget.style.color = 'var(--text-tertiary)';
+            }}
+            title="Close project and return to start"
+          >
+            <LogOut size={14} />
+            Exit Project
+          </button>
         </div>
 
         {/* Quick Actions */}

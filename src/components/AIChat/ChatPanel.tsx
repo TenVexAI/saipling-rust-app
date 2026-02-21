@@ -6,6 +6,7 @@ import { ChatInput } from './ChatInput';
 import { SkillSelector } from './SkillSelector';
 import { ContextSummary } from './ContextSummary';
 import { AgentPlanCard } from './AgentPlanCard';
+import { SaiplingChatLogo } from './SaiplingChatLogo';
 import { useAIStore } from '../../stores/aiStore';
 import { useProjectStore } from '../../stores/projectStore';
 import { agentPlan, agentExecute, agentCancel, listAvailableSkills } from '../../utils/tauri';
@@ -207,7 +208,7 @@ export function ChatPanel({ width }: ChatPanelProps) {
       <div ref={scrollRef} className="flex-1 overflow-y-auto">
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-center" style={{ padding: '0 24px' }}>
-            <MessageSquare size={32} style={{ color: 'var(--text-tertiary)' }} className="mb-3 opacity-30" />
+            <SaiplingChatLogo size={100} className="mb-3" />
             <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
               Ask Claude for help with your story. The AI will use the right skills based on what you're working on.
             </p>

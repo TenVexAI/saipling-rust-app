@@ -26,7 +26,8 @@
 
   /* Semantic colors */
   --color-info: #228be6;
-  --color-success: #40c057;
+  --color-success: #3cf281;
+  --color-green: #3cf281;
   --color-warning: #fab005;
   --color-error: #fa5252;
   --color-magenta: #be4bdb;
@@ -64,6 +65,8 @@
 
   --scrollbar-thumb: #ced4da;
   --scrollbar-track: transparent;
+
+  --logo-stroke: #212529;
 }
 
 /* Dark Professional */
@@ -97,6 +100,8 @@
 
   --scrollbar-thumb: #444444;
   --scrollbar-track: transparent;
+
+  --logo-stroke: #ffffff;
 }
 
 /* High Contrast */
@@ -130,6 +135,8 @@
 
   --scrollbar-thumb: #666666;
   --scrollbar-track: transparent;
+
+  --logo-stroke: #ffffff;
 }
 
 /* Sepia */
@@ -163,6 +170,8 @@
 
   --scrollbar-thumb: #c4b89c;
   --scrollbar-track: transparent;
+
+  --logo-stroke: #5c4b37;
 }
 
 /* Night Mode (Tokyo Night) */
@@ -198,9 +207,11 @@
   --scrollbar-track: transparent;
 
   --color-info: #7aa2f7;
-  --color-success: #9ece6a;
+  --color-success: #3cf281;
   --color-warning: #e0af68;
   --color-error: #f7768e;
   --color-magenta: #bb9af7;
   --color-purple: #9d7cd8;
+
+  --logo-stroke: #ffffff;
 }
