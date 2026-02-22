@@ -82,10 +82,8 @@ export function SeedPhaseView() {
               </h1>
               <button
                 onClick={() => openHelpWindow('phase-1-seed')}
-                className="flex items-center justify-center rounded-full transition-colors"
+                className="flex items-center justify-center rounded-full hover-icon"
                 style={{ color: 'var(--text-tertiary)', width: '22px', height: '22px', background: 'none', border: 'none', cursor: 'pointer' }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--accent)')}
-                onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-tertiary)')}
                 title="Learn about the Seed Phase"
               >
                 <Info size={15} />
@@ -130,14 +128,12 @@ export function SeedPhaseView() {
                     setSelectedElement(isSelected ? null : el.key);
                     if (foundationPath) setActiveFile(foundationPath);
                   }}
-                  className="text-left rounded-lg transition-all"
+                  className="text-left rounded-lg hover-btn"
                   style={{
                     backgroundColor: isSelected ? 'var(--accent-subtle)' : 'var(--bg-elevated)',
                     border: `1px solid ${isSelected ? 'var(--accent)' : 'var(--border-primary)'}`,
                     padding: '16px',
                   }}
-                  onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.borderColor = 'var(--border-secondary)'; }}
-                  onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.borderColor = 'var(--border-primary)'; }}
                 >
                   <div className="flex items-center gap-2" style={{ marginBottom: '6px' }}>
                     {status === 'filled' ? (

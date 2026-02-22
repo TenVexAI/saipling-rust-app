@@ -233,7 +233,7 @@ export function BrainstormToolbar({ currentFilePath }: BrainstormToolbarProps) {
         <button
           onClick={handleGenerate}
           disabled={isGenerating}
-          className="flex items-center gap-1.5 rounded-md text-xs font-medium transition-colors"
+          className="flex items-center gap-1.5 rounded-md text-xs font-medium hover-btn-primary"
           style={{
             backgroundColor: isGenerating ? 'var(--bg-tertiary)' : 'var(--accent)',
             color: isGenerating ? 'var(--text-tertiary)' : 'var(--text-inverse)',
@@ -249,7 +249,7 @@ export function BrainstormToolbar({ currentFilePath }: BrainstormToolbarProps) {
         <div className="relative">
           <button
             onClick={() => setShowDropdown(!showDropdown)}
-            className="flex items-center gap-1.5 rounded-md text-xs font-medium transition-colors"
+            className="flex items-center gap-1.5 rounded-md text-xs font-medium hover-btn"
             style={{
               backgroundColor: 'var(--bg-tertiary)',
               color: 'var(--text-primary)',
@@ -323,7 +323,7 @@ export function BrainstormToolbar({ currentFilePath }: BrainstormToolbarProps) {
 
         <button
           onClick={handleContextSettings}
-          className="flex items-center gap-1.5 rounded-md text-xs font-medium transition-colors"
+          className="flex items-center gap-1.5 rounded-md text-xs font-medium hover-btn"
           style={{
             backgroundColor: 'var(--bg-tertiary)',
             color: 'var(--text-primary)',
@@ -409,7 +409,7 @@ export function BrainstormToolbar({ currentFilePath }: BrainstormToolbarProps) {
             <div className="flex gap-2 justify-end" style={{ marginTop: '20px' }}>
               <button
                 onClick={handleCancelGenerate}
-                className="rounded-lg text-xs font-medium"
+                className="rounded-lg text-xs font-medium hover-btn"
                 style={{
                   backgroundColor: 'var(--bg-tertiary)',
                   color: 'var(--text-primary)',
@@ -421,7 +421,7 @@ export function BrainstormToolbar({ currentFilePath }: BrainstormToolbarProps) {
               </button>
               <button
                 onClick={handleConfirmGenerate}
-                className="rounded-lg text-xs font-medium"
+                className="rounded-lg text-xs font-medium hover-btn-primary"
                 style={{
                   backgroundColor: 'var(--accent)',
                   color: 'var(--text-inverse)',
@@ -488,7 +488,7 @@ export function BrainstormToolbar({ currentFilePath }: BrainstormToolbarProps) {
             <div className="flex gap-2 justify-end">
               <button
                 onClick={handleDenyDescription}
-                className="flex items-center gap-1.5 rounded-lg text-xs font-medium"
+                className="flex items-center gap-1.5 rounded-lg text-xs font-medium hover-btn"
                 style={{
                   backgroundColor: 'var(--bg-tertiary)',
                   color: 'var(--text-primary)',
@@ -501,7 +501,7 @@ export function BrainstormToolbar({ currentFilePath }: BrainstormToolbarProps) {
               </button>
               <button
                 onClick={handleApproveDescription}
-                className="flex items-center gap-1.5 rounded-lg text-xs font-medium"
+                className="flex items-center gap-1.5 rounded-lg text-xs font-medium hover-btn-primary"
                 style={{
                   backgroundColor: 'var(--color-success)',
                   color: '#fff',

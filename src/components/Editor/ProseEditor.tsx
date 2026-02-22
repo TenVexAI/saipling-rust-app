@@ -84,19 +84,24 @@ export function ProseEditor({ filePath }: ProseEditorProps) {
         editor.commands.setContent(html);
         markSaved();
       }
-    } catch {
-      // File doesn't exist yet — create it and open with empty content
-      try {
-        await writeFile(filePath, {}, '');
-        setFrontmatter({});
-        frontmatterRef.current = {};
-        initialContentRef.current = '';
-        if (editor) {
-          editor.commands.setContent('');
-          markSaved();
+    } catch (readErr) {
+      // Only create empty file if it truly doesn't exist (error message heuristic)
+      const errMsg = String(readErr).toLowerCase();
+      if (errMsg.includes('not found') || errMsg.includes('no such file') || errMsg.includes('does not exist') || errMsg.includes('(os error 2)') || errMsg.includes('(os error 3)')) {
+        try {
+          await writeFile(filePath, {}, '');
+          setFrontmatter({});
+          frontmatterRef.current = {};
+          initialContentRef.current = '';
+          if (editor) {
+            editor.commands.setContent('');
+            markSaved();
+          }
+        } catch (writeErr) {
+          setError(String(writeErr));
         }
-      } catch (writeErr) {
-        setError(String(writeErr));
+      } else {
+        setError(`Failed to read file: ${String(readErr)}`);
       }
     }
     setLoading(false);
@@ -110,11 +115,19 @@ export function ProseEditor({ filePath }: ProseEditorProps) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filePath, editor]);
 
-  // Save function
+  // Save function — guarded against writing empty content over a non-empty file
   const saveFile = useCallback(async () => {
-    if (!editor) return;
+    if (!editor || editor.isDestroyed) return;
     const html = editor.getHTML();
     const markdown = htmlToMarkdown(html);
+
+    // Never overwrite a file that had content with empty/trivial content
+    const hadContent = initialContentRef.current.trim().length > 0;
+    const newIsEmpty = markdown.trim().length === 0;
+    if (hadContent && newIsEmpty) {
+      console.warn('Save aborted: would overwrite non-empty file with empty content');
+      return;
+    }
 
     markSaving();
     try {
@@ -141,19 +154,6 @@ export function ProseEditor({ filePath }: ProseEditorProps) {
       }
     };
   }, [editor, saveFile]);
-
-  // Save on unmount if dirty
-  useEffect(() => {
-    return () => {
-      if (useEditorStore.getState().isDirty && editor) {
-        const html = editor.getHTML();
-        const markdown = htmlToMarkdown(html);
-        writeFile(filePathRef.current, frontmatterRef.current, markdown).catch((e) =>
-          console.error('Save on close failed:', e)
-        );
-      }
-    };
-  }, [editor]);
 
   // Ctrl+S save
   useEffect(() => {
@@ -214,7 +214,7 @@ export function ProseEditor({ filePath }: ProseEditorProps) {
               onClick={saveFile}
               disabled={!isDirty}
               title="Save (Ctrl+S)"
-              className="flex items-center justify-center transition-colors"
+              className="flex items-center justify-center hover-icon"
               style={{ width: '26px', height: '26px', borderRadius: '4px', background: 'none', border: 'none', cursor: isDirty ? 'pointer' : 'default', color: isDirty ? 'var(--accent)' : 'var(--text-tertiary)', opacity: isDirty ? 1 : 0.4 }}
             >
               <Save size={14} />
@@ -222,10 +222,8 @@ export function ProseEditor({ filePath }: ProseEditorProps) {
             <button
               onClick={() => setActiveFile(null)}
               title="Close file"
-              className="flex items-center justify-center transition-colors"
+              className="flex items-center justify-center hover-icon"
               style={{ width: '26px', height: '26px', borderRadius: '4px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-tertiary)' }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text-primary)')}
-              onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-tertiary)')}
             >
               <X size={14} />
             </button>

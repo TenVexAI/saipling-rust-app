@@ -93,7 +93,7 @@ export function Welcome() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <button
               onClick={() => setShowCreate(true)}
-              className="flex items-center gap-3 w-full rounded-lg text-sm font-medium transition-colors"
+              className="flex items-center gap-3 w-full rounded-lg text-sm font-medium hover-btn-primary"
               style={{
                 backgroundColor: 'var(--accent)',
                 color: 'var(--text-inverse)',
@@ -105,7 +105,7 @@ export function Welcome() {
             </button>
             <button
               onClick={handleOpen}
-              className="flex items-center gap-3 w-full rounded-lg text-sm font-medium transition-colors"
+              className="flex items-center gap-3 w-full rounded-lg text-sm font-medium hover-btn"
               style={{
                 backgroundColor: 'var(--bg-tertiary)',
                 color: 'var(--text-primary)',
@@ -184,7 +184,7 @@ export function Welcome() {
               <button
                 onClick={handleCreate}
                 disabled={!newName.trim()}
-                className="flex-1 rounded-lg text-sm font-medium"
+                className="flex-1 rounded-lg text-sm font-medium hover-btn-primary"
                 style={{
                   backgroundColor: 'var(--accent)',
                   color: 'var(--text-inverse)',
@@ -196,7 +196,7 @@ export function Welcome() {
               </button>
               <button
                 onClick={() => setShowCreate(false)}
-                className="rounded-lg text-sm"
+                className="rounded-lg text-sm hover-btn"
                 style={{
                   backgroundColor: 'var(--bg-tertiary)',
                   color: 'var(--text-primary)',

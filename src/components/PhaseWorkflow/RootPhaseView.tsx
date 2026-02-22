@@ -79,10 +79,8 @@ export function RootPhaseView() {
               </h1>
               <button
                 onClick={() => openHelpWindow('phase-2-root')}
-                className="flex items-center justify-center rounded-full transition-colors"
+                className="flex items-center justify-center rounded-full hover-icon"
                 style={{ color: 'var(--text-tertiary)', width: '22px', height: '22px', background: 'none', border: 'none', cursor: 'pointer' }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--accent)')}
-                onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-tertiary)')}
                 title="Learn about the Root Phase"
               >
                 <Info size={15} />
@@ -136,14 +134,12 @@ export function RootPhaseView() {
                           setSelectedBeat(isSelected ? null : beat.num);
                           if (beatOutlinePath) setActiveFile(beatOutlinePath);
                         }}
-                        className="flex items-start gap-3 text-left rounded-md transition-all"
+                        className="flex items-start gap-3 text-left rounded-md hover-btn"
                         style={{
                           backgroundColor: isSelected ? 'var(--accent-subtle)' : 'var(--bg-elevated)',
                           border: `1px solid ${isSelected ? 'var(--accent)' : 'var(--border-primary)'}`,
                           padding: '10px 14px',
                         }}
-                        onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.backgroundColor = 'var(--bg-hover)'; }}
-                        onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.backgroundColor = isSelected ? 'var(--accent-subtle)' : 'var(--bg-elevated)'; }}
                       >
                         <div className="shrink-0" style={{ marginTop: '1px' }}>
                           {filled ? (

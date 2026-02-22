@@ -169,13 +169,8 @@ pub fn delete_entry(path: PathBuf) -> Result<(), AppError> {
     if !path.exists() {
         return Err(AppError::FileNotFound(path.to_string_lossy().to_string()));
     }
-    // Move to recycle bin would require a platform-specific crate
-    // For now, do a regular delete with a warning
-    if path.is_dir() {
-        std::fs::remove_dir_all(&path)?;
-    } else {
-        std::fs::remove_file(&path)?;
-    }
+    // Send to OS recycle bin so users can recover deleted files
+    trash::delete(&path).map_err(|e| AppError::General(format!("Failed to move to recycle bin: {}", e)))?;
     Ok(())
 }
 

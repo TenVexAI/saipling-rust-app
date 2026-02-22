@@ -18,7 +18,7 @@ const COLOR_FIELDS: ColorField[] = [
   { key: '--bg-sidebar', label: 'Sidebar', defaultValue: '#0b0a0b' },
   { key: '--text-primary', label: 'Text', defaultValue: '#e0e0ff' },
   { key: '--text-secondary', label: 'Text Muted', defaultValue: '#a0a0cc' },
-  { key: '--accent', label: 'Accent', defaultValue: '#00ffaa' },
+  { key: '--accent', label: 'Accent', defaultValue: '#3cf281' },
   { key: '--accent-hover', label: 'Accent Hover', defaultValue: '#00dd90' },
   { key: '--accent-subtle', label: 'Accent Subtle', defaultValue: '#0a2a20' },
   { key: '--border-primary', label: 'Borders', defaultValue: '#2a5a5e' },
