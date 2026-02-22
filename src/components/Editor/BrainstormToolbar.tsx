@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Sparkles, ChevronDown, Settings2, Loader2, X, Check, AlertCircle } from 'lucide-react';
+import { Sparkles, ChevronDown, Settings2, Loader2, X, Check, AlertCircle, FileText } from 'lucide-react';
 import { listen } from '@tauri-apps/api/event';
 import { useProjectStore } from '../../stores/projectStore';
 import { useAIStore } from '../../stores/aiStore';
@@ -51,6 +51,8 @@ export function BrainstormToolbar({ currentFilePath }: BrainstormToolbarProps) {
   const streamedRef = useRef<string>('');
 
   const overviewDir = projectDir ? `${projectDir}\\project_overview` : null;
+  const [showWelcome, setShowWelcome] = useState(true);
+  const [creatingBlank, setCreatingBlank] = useState(false);
 
   const loadFiles = useCallback(async () => {
     if (!overviewDir) return;
@@ -70,6 +72,7 @@ export function BrainstormToolbar({ currentFilePath }: BrainstormToolbarProps) {
 
   // Detect multiple project_overview versions
   const overviewVersions = files.filter((f) => /^project_overview(_v\d+)?\.md$/.test(f.name));
+  const hasOverview = overviewVersions.length > 0;
   const hasMultipleOverviews = overviewVersions.length > 1;
 
   // ─── Generate Flow ───
@@ -213,6 +216,27 @@ export function BrainstormToolbar({ currentFilePath }: BrainstormToolbarProps) {
     setPhase('idle');
   };
 
+  const handleCreateBlank = async () => {
+    if (!overviewDir) return;
+    setCreatingBlank(true);
+    try {
+      const nextVersion = getNextOverviewVersion(files);
+      const blankPath = `${overviewDir}\\${nextVersion}`;
+      await writeFile(blankPath, { title: 'Project Overview' }, '# Project Overview\n\n');
+      await loadFiles();
+      // Cancel any pending generation
+      if (plan) {
+        try { await agentCancel(plan.plan_id); } catch { /* best effort */ }
+      }
+      setPlan(null);
+      setPhase('idle');
+      setActiveFile(blankPath);
+    } catch (e) {
+      setError(`Failed to create blank overview: ${String(e)}`);
+    }
+    setCreatingBlank(false);
+  };
+
   const handleContextSettings = () => {
     setActiveView('files');
     if (overviewDir) setContextExpandFolder(overviewDir);
@@ -243,7 +267,7 @@ export function BrainstormToolbar({ currentFilePath }: BrainstormToolbarProps) {
           }}
         >
           {isGenerating ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
-          {phase === 'planning' ? 'Planning...' : phase === 'generating' ? 'Generating...' : 'Generate'}
+          {phase === 'planning' ? 'Planning...' : phase === 'generating' ? 'Generating...' : hasOverview ? 'Regenerate' : 'Generate'}
         </button>
 
         <div className="relative">
@@ -368,10 +392,12 @@ export function BrainstormToolbar({ currentFilePath }: BrainstormToolbarProps) {
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)', marginBottom: '12px' }}>
-              Generate Project Overview
+              {hasOverview ? 'Regenerate Project Overview' : 'Generate Project Overview'}
             </h3>
             <p className="text-xs" style={{ color: 'var(--text-secondary)', marginBottom: '16px', lineHeight: '1.5' }}>
-              This will read your brainstorm notes and chat history, then generate a structured project overview and a suggested short description.
+              {hasOverview
+                ? 'This will create a new version of your Project Overview using your brainstorm notes and chat history. Your existing overview will not be overwritten.'
+                : 'This will read your brainstorm notes and chat history, then generate a structured project overview and a suggested short description.'}
             </p>
 
             <div className="text-xs" style={{ color: 'var(--text-tertiary)', marginBottom: '8px' }}>
@@ -420,6 +446,21 @@ export function BrainstormToolbar({ currentFilePath }: BrainstormToolbarProps) {
                 Cancel
               </button>
               <button
+                onClick={() => { handleCancelGenerate(); handleCreateBlank(); }}
+                className="flex items-center gap-1.5 rounded-lg text-xs font-medium hover-btn"
+                style={{
+                  backgroundColor: 'var(--bg-tertiary)',
+                  color: 'var(--text-primary)',
+                  border: '1px solid var(--border-primary)',
+                  padding: '8px 16px',
+                }}
+                disabled={creatingBlank}
+                title="Create a blank Project Overview to write your own"
+              >
+                <FileText size={12} />
+                Create Blank
+              </button>
+              <button
                 onClick={handleConfirmGenerate}
                 className="rounded-lg text-xs font-medium hover-btn-primary"
                 style={{
@@ -429,7 +470,7 @@ export function BrainstormToolbar({ currentFilePath }: BrainstormToolbarProps) {
                   padding: '8px 16px',
                 }}
               >
-                Generate
+                {hasOverview ? 'Regenerate' : 'Generate'}
               </button>
             </div>
           </div>
@@ -511,6 +552,75 @@ export function BrainstormToolbar({ currentFilePath }: BrainstormToolbarProps) {
               >
                 <Check size={12} />
                 Update Description
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Welcome Modal — shown once when no project_overview exists yet */}
+      {showWelcome && !hasOverview && (
+        <div
+          className="fixed inset-0 flex items-center justify-center"
+          style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000 }}
+          onClick={() => setShowWelcome(false)}
+        >
+          <div
+            className="rounded-xl"
+            style={{
+              backgroundColor: 'var(--bg-elevated)',
+              border: '1px solid var(--border-primary)',
+              boxShadow: 'var(--shadow-lg)',
+              padding: '28px',
+              maxWidth: '480px',
+              width: '90%',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)', marginBottom: '14px' }}>
+              Welcome to the Brainstorm Workspace
+            </h3>
+            <p className="text-xs" style={{ color: 'var(--text-secondary)', lineHeight: '1.6', marginBottom: '12px' }}>
+              This is where you can jot down anything and everything about your project — ideas, themes, characters, plot
+              points, world details. Get your thoughts out first.
+            </p>
+            <p className="text-xs" style={{ color: 'var(--text-secondary)', lineHeight: '1.6', marginBottom: '12px' }}>
+              When you're ready, open the chat panel and talk to Claude. Your notes are automatically used as context, so
+              Claude can help you explore and refine your ideas. Once Claude has a good understanding of your project, press
+              the <strong style={{ color: 'var(--text-primary)' }}>Generate</strong> button to have Claude create a
+              comprehensive Project Overview document.
+            </p>
+            <p className="text-xs" style={{ color: 'var(--text-tertiary)', lineHeight: '1.6', marginBottom: '20px' }}>
+              You can also skip the AI and write your own Project Overview at any time.
+            </p>
+
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => { setShowWelcome(false); handleCreateBlank(); }}
+                className="flex items-center gap-1.5 rounded-lg text-xs font-medium hover-btn"
+                style={{
+                  backgroundColor: 'var(--bg-tertiary)',
+                  color: 'var(--text-primary)',
+                  border: '1px solid var(--border-primary)',
+                  padding: '8px 16px',
+                  cursor: 'pointer',
+                }}
+              >
+                <FileText size={12} />
+                Create My Own
+              </button>
+              <button
+                onClick={() => setShowWelcome(false)}
+                className="rounded-lg text-xs font-medium hover-btn-primary"
+                style={{
+                  backgroundColor: 'var(--accent)',
+                  color: 'var(--text-inverse)',
+                  border: 'none',
+                  padding: '8px 16px',
+                  cursor: 'pointer',
+                }}
+              >
+                Work with Claude
               </button>
             </div>
           </div>

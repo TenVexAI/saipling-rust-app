@@ -106,6 +106,16 @@ img, a {
   color: var(--text-primary) !important;
 }
 
+/* Bordered danger buttons: red border + text on hover */
+.hover-btn-danger {
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.hover-btn-danger:hover:not(:disabled) {
+  background-color: var(--bg-hover) !important;
+  border-color: var(--color-error) !important;
+  color: var(--color-error) !important;
+}
+
 /* Primary filled buttons: subtle brightness on hover */
 .hover-btn-primary {
   transition: filter 0.15s ease;

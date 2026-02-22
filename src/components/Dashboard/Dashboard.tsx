@@ -7,6 +7,7 @@ import { BookOpen, Plus, Lightbulb, LogOut, Pencil, Trash2 } from 'lucide-react'
 import { SaiplingDashLogo } from './SaiplingDashLogo';
 import { EditProjectModal } from './EditProjectModal';
 import { DeleteProjectModal } from './DeleteProjectModal';
+import { GettingStartedModal } from './GettingStartedModal';
 
 export function Dashboard() {
   const project = useProjectStore((s) => s.project);
@@ -17,6 +18,8 @@ export function Dashboard() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [overviewPath, setOverviewPath] = useState<string | null>(null);
+  const [overviewChecked, setOverviewChecked] = useState(false);
+  const [showGettingStarted, setShowGettingStarted] = useState(false);
 
   const handleExitProject = async () => {
     if (projectDir) await saveProjectChat(projectDir);
@@ -30,8 +33,14 @@ export function Dashboard() {
       .then((entries) => {
         const overview = entries.find((e) => /^project_overview(_v\d+)?\.md$/.test(e.name));
         setOverviewPath(overview ? overview.path : null);
+        setOverviewChecked(true);
+        if (!overview) setShowGettingStarted(true);
       })
-      .catch(() => setOverviewPath(null));
+      .catch(() => {
+        setOverviewPath(null);
+        setOverviewChecked(true);
+        setShowGettingStarted(true);
+      });
   }, [projectDir]);
 
   const handleBrainstorm = () => {
@@ -81,18 +90,18 @@ export function Dashboard() {
               <div className="flex-1" />
               <button
                 onClick={handleExitProject}
-                className="flex items-center gap-2 rounded-lg text-xs font-medium shrink-0 hover-btn"
+                className="flex items-center gap-2 rounded-lg text-xs font-medium shrink-0 hover-btn-danger"
                 style={{
                   color: 'var(--text-tertiary)',
                   padding: '6px 12px',
-                  border: '1px solid var(--color-error)',
+                  border: '1px solid var(--border-primary)',
                   backgroundColor: 'transparent',
                   cursor: 'pointer',
                   whiteSpace: 'nowrap',
                 }}
                 title="Close project and return to start"
               >
-                <LogOut size={14} />
+                <LogOut size={14} style={{ color: 'var(--color-error)' }} />
                 Exit Project
               </button>
             </div>
@@ -198,6 +207,15 @@ export function Dashboard() {
       )}
       {showDeleteModal && (
         <DeleteProjectModal onClose={() => setShowDeleteModal(false)} />
+      )}
+      {showGettingStarted && overviewChecked && !overviewPath && (
+        <GettingStartedModal
+          onStart={() => {
+            setShowGettingStarted(false);
+            handleBrainstorm();
+          }}
+          onDismiss={() => setShowGettingStarted(false)}
+        />
       )}
     </div>
   );
