@@ -3,7 +3,7 @@ name = "prose_editor"
 display_name = "Prose Editor"
 description = "Reviews and suggests improvements to existing draft prose"
 default_model = "claude-sonnet-4-6"
-temperature = 0.5
+temperature = 0.65
 
 [context]
 always_include = []

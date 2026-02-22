@@ -3,7 +3,7 @@ name = "scene_architect"
 display_name = "Scene Architect"
 description = "Designs individual scenes using the Action/Reaction pattern during the Flourish Phase"
 default_model = "claude-sonnet-4-6"
-temperature = 0.7
+temperature = 0.75
 
 [context]
 always_include = [
