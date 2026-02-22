@@ -58,7 +58,7 @@ export function ChapterList({
         </h3>
         <button
           onClick={onCreateChapter}
-          className="flex items-center gap-1 text-xs transition-colors"
+          className="flex items-center gap-1 text-xs hover-action"
           style={{ color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer' }}
         >
           <Plus size={12} />
@@ -123,10 +123,8 @@ export function ChapterList({
                     ))}
                     <button
                       onClick={() => onCreateScene(chapter.id)}
-                      className="flex items-center w-full text-left text-xs transition-colors"
+                      className="flex items-center w-full text-left text-xs hover-action"
                       style={{ padding: '5px 10px', color: 'var(--text-tertiary)', background: 'none', border: 'none', cursor: 'pointer' }}
-                      onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--accent)')}
-                      onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-tertiary)')}
                     >
                       <Plus size={12} style={{ marginRight: '8px' }} />
                       Add Scene

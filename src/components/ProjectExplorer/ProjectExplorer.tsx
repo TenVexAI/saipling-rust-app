@@ -52,8 +52,8 @@ export function ProjectExplorer() {
         </h2>
         <button
           onClick={loadRoot}
-          className="flex items-center justify-center transition-colors"
-          style={{ color: 'var(--text-tertiary)', background: 'none', border: 'none', cursor: 'pointer' }}
+          className="flex items-center justify-center hover-icon"
+          style={{ color: 'var(--text-tertiary)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}
           title="Refresh"
         >
           <RefreshCw size={14} />

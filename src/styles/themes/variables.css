@@ -215,3 +215,45 @@
 
   --logo-stroke: #ffffff;
 }
+
+/* Custom Neon (user-customizable — these are the defaults) */
+[data-theme="custom"] {
+  --bg-primary: #0a0a0f;
+  --bg-secondary: #0e0e16;
+  --bg-tertiary: #14141f;
+  --bg-elevated: #12121c;
+  --bg-sidebar: #08080d;
+  --bg-input: #12121c;
+  --bg-hover: #1a1a2a;
+  --bg-active: #222235;
+  --bg-selection: #1a2a3a;
+
+  --text-primary: #e0e0ff;
+  --text-secondary: #a0a0cc;
+  --text-tertiary: #6a6a8a;
+  --text-inverse: #0a0a0f;
+
+  --border-primary: #2a2a40;
+  --border-secondary: #1e1e30;
+  --border-focus: #00ffaa;
+
+  --accent: #00ffaa;
+  --accent-hover: #00dd90;
+  --accent-subtle: #0a2a20;
+
+  --shadow-sm: 0 1px 2px rgba(0,255,170,0.08);
+  --shadow-md: 0 4px 6px rgba(0,255,170,0.1);
+  --shadow-lg: 0 10px 15px rgba(0,255,170,0.12);
+
+  --scrollbar-thumb: #2a2a40;
+  --scrollbar-track: transparent;
+
+  --color-info: #00ccff;
+  --color-success: #00ffaa;
+  --color-warning: #ffcc00;
+  --color-error: #ff3366;
+  --color-magenta: #ff00cc;
+  --color-purple: #aa66ff;
+
+  --logo-stroke: #ffffff;
+}

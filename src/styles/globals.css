@@ -66,6 +66,77 @@ img, a {
   user-select: none;
 }
 
+/* ─── Interactive hover utilities ─── */
+
+/* Icon-only buttons: subtle bg on hover */
+.hover-icon {
+  border-radius: 4px;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.hover-icon:hover:not(:disabled) {
+  background-color: var(--bg-hover) !important;
+  color: var(--accent) !important;
+}
+
+/* Icon buttons that signal danger on hover */
+.hover-icon-danger {
+  border-radius: 4px;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.hover-icon-danger:hover:not(:disabled) {
+  background-color: var(--bg-hover) !important;
+  color: var(--color-error) !important;
+}
+
+/* Sidebar nav items: icon color change only on hover */
+.hover-sidebar {
+  transition: color 0.15s ease;
+}
+.hover-sidebar:hover:not(:disabled) {
+  color: var(--accent) !important;
+}
+
+/* Bordered outline buttons (Export, Expand All, etc.): bg + border glow on hover */
+.hover-btn {
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.hover-btn:hover:not(:disabled) {
+  background-color: var(--bg-hover) !important;
+  border-color: var(--accent) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Primary filled buttons: subtle brightness on hover */
+.hover-btn-primary {
+  transition: filter 0.15s ease;
+}
+.hover-btn-primary:hover:not(:disabled) {
+  filter: brightness(1.1) !important;
+}
+
+/* Text-only action links (+ New, + Add): underline + brighten on hover */
+.hover-action {
+  transition: color 0.15s ease;
+}
+.hover-action:hover:not(:disabled) {
+  filter: brightness(1.25) !important;
+  text-decoration: underline !important;
+}
+
+/* Dropdown (select) glow on hover/focus */
+select {
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+select:hover {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 1px var(--accent) !important;
+}
+select:focus {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 2px var(--accent) !important;
+  outline: none;
+}
+
 /* TipTap editor styles */
 .prose-editor-content {
   font-family: var(--font-editor);

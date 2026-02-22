@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Key, Check, Loader2, Palette, Info, Bot, Pencil, Zap, ChevronRight } from 'lucide-react';
+import { Key, Check, Loader2, Palette, Info, Bot, Pencil, Zap, ChevronRight, Settings } from 'lucide-react';
 import { emit } from '@tauri-apps/api/event';
 import { useThemeStore } from '../../stores/themeStore';
 import { THEMES } from '../../types/theme';
@@ -7,6 +7,7 @@ import { getConfig, setApiKey, validateApiKey, updateConfig, getModelsConfig, ge
 import { openHelpWindow } from '../../utils/helpWindow';
 import { setModelsConfig } from '../../utils/modelPricing';
 import { useProjectStore } from '../../stores/projectStore';
+import { openThemeEditor } from '../../utils/themeEditorWindow';
 import type { ModelEntry } from '../../types/ai';
 
 export function SettingsView() {
@@ -258,23 +259,48 @@ export function SettingsView() {
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" style={{ gap: '12px' }}>
             {THEMES.map((t) => (
-              <button
-                key={t.id}
-                onClick={() => handleThemeChange(t.id)}
-                className="text-left rounded-xl transition-all"
-                style={{
-                  backgroundColor: theme === t.id ? 'var(--accent-subtle)' : 'var(--bg-elevated)',
-                  border: `2px solid ${theme === t.id ? 'var(--accent)' : 'var(--border-primary)'}`,
-                  padding: '16px',
-                }}
-              >
-                <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                  {t.label}
-                </span>
-                <p className="text-xs" style={{ color: 'var(--text-tertiary)', marginTop: '4px' }}>
-                  {t.description}
-                </p>
-              </button>
+              <div key={t.id} className="relative">
+                <button
+                  onClick={() => handleThemeChange(t.id)}
+                  className="text-left rounded-xl w-full hover-btn"
+                  style={{
+                    backgroundColor: theme === t.id ? 'var(--accent-subtle)' : 'var(--bg-elevated)',
+                    border: `2px solid ${theme === t.id ? 'var(--accent)' : 'var(--border-primary)'}`,
+                    padding: '16px',
+                  }}
+                >
+                  <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                    {t.label}
+                  </span>
+                  <p className="text-xs" style={{ color: 'var(--text-tertiary)', marginTop: '4px' }}>
+                    {t.description}
+                  </p>
+                </button>
+                {t.id === 'custom' && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openThemeEditor();
+                    }}
+                    className="absolute flex items-center justify-center rounded-md transition-colors"
+                    style={{
+                      top: '8px',
+                      right: '8px',
+                      width: '26px',
+                      height: '26px',
+                      color: 'var(--text-tertiary)',
+                      backgroundColor: 'var(--bg-tertiary)',
+                      border: '1px solid var(--border-primary)',
+                      cursor: 'pointer',
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--accent)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-tertiary)')}
+                    title="Customize theme colors"
+                  >
+                    <Settings size={13} />
+                  </button>
+                )}
+              </div>
             ))}
           </div>
         </section>

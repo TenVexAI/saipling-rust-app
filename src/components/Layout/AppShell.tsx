@@ -17,7 +17,9 @@ import { PhaseWorkflow } from '../PhaseWorkflow/PhaseWorkflow';
 import { ProseEditor } from '../Editor/ProseEditor';
 import { useProjectStore } from '../../stores/projectStore';
 import { useEditorStore } from '../../stores/editorStore';
-import { getModelsConfig } from '../../utils/tauri';
+import { getModelsConfig, getConfig } from '../../utils/tauri';
+import { listen } from '@tauri-apps/api/event';
+import { useThemeStore } from '../../stores/themeStore';
 import { setModelsConfig } from '../../utils/modelPricing';
 
 function MainContent() {
@@ -77,10 +79,34 @@ export function AppShell() {
     setChatWidth((prev) => Math.max(260, Math.min(600, prev - delta)));
   }, []);
 
+  const applyCustomColors = useThemeStore((s) => s.applyCustomColors);
+  const currentTheme = useThemeStore((s) => s.theme);
+
   // Load models config on mount
   useEffect(() => {
     getModelsConfig().then(setModelsConfig).catch(() => {});
   }, []);
+
+  // Load custom theme colors on mount and when theme changes to custom
+  useEffect(() => {
+    if (currentTheme === 'custom') {
+      getConfig().then((c) => {
+        if (c.custom_theme_colors && Object.keys(c.custom_theme_colors).length > 0) {
+          applyCustomColors(c.custom_theme_colors);
+        }
+      }).catch(() => {});
+    }
+  }, [currentTheme, applyCustomColors]);
+
+  // Listen for live updates from the custom theme editor window
+  useEffect(() => {
+    const unlisten = listen<Record<string, string>>('custom-theme-updated', (event) => {
+      if (currentTheme === 'custom') {
+        applyCustomColors(event.payload);
+      }
+    });
+    return () => { unlisten.then((fn) => fn()); };
+  }, [currentTheme, applyCustomColors]);
 
   // Focus mode keyboard shortcuts: F11 or Ctrl+Shift+F
   useEffect(() => {

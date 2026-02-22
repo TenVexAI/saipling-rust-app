@@ -146,8 +146,8 @@ export function WorldBrowser() {
                   <div className="flex items-center justify-between">
                     <button
                       onClick={() => toggleFolder(index)}
-                      className="flex items-center gap-2 text-left"
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0' }}
+                      className="flex items-center gap-2 text-left hover-sidebar rounded-md"
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 6px' }}
                     >
                       <span style={{ color: 'var(--text-tertiary)' }}>
                         {folder.expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
@@ -162,8 +162,8 @@ export function WorldBrowser() {
                     </button>
                     <button
                       onClick={() => handleAddEntry(folder.path, folder.name)}
-                      className="flex items-center transition-colors"
-                      style={{ color: 'var(--text-tertiary)', background: 'none', border: 'none', cursor: 'pointer' }}
+                      className="flex items-center hover-icon"
+                      style={{ color: 'var(--text-tertiary)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}
                       title={`Add ${folder.name}`}
                     >
                       <Plus size={12} />

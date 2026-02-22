@@ -25,7 +25,7 @@ export function SkillSelector() {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center justify-between rounded-md text-xs font-medium w-full"
+        className="flex items-center justify-between rounded-md text-xs font-medium w-full hover-btn"
         style={{
           backgroundColor: 'var(--bg-tertiary)',
           color: 'var(--text-secondary)',

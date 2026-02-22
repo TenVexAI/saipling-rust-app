@@ -162,6 +162,7 @@ export interface AppConfig {
     approval_mode: string;
   };
   skill_overrides: Record<string, SkillOverride>;
+  custom_theme_colors: Record<string, string>;
 }
 
 export const getConfig = () =>

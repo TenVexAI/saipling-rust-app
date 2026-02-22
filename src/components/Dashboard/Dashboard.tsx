@@ -64,20 +64,16 @@ export function Dashboard() {
               </h1>
               <button
                 onClick={() => setShowEditModal(true)}
-                className="flex items-center justify-center transition-colors shrink-0"
+                className="flex items-center justify-center shrink-0 hover-icon"
                 style={{ color: 'var(--text-tertiary)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--accent)')}
-                onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-tertiary)')}
                 title="Edit project name and description"
               >
                 <Pencil size={14} />
               </button>
               <button
                 onClick={() => setShowDeleteModal(true)}
-                className="flex items-center justify-center transition-colors shrink-0"
+                className="flex items-center justify-center shrink-0 hover-icon-danger"
                 style={{ color: 'var(--text-tertiary)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--color-error)')}
-                onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-tertiary)')}
                 title="Delete project"
               >
                 <Trash2 size={14} />
@@ -85,7 +81,7 @@ export function Dashboard() {
               <div className="flex-1" />
               <button
                 onClick={handleExitProject}
-                className="flex items-center gap-2 rounded-lg text-xs font-medium transition-colors shrink-0"
+                className="flex items-center gap-2 rounded-lg text-xs font-medium shrink-0 hover-btn"
                 style={{
                   color: 'var(--text-tertiary)',
                   padding: '6px 12px',
@@ -93,14 +89,6 @@ export function Dashboard() {
                   backgroundColor: 'transparent',
                   cursor: 'pointer',
                   whiteSpace: 'nowrap',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)';
-                  e.currentTarget.style.color = 'var(--text-primary)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                  e.currentTarget.style.color = 'var(--text-tertiary)';
                 }}
                 title="Close project and return to start"
               >
@@ -121,7 +109,7 @@ export function Dashboard() {
         <div className="flex gap-3" style={{ marginBottom: '40px' }}>
           <button
             onClick={handleBrainstorm}
-            className="flex items-center gap-2 rounded-lg text-sm font-medium transition-colors"
+            className="flex items-center gap-2 rounded-lg text-sm font-medium hover-btn-primary"
             style={{
               backgroundColor: 'var(--accent)',
               color: 'var(--text-inverse)',
@@ -132,7 +120,7 @@ export function Dashboard() {
             {overviewPath ? 'Project Overview' : 'Brainstorm'}
           </button>
           <button
-            className="flex items-center gap-2 rounded-lg text-sm font-medium transition-colors"
+            className="flex items-center gap-2 rounded-lg text-sm font-medium hover-btn"
             style={{
               backgroundColor: 'var(--bg-tertiary)',
               color: 'var(--text-primary)',

@@ -65,7 +65,7 @@ export function NotesBrowser() {
           </div>
           <button
             onClick={handleAddNote}
-            className="flex items-center gap-1 text-xs transition-colors"
+            className="flex items-center gap-1 text-xs hover-action"
             style={{ color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer' }}
           >
             <Plus size={14} />

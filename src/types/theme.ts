@@ -1,4 +1,4 @@
-export type ThemeId = 'lightPro' | 'darkPro' | 'highContrast' | 'sepia' | 'nightMode';
+export type ThemeId = 'lightPro' | 'darkPro' | 'highContrast' | 'sepia' | 'nightMode' | 'custom';
 
 export interface ThemeInfo {
   id: ThemeId;
@@ -11,5 +11,6 @@ export const THEMES: ThemeInfo[] = [
   { id: 'darkPro', label: 'Dark Professional', description: 'Dark, modern' },
   { id: 'highContrast', label: 'High Contrast', description: 'Accessibility-focused' },
   { id: 'sepia', label: 'Sepia', description: 'Warm, paper-like' },
-  { id: 'nightMode', label: 'Night Mode', description: 'Blue-tinted dark (Tokyo Night)' },
+  { id: 'nightMode', label: 'Night Mode', description: 'Blue-tinted dark' },
+  { id: 'custom', label: 'Custom', description: 'Fully customizable theme' },
 ];

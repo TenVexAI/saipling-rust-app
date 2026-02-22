@@ -58,7 +58,7 @@ export function MatterList({ title, entries, onSelect, onCreate, onRemove }: Mat
               </button>
               <button
                 onClick={() => onRemove(entry.subtype)}
-                className="flex items-center justify-center transition-colors"
+                className="flex items-center justify-center hover-icon-danger"
                 style={{ color: 'var(--text-tertiary)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px' }}
                 title="Remove"
               >

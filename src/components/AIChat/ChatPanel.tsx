@@ -193,7 +193,7 @@ export function ChatPanel({ width }: ChatPanelProps) {
           {isStreaming && (
             <button
               onClick={handleCancel}
-              className="p-1 rounded"
+              className="p-1 rounded hover-icon-danger"
               style={{ color: 'var(--color-error)' }}
               title="Stop generation"
             >
@@ -203,7 +203,7 @@ export function ChatPanel({ width }: ChatPanelProps) {
           {messages.length > 0 && (
             <button
               onClick={clearMessages}
-              className="p-1 rounded"
+              className="p-1 rounded hover-icon"
               style={{ color: 'var(--text-tertiary)' }}
               title="Clear conversation"
             >

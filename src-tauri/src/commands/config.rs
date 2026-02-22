@@ -63,6 +63,8 @@ pub struct AppConfig {
     pub ai: AiConfig,
     #[serde(default)]
     pub skill_overrides: HashMap<String, SkillOverride>,
+    #[serde(default)]
+    pub custom_theme_colors: HashMap<String, String>,
 }
 
 impl Default for AppConfig {
@@ -77,6 +79,7 @@ impl Default for AppConfig {
             editor: EditorConfig::default(),
             ai: AiConfig::default(),
             skill_overrides: HashMap::new(),
+            custom_theme_colors: HashMap::new(),
         }
     }
 }

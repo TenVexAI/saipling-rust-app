@@ -45,7 +45,7 @@ export function Sidebar() {
               key={item.id}
               onClick={() => !disabled && setActiveView(item.id)}
               disabled={disabled}
-              className="flex items-center gap-3 w-full rounded-md transition-colors"
+              className="flex items-center gap-3 w-full rounded-md hover-sidebar"
               style={{
                 color: isActive ? '#3cf281' : disabled ? 'var(--text-tertiary)' : 'var(--text-secondary)',
                 backgroundColor: 'transparent',
@@ -68,7 +68,7 @@ export function Sidebar() {
       <div className="pb-3 px-1.5 flex flex-col gap-1">
         <button
           onClick={() => openHelpWindow()}
-          className="flex items-center gap-3 w-full rounded-md transition-colors"
+          className="flex items-center gap-3 w-full rounded-md hover-sidebar"
           style={{
             color: 'var(--text-secondary)',
             backgroundColor: 'transparent',
@@ -82,7 +82,7 @@ export function Sidebar() {
         </button>
         <button
           onClick={() => setActiveView('settings')}
-          className="flex items-center gap-3 w-full rounded-md transition-colors"
+          className="flex items-center gap-3 w-full rounded-md hover-sidebar"
           style={{
             color: activeView === 'settings' ? '#3cf281' : 'var(--text-secondary)',
             backgroundColor: 'transparent',

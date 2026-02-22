@@ -182,7 +182,7 @@ export function BookView() {
           </div>
           <button
             onClick={() => setShowExport(true)}
-            className="shrink-0 flex items-center gap-1.5 rounded-lg text-xs font-medium"
+            className="shrink-0 flex items-center gap-1.5 rounded-lg text-xs font-medium hover-btn"
             style={{
               padding: '6px 12px',
               backgroundColor: 'var(--bg-secondary)',

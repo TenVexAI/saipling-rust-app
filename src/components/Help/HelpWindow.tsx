@@ -51,14 +51,30 @@ export function HelpWindow() {
     }
   }, []);
 
+  const applyCustomColors = useThemeStore((s) => s.applyCustomColors);
+
   // Load theme from config so help window matches main app
   useEffect(() => {
     getConfig().then((config) => {
       if (config.theme) {
         setTheme(config.theme as Parameters<typeof setTheme>[0]);
       }
+      if (config.theme === 'custom' && config.custom_theme_colors && Object.keys(config.custom_theme_colors).length > 0) {
+        applyCustomColors(config.custom_theme_colors);
+      }
     }).catch(() => {});
-  }, [setTheme]);
+  }, [setTheme, applyCustomColors]);
+
+  // Listen for live custom theme color updates from the editor window
+  useEffect(() => {
+    let unlisten: (() => void) | undefined;
+    import('@tauri-apps/api/event').then(({ listen }) => {
+      listen<Record<string, string>>('custom-theme-updated', (event) => {
+        applyCustomColors(event.payload);
+      }).then((u) => { unlisten = u; });
+    });
+    return () => { unlisten?.(); };
+  }, [applyCustomColors]);
 
   // Read target section from URL params and scroll to it
   useEffect(() => {
@@ -226,14 +242,14 @@ export function HelpWindow() {
         </div>
         <button
           onClick={expandAll}
-          className="text-xs rounded-md"
+          className="text-xs rounded-md hover-btn"
           style={{ padding: '5px 10px', color: 'var(--text-secondary)', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-primary)' }}
         >
           Expand All
         </button>
         <button
           onClick={collapseAll}
-          className="text-xs rounded-md"
+          className="text-xs rounded-md hover-btn"
           style={{ padding: '5px 10px', color: 'var(--text-secondary)', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-primary)' }}
         >
           Collapse All

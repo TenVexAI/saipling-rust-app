@@ -116,8 +116,8 @@ export function ContextSettings() {
         </h2>
         <button
           onClick={loadRoot}
-          className="flex items-center justify-center transition-colors"
-          style={{ color: 'var(--text-tertiary)', background: 'none', border: 'none', cursor: 'pointer' }}
+          className="flex items-center justify-center hover-icon"
+          style={{ color: 'var(--text-tertiary)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}
           title="Refresh"
         >
           <RefreshCw size={14} />
@@ -180,7 +180,7 @@ export function ContextSettings() {
             <div className="flex justify-end" style={{ gap: '8px' }}>
               <button
                 onClick={() => setDeleteConfirm(null)}
-                className="rounded-lg text-xs"
+                className="rounded-lg text-xs hover-btn"
                 style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-primary)', padding: '6px 14px', cursor: 'pointer' }}
               >
                 Cancel
@@ -306,25 +306,29 @@ function ContextFileTreeItem({
           <span className="truncate">{entry.name}</span>
         </button>
 
-        {/* Action buttons — always visible for files, icon buttons fade on hover */}
-        {!entry.is_dir && (
+        {/* Action buttons — only show edit/delete for .md files */}
+        {!entry.is_dir && (() => {
+          const isMd = entry.name.endsWith('.md');
+          return (
           <div className="flex items-center gap-1 shrink-0" style={{ marginLeft: '8px' }}>
             <button
               onClick={() => onOpenExplorer(entry.path)}
               title="Open file location"
-              className="flex items-center justify-center transition-opacity"
+              className="flex items-center justify-center transition-opacity hover-icon"
               style={{ color: 'var(--text-tertiary)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px', opacity: hovered ? 1 : 0 }}
             >
               <ExternalLink size={12} />
             </button>
-            <button
-              onClick={() => onEdit(entry.path)}
-              title="Edit in editor"
-              className="flex items-center justify-center transition-opacity"
-              style={{ color: 'var(--text-tertiary)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px', opacity: hovered ? 1 : 0 }}
-            >
-              <Pencil size={12} />
-            </button>
+            {isMd && (
+              <button
+                onClick={() => onEdit(entry.path)}
+                title="Edit in editor"
+                className="flex items-center justify-center transition-opacity hover-icon"
+                style={{ color: 'var(--text-tertiary)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px', opacity: hovered ? 1 : 0 }}
+              >
+                <Pencil size={12} />
+              </button>
+            )}
             <select
               value={contextMode}
               onChange={(e) => onContextChange(entry.path, e.target.value as ContextMode)}
@@ -343,16 +347,19 @@ function ContextFileTreeItem({
               <option value="exclude">Exclude</option>
               <option value="force">Force</option>
             </select>
-            <button
-              onClick={() => onDelete(entry.path)}
-              title="Delete file"
-              className="flex items-center justify-center transition-opacity"
-              style={{ color: 'var(--text-tertiary)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px', opacity: hovered ? 1 : 0 }}
-            >
-              <Trash2 size={12} />
-            </button>
+            {isMd && (
+              <button
+                onClick={() => onDelete(entry.path)}
+                title="Delete file"
+                className="flex items-center justify-center transition-opacity hover-icon-danger"
+                style={{ color: 'var(--text-tertiary)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px', opacity: hovered ? 1 : 0 }}
+              >
+                <Trash2 size={12} />
+              </button>
+            )}
           </div>
-        )}
+          );
+        })()}
       </div>
 
       {expanded && children.map((child) => (
