@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 import { TitleBar } from './TitleBar';
 import { Sidebar } from '../Sidebar/Sidebar';
 import { Footer } from '../Footer/Footer';
@@ -18,9 +19,12 @@ import { ProseEditor } from '../Editor/ProseEditor';
 import { useProjectStore } from '../../stores/projectStore';
 import { useEditorStore } from '../../stores/editorStore';
 import { getModelsConfig, getConfig } from '../../utils/tauri';
+import { openHelpWindow } from '../../utils/helpWindow';
 import { listen } from '@tauri-apps/api/event';
 import { useThemeStore } from '../../stores/themeStore';
 import { setModelsConfig } from '../../utils/modelPricing';
+
+const appWindow = getCurrentWindow();
 
 function MainContent() {
   const activeView = useProjectStore((s) => s.activeView);
@@ -72,9 +76,26 @@ export function AppShell() {
   const activeBookId = useProjectStore((s) => s.activeBookId);
   const rightPanelOpen = useProjectStore((s) => s.rightPanelOpen);
   const activeView = useProjectStore((s) => s.activeView);
+  const setActiveView = useProjectStore((s) => s.setActiveView);
   const showChat = activeView !== 'settings' && activeView !== 'skill_settings' && rightPanelOpen;
   const [chatWidth, setChatWidth] = useState(340);
   const contentRef = useRef<HTMLDivElement>(null);
+  const wasMaximizedRef = useRef(false);
+
+  const handleToggleFocusMode = useCallback(async () => {
+    const entering = !useEditorStore.getState().focusMode;
+    toggleFocusMode();
+    try {
+      if (entering) {
+        wasMaximizedRef.current = await appWindow.isMaximized();
+        await appWindow.maximize();
+      } else if (!wasMaximizedRef.current) {
+        await appWindow.unmaximize();
+      }
+    } catch (e) {
+      console.warn('Focus mode window resize failed:', e);
+    }
+  }, [toggleFocusMode]);
 
   const handleResize = useCallback((delta: number) => {
     setChatWidth((prev) => {
@@ -118,12 +139,38 @@ export function AppShell() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'F11' || ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'F')) {
         e.preventDefault();
-        toggleFocusMode();
+        handleToggleFocusMode();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [toggleFocusMode]);
+  }, [handleToggleFocusMode]);
+
+  // Navigation hotkeys: Ctrl+Shift+{key}
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey) || !e.shiftKey) return;
+      const key = e.key.toUpperCase();
+      switch (key) {
+        case 'D': e.preventDefault(); setActiveView('dashboard'); break;
+        case 'E': e.preventDefault(); setActiveView('files'); break;
+        case 'B': e.preventDefault(); setActiveView('book'); break;
+        case 'W': e.preventDefault(); setActiveView('world'); break;
+        case 'C': e.preventDefault(); setActiveView('characters'); break;
+        case 'N':
+          e.preventDefault();
+          setActiveView('notes');
+          setTimeout(() => window.dispatchEvent(new Event('trigger-new-note')), 100);
+          break;
+        case 'H': e.preventDefault(); openHelpWindow(); break;
+        default:
+          if (e.code === 'Comma') { e.preventDefault(); setActiveView('settings'); }
+          break;
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [setActiveView]);
 
   return (
     <div className="flex flex-col h-full w-full overflow-hidden">

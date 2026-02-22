@@ -46,6 +46,7 @@ const howToUse: HelpSection = {
         'Click "Create New Project" to start fresh. Give your project a name, choose a genre (optional), and select a folder on your computer where the project files will be stored.',
         'Click "Open Existing Project" to resume work on a project you\'ve already started.',
         'Your recent projects will appear on the Welcome screen for quick access.',
+        'Once inside a project, use keyboard shortcuts to navigate quickly — see the Keyboard Shortcuts section for a full list.',
       ],
     },
     {
@@ -77,6 +78,7 @@ const howToUse: HelpSection = {
         'The AI skill selector at the top of the chat panel lets you switch between different AI capabilities.',
         'Your conversation is preserved as you navigate between views within the same session.',
         'Click "Clear Conversation" to start fresh if needed.',
+        'Use Ctrl+Shift+D to jump back to the Dashboard at any time.',
       ],
     },
     {
@@ -88,7 +90,8 @@ const howToUse: HelpSection = {
         'Use the toolbar for bold, italic, headings, lists, and other formatting.',
         'Select text to see the inline AI toolbar with options to Rewrite, Shorten, Expand, Improve, or Continue.',
         'Press Ctrl+S to save manually, or rely on the 30-second auto-save.',
-        'Press Ctrl+Shift+F to enter Focus Mode for distraction-free writing.',
+        'Press Ctrl+Shift+F to enter Focus Mode for distraction-free writing. The window will automatically maximize.',
+        'Press Ctrl+Shift+N to instantly create a new note — great for jotting down ideas mid-writing.',
       ],
     },
     {
@@ -110,9 +113,11 @@ const howToUse: HelpSection = {
       content:
         'Focus Mode strips away all UI chrome — sidebar, chat panel, toolbar, title bar, and footer — leaving only the editor and a minimal status bar. This is ideal for when you want to concentrate purely on writing.',
       bullets: [
-        'Toggle with Ctrl+Shift+F.',
+        'Toggle with Ctrl+Shift+F or F11.',
+        'The window automatically maximizes when entering Focus Mode.',
         'Word count remains visible at the bottom left.',
         'A subtle hint at the bottom right reminds you how to exit.',
+        'If you want to un-maximize the window while staying in Focus Mode, press Win+Down Arrow.',
       ],
     },
   ],
@@ -305,10 +310,34 @@ const apiKeySection: HelpSection = {
 };
 
 // ────────────────────────────────────────────────────────
+// Section 4: Keyboard Shortcuts
+// ────────────────────────────────────────────────────────
+const keyboardShortcuts: HelpSection = {
+  id: 'keyboard-shortcuts',
+  title: 'Keyboard Shortcuts',
+  content:
+    'SAiPLING provides keyboard shortcuts so you can navigate and work without reaching for the mouse.',
+  table: [
+    { label: 'Ctrl+Shift+D', desc: 'Go to Dashboard' },
+    { label: 'Ctrl+Shift+E', desc: 'Go to Files & Context' },
+    { label: 'Ctrl+Shift+B', desc: 'Go to Book view' },
+    { label: 'Ctrl+Shift+W', desc: 'Go to World view' },
+    { label: 'Ctrl+Shift+C', desc: 'Go to Characters view' },
+    { label: 'Ctrl+Shift+N', desc: 'Go to Notes and create a new note' },
+    { label: 'Ctrl+Shift+H', desc: 'Open the Help window' },
+    { label: 'Ctrl+Shift+,', desc: 'Open Settings' },
+    { label: 'Ctrl+S', desc: 'Save the current file' },
+    { label: 'Ctrl+Shift+F', desc: 'Toggle Focus Mode (also maximizes the window)' },
+    { label: 'F11', desc: 'Toggle Focus Mode (alternative)' },
+  ],
+};
+
+// ────────────────────────────────────────────────────────
 // Export all sections
 // ────────────────────────────────────────────────────────
 export const HELP_SECTIONS: HelpSection[] = [
   howToUse,
   saplingMethod,
   apiKeySection,
+  keyboardShortcuts,
 ];

@@ -252,7 +252,7 @@ export function ProseEditor({ filePath }: ProseEditorProps) {
       >
         <span>{wordCount.toLocaleString()} words</span>
         {focusMode
-          ? <span>Ctrl+Shift+F to exit focus mode</span>
+          ? <span>Ctrl+Shift+F to exit focus mode · Win+Down to un-maximize</span>
           : <span>{isDirty ? 'Unsaved changes' : 'Saved'}</span>
         }
       </div>
