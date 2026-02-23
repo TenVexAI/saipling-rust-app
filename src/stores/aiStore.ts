@@ -22,6 +22,7 @@ interface AIState {
   setConversationId: (id: string | null) => void;
   setLastCost: (cost: string | null) => void;
   addSessionCost: (cost: number) => void;
+  setSessionCost: (cost: number) => void;
 }
 
 export const useAIStore = create<AIState>()((set) => ({
@@ -56,4 +57,5 @@ export const useAIStore = create<AIState>()((set) => ({
   setConversationId: (id) => set({ conversationId: id }),
   setLastCost: (cost) => set({ lastCost: cost }),
   addSessionCost: (cost) => set((s) => ({ sessionCost: s.sessionCost + cost })),
+  setSessionCost: (cost) => set({ sessionCost: cost }),
 }));

@@ -19,7 +19,7 @@ export async function loadProjectChat(projectDir: string): Promise<void> {
     store.setMessages(data.messages || []);
     store.setActiveSkill(data.activeSkill ?? null);
     store.setConversationId(data.conversationId ?? null);
-    store.addSessionCost(data.sessionCost || 0);
+    store.setSessionCost(data.sessionCost || 0);
   } catch {
     // No saved chat — start fresh
     useAIStore.getState().clearMessages();
