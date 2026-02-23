@@ -40,6 +40,7 @@ pub fn run() {
             filesystem::move_entry,
             filesystem::get_word_count,
             filesystem::get_book_word_count,
+            filesystem::get_book_total_doc_words,
             // Draft management
             draft::save_draft,
             draft::list_drafts,

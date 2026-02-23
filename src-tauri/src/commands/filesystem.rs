@@ -285,6 +285,37 @@ pub fn get_book_word_count(project_dir: PathBuf, book_id: String) -> Result<Word
     Ok(WordCountSummary { book_total, target, chapters })
 }
 
+/// Count words in ALL .md files recursively within a book directory.
+/// Used to estimate full-context token count on the dashboard.
+#[tauri::command]
+pub fn get_book_total_doc_words(project_dir: PathBuf, book_id: String) -> Result<u64, AppError> {
+    let book_dir = project_dir.join("books").join(&book_id);
+    if !book_dir.exists() {
+        return Err(AppError::BookNotFound(book_id));
+    }
+    Ok(count_md_words_recursive(&book_dir))
+}
+
+fn count_md_words_recursive(dir: &PathBuf) -> u64 {
+    let mut total: u64 = 0;
+    let entries = match std::fs::read_dir(dir) {
+        Ok(e) => e,
+        Err(_) => return 0,
+    };
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.is_dir() {
+            total += count_md_words_recursive(&path);
+        } else if path.extension().map(|e| e == "md").unwrap_or(false) {
+            if let Ok(content) = std::fs::read_to_string(&path) {
+                let (_, body) = parse_frontmatter(&content);
+                total += body.split_whitespace().count() as u64;
+            }
+        }
+    }
+    total
+}
+
 #[tauri::command]
 pub fn reveal_in_explorer(path: PathBuf) -> Result<(), AppError> {
     let target = if path.is_dir() {
