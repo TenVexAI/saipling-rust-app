@@ -12,11 +12,11 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { id: 'dashboard', icon: <LayoutDashboard size={20} />, label: 'Dashboard' },
-  { id: 'files', icon: <FolderOpen size={20} />, label: 'Files & Context' },
   { id: 'book', icon: <BookOpen size={20} />, label: 'Book' },
-  { id: 'world', icon: <Globe size={20} />, label: 'World' },
   { id: 'characters', icon: <Users size={20} />, label: 'Characters' },
+  { id: 'world', icon: <Globe size={20} />, label: 'World' },
   { id: 'notes', icon: <StickyNote size={20} />, label: 'Notes' },
+  { id: 'files', icon: <FolderOpen size={20} />, label: 'Files & Context' },
 ];
 
 export function Sidebar() {

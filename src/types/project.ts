@@ -1,14 +1,10 @@
 export interface ProjectMetadata {
   version: string;
   name: string;
-  author: string;
-  genre: string;
   description: string;
   created: string;
   modified: string;
-  series_phase_progress: Record<string, PhaseProgress>;
   books: BookRef[];
-  settings: ProjectSettings;
   directory: string;
 }
 
@@ -22,13 +18,6 @@ export interface BookRef {
   id: string;
   title: string;
   sort_order: number;
-}
-
-export interface ProjectSettings {
-  preferred_model: string;
-  writing_style_notes: string;
-  pov: string;
-  tense: string;
 }
 
 export interface RecentProject {

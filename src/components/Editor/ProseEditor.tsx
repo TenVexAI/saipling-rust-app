@@ -5,7 +5,7 @@ import Placeholder from '@tiptap/extension-placeholder';
 import CharacterCount from '@tiptap/extension-character-count';
 import Highlight from '@tiptap/extension-highlight';
 import Typography from '@tiptap/extension-typography';
-import { X, Save } from 'lucide-react';
+import { X, Save, Scan } from 'lucide-react';
 import { EditorToolbar } from './EditorToolbar';
 import { FrontmatterPanel } from './FrontmatterPanel';
 import { InlineAIToolbar } from './InlineAIToolbar';
@@ -218,6 +218,14 @@ export function ProseEditor({ filePath }: ProseEditorProps) {
               style={{ width: '26px', height: '26px', borderRadius: '4px', background: 'none', border: 'none', cursor: isDirty ? 'pointer' : 'default', color: isDirty ? 'var(--accent)' : 'var(--text-tertiary)', opacity: isDirty ? 1 : 0.4 }}
             >
               <Save size={14} />
+            </button>
+            <button
+              onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'F', ctrlKey: true, shiftKey: true, bubbles: true }))}
+              title="Focus Mode (Ctrl+Shift+F)"
+              className="flex items-center justify-center hover-icon"
+              style={{ width: '26px', height: '26px', borderRadius: '4px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-tertiary)' }}
+            >
+              <Scan size={14} />
             </button>
             <button
               onClick={() => setActiveFile(null)}

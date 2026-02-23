@@ -6,8 +6,8 @@ import type {
 import type { AgentPlan, ContextScope, Message, TokenEstimate, ModelsConfig, SkillSettingsEntry, SkillOverride } from '../types/ai';
 
 // ─── Project Management ───
-export const createProject = (name: string, isSeries: boolean, genre: string | null, description: string | null, directory: string) =>
-  invoke<ProjectMetadata>('create_project', { name, isSeries, genre, description, directory });
+export const createProject = (name: string, isSeries: boolean, description: string | null, directory: string) =>
+  invoke<ProjectMetadata>('create_project', { name, isSeries, description, directory });
 
 export const openProject = (directory: string) =>
   invoke<ProjectMetadata>('open_project', { directory });

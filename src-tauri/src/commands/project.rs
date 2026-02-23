@@ -4,31 +4,6 @@ use chrono::{DateTime, Utc};
 use crate::error::AppError;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PhaseElementProgress {
-    #[serde(flatten)]
-    pub elements: std::collections::HashMap<String, serde_json::Value>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PhaseProgress {
-    pub status: String, // "not_started", "in_progress", "complete"
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub completed_at: Option<DateTime<Utc>>,
-    #[serde(flatten)]
-    pub extra: std::collections::HashMap<String, serde_json::Value>,
-}
-
-impl Default for PhaseProgress {
-    fn default() -> Self {
-        Self {
-            status: "not_started".to_string(),
-            completed_at: None,
-            extra: std::collections::HashMap::new(),
-        }
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BookRef {
     pub id: String,
     pub title: String,
@@ -36,48 +11,15 @@ pub struct BookRef {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ProjectSettings {
-    #[serde(default = "default_model")]
-    pub preferred_model: String,
-    #[serde(default)]
-    pub writing_style_notes: String,
-    #[serde(default)]
-    pub pov: String,
-    #[serde(default)]
-    pub tense: String,
-}
-
-fn default_model() -> String {
-    "claude-sonnet-4-5-20250929".to_string()
-}
-
-impl Default for ProjectSettings {
-    fn default() -> Self {
-        Self {
-            preferred_model: default_model(),
-            writing_style_notes: String::new(),
-            pov: String::new(),
-            tense: String::new(),
-        }
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProjectMetadata {
     pub version: String,
     pub name: String,
-    pub author: String,
-    pub genre: String,
     #[serde(default)]
     pub description: String,
     pub created: DateTime<Utc>,
     pub modified: DateTime<Utc>,
     #[serde(default)]
-    pub series_phase_progress: std::collections::HashMap<String, PhaseProgress>,
-    #[serde(default)]
     pub books: Vec<BookRef>,
-    #[serde(default)]
-    pub settings: ProjectSettings,
     #[serde(skip)]
     pub directory: PathBuf,
 }
@@ -123,7 +65,6 @@ fn update_recent(name: &str, path: &PathBuf) -> Result<(), AppError> {
 pub fn create_project(
     name: String,
     is_series: bool,
-    genre: Option<String>,
     description: Option<String>,
     directory: PathBuf,
 ) -> Result<ProjectMetadata, AppError> {
@@ -155,14 +96,10 @@ pub fn create_project(
     let metadata = ProjectMetadata {
         version: "1.0.0".to_string(),
         name: name.clone(),
-        author: String::new(),
-        genre: genre.unwrap_or_default(),
         description: desc.clone(),
         created: now,
         modified: now,
-        series_phase_progress: std::collections::HashMap::new(),
         books: Vec::new(),
-        settings: ProjectSettings::default(),
         directory: directory.clone(),
     };
 

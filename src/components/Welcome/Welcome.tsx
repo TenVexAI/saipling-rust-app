@@ -45,7 +45,7 @@ export function Welcome() {
     try {
       const config = await getConfig();
       const dir = `${config.projects_root}\\${newName.trim().toLowerCase().replace(/\s+/g, '-')}`;
-      const meta = await createProject(newName.trim(), false, null, newDescription.trim() || null, dir);
+      const meta = await createProject(newName.trim(), false, newDescription.trim() || null, dir);
       setProject(meta, dir);
       setTotalProjectCost(0);
       loadProjectChat(dir);
