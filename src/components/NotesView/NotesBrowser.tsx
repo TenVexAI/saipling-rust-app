@@ -1,34 +1,70 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { StickyNote, FileText, Plus, FolderOpen, X } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { StickyNote, FileText, Plus, FolderOpen, X, ChevronDown, ChevronRight, Book } from 'lucide-react';
 import { useProjectStore } from '../../stores/projectStore';
 import { listDirectory } from '../../utils/tauri';
 import type { FileEntry } from '../../types/project';
 
+interface NoteGroup {
+  label: string;
+  scope: string; // 'project' or book id
+  dir: string;
+  notes: FileEntry[];
+}
+
 export function NotesBrowser() {
   const projectDir = useProjectStore((s) => s.projectDir);
+  const project = useProjectStore((s) => s.project);
   const setActiveFile = useProjectStore((s) => s.setActiveFile);
-  const [notes, setNotes] = useState<FileEntry[]>([]);
+  const [noteGroups, setNoteGroups] = useState<NoteGroup[]>([]);
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [showNewNoteModal, setShowNewNoteModal] = useState(false);
   const [newNoteTitle, setNewNoteTitle] = useState('');
+  const [newNoteScope, setNewNoteScope] = useState('project');
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const notesDir = projectDir ? `${projectDir}\\notes` : null;
+  const books = useMemo(() => project?.books ?? [], [project?.books]);
+
+  const totalNotes = noteGroups.reduce((sum, g) => sum + g.notes.length, 0);
 
   const loadNotes = useCallback(async () => {
-    if (!notesDir) return;
+    if (!projectDir) return;
     setLoading(true);
+    const groups: NoteGroup[] = [];
+
+    // Project-level notes
+    const projNotesDir = `${projectDir}\\notes`;
     try {
-      const entries = await listDirectory(notesDir);
-      const noteFiles = entries
-        .filter((e) => !e.is_dir && e.name.endsWith('.md'))
-        .sort((a, b) => a.name.localeCompare(b.name));
-      setNotes(noteFiles);
+      const entries = await listDirectory(projNotesDir);
+      groups.push({
+        label: 'Project',
+        scope: 'project',
+        dir: projNotesDir,
+        notes: entries.filter((e) => !e.is_dir && e.name.endsWith('.md')).sort((a, b) => a.name.localeCompare(b.name)),
+      });
     } catch {
-      setNotes([]);
+      groups.push({ label: 'Project', scope: 'project', dir: projNotesDir, notes: [] });
     }
+
+    // Book-level notes
+    for (const book of books) {
+      const bookNotesDir = `${projectDir}\\books\\${book.id}\\notes`;
+      try {
+        const entries = await listDirectory(bookNotesDir);
+        groups.push({
+          label: book.title,
+          scope: book.id,
+          dir: bookNotesDir,
+          notes: entries.filter((e) => !e.is_dir && e.name.endsWith('.md')).sort((a, b) => a.name.localeCompare(b.name)),
+        });
+      } catch {
+        groups.push({ label: book.title, scope: book.id, dir: bookNotesDir, notes: [] });
+      }
+    }
+
+    setNoteGroups(groups);
     setLoading(false);
-  }, [notesDir]);
+  }, [projectDir, books]);
 
   useEffect(() => {
     loadNotes();
@@ -36,17 +72,30 @@ export function NotesBrowser() {
 
   const handleAddNote = () => {
     setNewNoteTitle('');
+    setNewNoteScope('project');
     setShowNewNoteModal(true);
     setTimeout(() => inputRef.current?.focus(), 50);
   };
 
   const handleConfirmNewNote = () => {
-    if (!newNoteTitle.trim() || !notesDir) return;
+    if (!newNoteTitle.trim() || !projectDir) return;
     const slug = newNoteTitle.trim().toLowerCase().replace(/\s+/g, '-');
-    const path = `${notesDir}\\${slug}.md`;
+    const targetDir = newNoteScope === 'project'
+      ? `${projectDir}\\notes`
+      : `${projectDir}\\books\\${newNoteScope}\\notes`;
+    const path = `${targetDir}\\${slug}.md`;
     setShowNewNoteModal(false);
     setNewNoteTitle('');
     setActiveFile(path);
+  };
+
+  const toggleGroup = (scope: string) => {
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(scope)) next.delete(scope);
+      else next.add(scope);
+      return next;
+    });
   };
 
   // Allow external trigger (hotkey) to open the new note modal
@@ -100,29 +149,57 @@ export function NotesBrowser() {
           <div className="flex items-center justify-center" style={{ padding: '24px', color: 'var(--text-tertiary)' }}>
             <span className="text-sm">Loading notes...</span>
           </div>
-        ) : notes.length === 0 ? (
+        ) : totalNotes === 0 ? (
           <div className="flex flex-col items-center" style={{ padding: '32px 0', color: 'var(--text-tertiary)' }}>
             <FolderOpen size={24} style={{ marginBottom: '8px', opacity: 0.5 }} />
             <p className="text-sm">No notes yet</p>
             <p className="text-xs" style={{ marginTop: '4px' }}>Notes live in the <code>notes/</code> directory</p>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-            {notes.map((note) => (
-              <button
-                key={note.path}
-                onClick={() => setActiveFile(note.path)}
-                className="flex items-center gap-3 w-full text-left rounded-lg transition-colors"
-                style={{ padding: '10px 14px' }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--bg-hover)')}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-              >
-                <FileText size={14} style={{ color: 'var(--text-tertiary)', flexShrink: 0 }} />
-                <span className="text-sm truncate" style={{ color: 'var(--text-primary)' }}>
-                  {formatName(note.name)}
-                </span>
-              </button>
-            ))}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {noteGroups.map((group) => {
+              const isCollapsed = collapsedGroups.has(group.scope);
+              const isBook = group.scope !== 'project';
+              return (
+                <div key={group.scope}>
+                  <button
+                    onClick={() => toggleGroup(group.scope)}
+                    className="flex items-center gap-2 w-full text-left"
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0', color: 'var(--text-secondary)' }}
+                  >
+                    {isCollapsed ? <ChevronRight size={12} /> : <ChevronDown size={12} />}
+                    {isBook ? <Book size={12} style={{ color: 'var(--accent)' }} /> : <StickyNote size={12} style={{ color: 'var(--accent)' }} />}
+                    <span className="text-xs font-semibold uppercase" style={{ letterSpacing: '0.03em' }}>
+                      {group.label}
+                    </span>
+                    <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>({group.notes.length})</span>
+                  </button>
+                  {!isCollapsed && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginTop: '4px' }}>
+                      {group.notes.length === 0 ? (
+                        <span className="text-xs" style={{ color: 'var(--text-tertiary)', padding: '4px 24px' }}>No notes</span>
+                      ) : (
+                        group.notes.map((note) => (
+                          <button
+                            key={note.path}
+                            onClick={() => setActiveFile(note.path)}
+                            className="flex items-center gap-3 w-full text-left rounded-lg transition-colors"
+                            style={{ padding: '8px 14px', marginLeft: '12px' }}
+                            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--bg-hover)')}
+                            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                          >
+                            <FileText size={14} style={{ color: 'var(--text-tertiary)', flexShrink: 0 }} />
+                            <span className="text-sm truncate" style={{ color: 'var(--text-primary)' }}>
+                              {formatName(note.name)}
+                            </span>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
@@ -159,6 +236,28 @@ export function NotesBrowser() {
               <X size={16} />
             </button>
           </div>
+
+          <label className="block text-xs font-medium" style={{ color: 'var(--text-secondary)', marginBottom: '6px' }}>
+            Scope
+          </label>
+          <select
+            value={newNoteScope}
+            onChange={(e) => setNewNoteScope(e.target.value)}
+            className="w-full rounded-lg text-sm"
+            style={{
+              backgroundColor: 'var(--bg-input)',
+              border: '1px solid var(--border-primary)',
+              color: 'var(--text-primary)',
+              padding: '10px 12px',
+              marginBottom: '14px',
+              cursor: 'pointer',
+            }}
+          >
+            <option value="project">Project</option>
+            {books.map((b) => (
+              <option key={b.id} value={b.id}>{b.title}</option>
+            ))}
+          </select>
 
           <label className="block text-xs font-medium" style={{ color: 'var(--text-secondary)', marginBottom: '6px' }}>
             Note title
