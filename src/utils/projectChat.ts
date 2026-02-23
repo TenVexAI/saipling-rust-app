@@ -16,10 +16,11 @@ export async function loadProjectChat(projectDir: string): Promise<void> {
     const { body } = await readFile(`${projectDir}\\${CHAT_FILE}`);
     const data: ChatData = JSON.parse(body);
     const store = useAIStore.getState();
-    store.setMessages(data.messages || []);
+    const msgs = data.messages || [];
+    store.setMessages(msgs);
     store.setActiveSkill(data.activeSkill ?? null);
     store.setConversationId(data.conversationId ?? null);
-    store.setSessionCost(data.sessionCost || 0);
+    store.setSessionCost(msgs.length > 0 ? (data.sessionCost || 0) : 0);
   } catch {
     // No saved chat — start fresh
     useAIStore.getState().clearMessages();

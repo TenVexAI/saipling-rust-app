@@ -202,7 +202,7 @@ export function ChatPanel({ width }: ChatPanelProps) {
           )}
           {messages.length > 0 && (
             <button
-              onClick={clearMessages}
+              onClick={() => { clearMessages(); saveCurrentChat(); }}
               className="p-1 rounded hover-icon"
               style={{ color: 'var(--text-tertiary)' }}
               title="Clear conversation"

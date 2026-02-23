@@ -24,6 +24,8 @@ pub struct ProjectMetadata {
     pub books: Vec<BookRef>,
     #[serde(default = "default_world_sections")]
     pub world_sections: Vec<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub active_book_id: Option<String>,
     #[serde(skip)]
     pub directory: PathBuf,
 }
@@ -104,6 +106,7 @@ pub fn create_project(
         modified: now,
         books: Vec::new(),
         world_sections: default_world_sections(),
+        active_book_id: None,
         directory: directory.clone(),
     };
 

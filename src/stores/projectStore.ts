@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { ProjectMetadata, BookMetadata, BookRef } from '../types/project';
 import type { Phase } from '../types/sapling';
+import { updateProjectMetadata } from '../utils/tauri';
 
 export type SidebarView = 'dashboard' | 'files' | 'book' | 'world' | 'characters' | 'notes' | 'settings' | 'skill_settings' | 'phase';
 
@@ -61,17 +62,22 @@ export const useProjectStore = create<ProjectState>((set) => ({
   sidebarExpanded: false,
   rightPanelOpen: true,
 
-  setProject: (project, dir) => set({
-    project,
-    projectDir: dir,
-    activeView: 'dashboard',
-    activeBookId: null,
-    activeBookMeta: null,
-    activeChapterId: null,
-    activeSceneId: null,
-    activeFilePath: null,
-    activePhase: null,
-  }),
+  setProject: (project, dir) => {
+    const savedId = project.active_book_id;
+    const firstBookId = project.books.length > 0 ? project.books[0].id : null;
+    const activeId = savedId && project.books.some((b) => b.id === savedId) ? savedId : firstBookId;
+    set({
+      project,
+      projectDir: dir,
+      activeView: 'dashboard',
+      activeBookId: activeId,
+      activeBookMeta: null,
+      activeChapterId: null,
+      activeSceneId: null,
+      activeFilePath: null,
+      activePhase: null,
+    });
+  },
 
   clearProject: () => set({
     project: null,
@@ -86,12 +92,22 @@ export const useProjectStore = create<ProjectState>((set) => ({
   }),
 
   setActiveView: (view) => set({ activeView: view, activeFilePath: null, contextExpandFolder: null, activePhase: null }),
-  setActiveBook: (bookId, meta) => set({
-    activeBookId: bookId,
-    activeBookMeta: meta ?? null,
-    activeChapterId: null,
-    activeSceneId: null,
-  }),
+  setActiveBook: (bookId, meta) => {
+    set((s) => {
+      // Persist active book to project.json
+      if (s.project && s.projectDir && bookId !== s.activeBookId) {
+        const updated = { ...s.project, active_book_id: bookId };
+        updateProjectMetadata(s.projectDir, updated).catch(() => {});
+      }
+      return {
+        activeBookId: bookId,
+        activeBookMeta: meta ?? null,
+        activeChapterId: null,
+        activeSceneId: null,
+        project: s.project ? { ...s.project, active_book_id: bookId } : null,
+      };
+    });
+  },
   setActiveChapter: (chapterId) => set({ activeChapterId: chapterId, activeSceneId: null }),
   setActiveScene: (sceneId) => set({ activeSceneId: sceneId }),
   setActiveFile: (path) => set({ activeFilePath: path }),

@@ -6,6 +6,7 @@ export interface ProjectMetadata {
   modified: string;
   books: BookRef[];
   world_sections: string[];
+  active_book_id?: string | null;
   directory: string;
 }
 
