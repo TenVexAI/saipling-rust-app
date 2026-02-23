@@ -15,21 +15,21 @@ interface BrainstormToolbarProps {
 
 type GeneratePhase = 'idle' | 'planning' | 'confirming' | 'generating' | 'description_approval';
 
-/** Determine the next versioned filename for project_overview. */
+/** Determine the next versioned filename for overview. */
 function getNextOverviewVersion(files: FileEntry[]): string {
   const existing = files
     .map((f) => f.name)
-    .filter((n) => /^project_overview(_v\d+)?\.md$/.test(n));
-  if (existing.length === 0) return 'project_overview.md';
+    .filter((n) => /^overview(_v\d+)?\.md$/.test(n));
+  if (existing.length === 0) return 'overview.md';
   // Find the highest version number
-  let maxVersion = 1; // project_overview.md counts as v1
+  let maxVersion = 1; // overview.md counts as v1
   for (const name of existing) {
-    const match = name.match(/^project_overview_v(\d+)\.md$/);
+    const match = name.match(/^overview_v(\d+)\.md$/);
     if (match) {
       maxVersion = Math.max(maxVersion, parseInt(match[1], 10));
     }
   }
-  return `project_overview_v${maxVersion + 1}.md`;
+  return `overview_v${maxVersion + 1}.md`;
 }
 
 export function BrainstormToolbar({ currentFilePath }: BrainstormToolbarProps) {
@@ -50,7 +50,7 @@ export function BrainstormToolbar({ currentFilePath }: BrainstormToolbarProps) {
   const [pendingOverviewPath, setPendingOverviewPath] = useState<string | null>(null);
   const streamedRef = useRef<string>('');
 
-  const overviewDir = projectDir ? `${projectDir}\\project_overview` : null;
+  const overviewDir = projectDir ? `${projectDir}\\overview` : null;
   const [showWelcome, setShowWelcome] = useState(true);
   const [creatingBlank, setCreatingBlank] = useState(false);
 
@@ -70,8 +70,8 @@ export function BrainstormToolbar({ currentFilePath }: BrainstormToolbarProps) {
 
   const currentFileName = currentFilePath.split(/[\\/]/).pop() || '';
 
-  // Detect multiple project_overview versions
-  const overviewVersions = files.filter((f) => /^project_overview(_v\d+)?\.md$/.test(f.name));
+  // Detect multiple overview versions
+  const overviewVersions = files.filter((f) => /^overview(_v\d+)?\.md$/.test(f.name));
   const hasOverview = overviewVersions.length > 0;
   const hasMultipleOverviews = overviewVersions.length > 1;
 
@@ -338,7 +338,7 @@ export function BrainstormToolbar({ currentFilePath }: BrainstormToolbarProps) {
         {hasMultipleOverviews && (
           <div
             className="flex items-center"
-            title={`${overviewVersions.length} versions of project_overview.md exist. Consider deleting old versions or excluding them in Context Settings.`}
+            title={`${overviewVersions.length} versions of overview.md exist. Consider deleting old versions or excluding them in Context Settings.`}
             style={{ color: 'var(--color-warning)', cursor: 'help' }}
           >
             <AlertCircle size={15} />
@@ -558,7 +558,7 @@ export function BrainstormToolbar({ currentFilePath }: BrainstormToolbarProps) {
         </div>
       )}
 
-      {/* Welcome Modal — shown once when no project_overview exists yet */}
+      {/* Welcome Modal — shown once when no overview exists yet */}
       {showWelcome && !hasOverview && (
         <div
           className="fixed inset-0 flex items-center justify-center"

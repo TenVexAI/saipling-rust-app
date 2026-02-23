@@ -7,20 +7,21 @@ temperature = 0.7
 
 [context]
 always_include = [
-    "characters/_relationships.md",
+    "overview/overview.md",
 ]
 max_context_tokens = 40000
 
 [context.when_book]
 include = [
-    "{book}/foundation/story-foundation.md",
-    "{book}/structure/beat-outline.md",
-    "{book}/characters/*.md",
+    "{book}/phase-1-seed/story-foundation.md",
+    "{book}/phase-2-root/story-structure-outline.md",
+    "{book}/phase-3-sprout/**/journey-map.md",
+    "{book}/phase-3-sprout/relationship-dynamics.md",
 ]
 
 [context.optional]
 include_if_exists = [
-    "characters/*.md",
+    "characters/**/profile.md",
 ]
 
 [system_prompt]

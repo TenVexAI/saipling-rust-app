@@ -11,8 +11,7 @@ max_context_tokens = 30000
 
 [context.optional]
 include_if_exists = [
-    "world/world-bible.md",
-    "world/locations/*.md",
+    "world/**/entry.md",
 ]
 
 [system_prompt]

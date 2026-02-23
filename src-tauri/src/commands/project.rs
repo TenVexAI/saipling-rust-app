@@ -8,6 +8,8 @@ pub struct BookRef {
     pub id: String,
     pub title: String,
     pub sort_order: u32,
+    #[serde(default)]
+    pub genre: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -20,8 +22,14 @@ pub struct ProjectMetadata {
     pub modified: DateTime<Utc>,
     #[serde(default)]
     pub books: Vec<BookRef>,
+    #[serde(default = "default_world_sections")]
+    pub world_sections: Vec<String>,
     #[serde(skip)]
     pub directory: PathBuf,
+}
+
+fn default_world_sections() -> Vec<String> {
+    vec!["locations".to_string(), "items".to_string()]
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -34,7 +42,7 @@ pub struct RecentProject {
 fn recent_projects_path() -> Result<PathBuf, AppError> {
     let docs = dirs::document_dir()
         .ok_or_else(|| AppError::Config("Cannot find Documents directory".into()))?;
-    Ok(docs.join("sAIpling").join(".saipling").join("recent-projects.json"))
+    Ok(docs.join("SAiPLING").join(".saipling").join("recent-projects.json"))
 }
 
 fn update_recent(name: &str, path: &PathBuf) -> Result<(), AppError> {
@@ -64,24 +72,18 @@ fn update_recent(name: &str, path: &PathBuf) -> Result<(), AppError> {
 #[tauri::command]
 pub fn create_project(
     name: String,
-    is_series: bool,
     description: Option<String>,
     directory: PathBuf,
 ) -> Result<ProjectMetadata, AppError> {
     std::fs::create_dir_all(&directory)?;
 
-    // Create directory structure
+    // Create directory structure per filesystem spec v2
     let dirs = [
-        "project_overview",
-        "series",
+        "overview",
+        "characters",
         "world",
         "world/locations",
-        "world/factions",
-        "world/technology",
-        "world/history",
-        "world/magic-systems",
-        "world/rules",
-        "characters",
+        "world/items",
         "books",
         "notes",
         "timeline",
@@ -92,6 +94,7 @@ pub fn create_project(
     }
 
     let now = Utc::now();
+    let date_str = now.format("%Y-%m-%d").to_string();
     let desc = description.clone().unwrap_or_default();
     let metadata = ProjectMetadata {
         version: "1.0.0".to_string(),
@@ -100,71 +103,71 @@ pub fn create_project(
         created: now,
         modified: now,
         books: Vec::new(),
+        world_sections: default_world_sections(),
         directory: directory.clone(),
     };
 
     let project_json = directory.join("project.json");
     std::fs::write(&project_json, serde_json::to_string_pretty(&metadata)?)?;
 
-    // Create brainstorm notes file in project_overview
-    let brainstorm_content = if desc.is_empty() {
-        format!("# {}\n\n", name)
-    } else {
-        format!("# {}\n\n{}\n\n", name, desc)
-    };
+    // Create overview/brainstorm.md with frontmatter template
+    let brainstorm_content = format!(
+        "---\ntype: brainstorm\nscope: series\nsubject: project\ncreated: {}\nmodified: {}\nstatus: empty\n---\n\n\
+# Project Brainstorm\n\n\
+This is your space to brain-dump everything about your project — the big ideas,\n\
+the vague feelings, the \"what if\" questions, the scenes you can already see in\n\
+your head. Don't worry about structure or consistency here. Just get your ideas\n\
+down.\n\n\
+Think about:\n\
+- What's the core idea that excites you?\n\
+- What kind of story is this? (series, standalone, universe?)\n\
+- What genre(s) does it live in?\n\
+- What tone or feeling are you going for?\n\
+- Any characters, settings, or scenes that are already forming?\n\
+- What themes or questions do you want to explore?\n\
+- What books, movies, or stories inspire this project?\n\n\
+Write freely below — this document is your starting point, not your final answer.\n\n\
+---\n\n",
+        date_str, date_str
+    );
     std::fs::write(
-        directory.join("project_overview/project_brainstorm_notes.md"),
+        directory.join("overview/brainstorm.md"),
         brainstorm_content,
     )?;
 
-    // Create empty series foundation
+    // Create empty timeline config
     std::fs::write(
-        directory.join("series/foundation.md"),
-        format!(
-            "---\ntype: series-foundation\nscope: series\ncreated: {}\nmodified: {}\nstatus: not_started\n---\n\n# Series Foundation — {}\n\n",
-            now.format("%Y-%m-%d"),
-            now.format("%Y-%m-%d"),
-            name
-        ),
+        directory.join("timeline/timelines.json"),
+        "{\n  \"timelines\": []\n}\n",
     )?;
 
-    // Create empty relationships file
-    std::fs::write(
-        directory.join("characters/_relationships.md"),
-        format!(
-            "---\ntype: relationships\nscope: series\ncreated: {}\nmodified: {}\n---\n\n# Character Relationships\n\n",
-            now.format("%Y-%m-%d"),
-            now.format("%Y-%m-%d"),
-        ),
-    )?;
-
-    // If standalone, create book-01 automatically
-    if !is_series {
-        let book_dir = directory.join("books/book-01");
-        create_book_dirs(&book_dir, "Untitled Novel", 1)?;
-        // Re-read and update metadata with book ref
-        let mut meta = metadata.clone();
-        meta.books.push(BookRef {
-            id: "book-01".to_string(),
-            title: "Untitled Novel".to_string(),
-            sort_order: 1,
-        });
-        std::fs::write(&project_json, serde_json::to_string_pretty(&meta)?)?;
-        update_recent(&name, &directory)?;
-        return Ok(meta);
-    }
+    // Create helper JSON files
+    std::fs::write(directory.join(".ai_chat.json"), "[]")?;
+    std::fs::write(directory.join(".ai_cost.json"), "{\"total\": 0}")?;
+    std::fs::write(directory.join(".context_settings.json"), "{}")?;
 
     update_recent(&name, &directory)?;
     Ok(metadata)
 }
 
-pub fn create_book_dirs(book_dir: &PathBuf, title: &str, sort_order: u32) -> Result<(), AppError> {
+pub fn create_book_dirs(
+    book_dir: &PathBuf,
+    title: &str,
+    author: &str,
+    genre: &str,
+    sort_order: u32,
+) -> Result<(), AppError> {
     let subdirs = [
+        "overview",
+        "phase-1-seed",
+        "phase-2-root",
+        "phase-3-sprout",
+        "phase-4-flourish",
+        "phase-4-flourish/act-1",
+        "phase-4-flourish/act-2",
+        "phase-4-flourish/act-3",
+        "phase-5-bloom",
         "front-matter",
-        "foundation",
-        "structure",
-        "characters",
-        "chapters",
         "back-matter",
         "notes",
     ];
@@ -173,30 +176,99 @@ pub fn create_book_dirs(book_dir: &PathBuf, title: &str, sort_order: u32) -> Res
     }
 
     let now = Utc::now();
+    let date_str = now.format("%Y-%m-%d").to_string();
+    let book_id = book_dir.file_name().unwrap().to_string_lossy().to_string();
+
     let book_meta = serde_json::json!({
         "version": "1.0.0",
-        "id": book_dir.file_name().unwrap().to_string_lossy(),
+        "id": book_id,
         "title": title,
+        "author": author,
+        "genre": genre,
         "sort_order": sort_order,
         "created": now,
         "modified": now,
         "target_word_count": 80000,
         "current_word_count": 0,
         "phase_progress": {
-            "seed": { "status": "not_started" },
-            "root": { "status": "not_started" },
-            "sprout": { "status": "not_started" },
-            "flourish": { "status": "not_started" },
-            "bloom": { "status": "not_started" }
+            "seed": {
+                "status": "not_started",
+                "elements": {
+                    "premise": false,
+                    "theme": false,
+                    "protagonist": false,
+                    "central_conflict": false,
+                    "story_world": false,
+                    "emotional_promise": false
+                },
+                "deliverables": {
+                    "logline": false,
+                    "story_foundation": false
+                }
+            },
+            "root": {
+                "status": "not_started",
+                "beats_drafted": 0,
+                "beats_total": 21,
+                "deliverables": {
+                    "story_structure_outline": false
+                }
+            },
+            "sprout": {
+                "status": "not_started",
+                "characters": {},
+                "deliverables": {
+                    "relationship_dynamics": false
+                }
+            },
+            "flourish": {
+                "status": "not_started",
+                "scenes_outlined": 0
+            },
+            "bloom": {
+                "status": "not_started",
+                "scenes_drafted": 0,
+                "scenes_total": 0
+            }
         },
+        "chapters": [],
         "front_matter": {},
         "back_matter": {},
-        "chapters": []
+        "settings": {
+            "pov": "",
+            "tense": ""
+        }
     });
     std::fs::write(
         book_dir.join("book.json"),
         serde_json::to_string_pretty(&book_meta)?,
     )?;
+
+    // Create book overview brainstorm.md
+    let scope = book_id;
+    let brainstorm_content = format!(
+        "---\ntype: brainstorm\nscope: {}\nsubject: book\ncreated: {}\nmodified: {}\nstatus: empty\n---\n\n\
+# Book Brainstorm\n\n\
+This is your space to brain-dump everything about this specific book. If you've\n\
+already created a project overview, think about what makes THIS book unique within\n\
+the larger project.\n\n\
+Think about:\n\
+- What's the core story of this book?\n\
+- Who is the main character and what do they want?\n\
+- What's the central conflict or problem?\n\
+- Where and when does this book take place?\n\
+- How does this book fit into the larger series (if applicable)?\n\
+- What should the reader feel by the end?\n\
+- Any specific scenes, moments, or images you already have in mind?\n\n\
+Write freely below.\n\n\
+---\n\n",
+        scope, date_str, date_str
+    );
+    std::fs::write(
+        book_dir.join("overview/brainstorm.md"),
+        brainstorm_content,
+    )?;
+
     Ok(())
 }
 

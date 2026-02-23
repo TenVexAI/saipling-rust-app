@@ -35,7 +35,7 @@ export function ProseEditor({ filePath }: ProseEditorProps) {
   const filePathRef = useRef(filePath);
   const autoSaveTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const isBrainstormFile = /[\\/]project_overview[\\/]/.test(filePath);
+  const isBrainstormFile = /[\\/]overview[\\/]/.test(filePath);
 
   const editor = useEditor({
     extensions: [

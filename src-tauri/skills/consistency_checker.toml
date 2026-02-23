@@ -11,16 +11,15 @@ max_context_tokens = 100000
 
 [context.when_book]
 include = [
-    "{book}/foundation/story-foundation.md",
-    "{book}/structure/beat-outline.md",
-    "{book}/characters/*.md",
+    "{book}/phase-1-seed/story-foundation.md",
+    "{book}/phase-2-root/story-structure-outline.md",
+    "{book}/phase-3-sprout/**/journey-map.md",
 ]
 
 [context.optional]
 include_if_exists = [
-    "world/world-bible.md",
-    "characters/*.md",
-    "characters/_relationships.md",
+    "world/**/entry.md",
+    "characters/**/profile.md",
 ]
 
 [system_prompt]

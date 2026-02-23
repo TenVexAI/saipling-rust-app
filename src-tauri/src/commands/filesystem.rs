@@ -62,9 +62,11 @@ fn infer_file_type(path: &PathBuf) -> Option<String> {
         if name_lower.contains("foundation") { return Some("story-foundation".to_string()); }
         if name_lower.contains("beat") || name_lower.contains("outline") { return Some("beat-outline".to_string()); }
         if name_lower.contains("journey") { return Some("character-journey".to_string()); }
-        if name_lower == "_relationships.md" { return Some("relationships".to_string()); }
-        if name_lower.contains("world-bible") { return Some("world-bible".to_string()); }
-        if name_lower == "draft.md" { return Some("scene-draft".to_string()); }
+        if name_lower == "profile.md" { return Some("character-profile".to_string()); }
+        if name_lower == "entry.md" { return Some("world-entry".to_string()); }
+        if name_lower == "brainstorm.md" { return Some("brainstorm".to_string()); }
+        if name_lower == "draft.md" { return Some("element-draft".to_string()); }
+        if name_lower == "relationship-dynamics.md" { return Some("relationship-dynamics".to_string()); }
     }
     None
 }

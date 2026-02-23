@@ -5,6 +5,7 @@ export interface ProjectMetadata {
   created: string;
   modified: string;
   books: BookRef[];
+  world_sections: string[];
   directory: string;
 }
 
@@ -18,6 +19,7 @@ export interface BookRef {
   id: string;
   title: string;
   sort_order: number;
+  genre: string;
 }
 
 export interface RecentProject {
@@ -30,6 +32,8 @@ export interface BookMetadata {
   version: string;
   id: string;
   title: string;
+  author: string;
+  genre: string;
   sort_order: number;
   created: string;
   modified: string;
@@ -39,6 +43,12 @@ export interface BookMetadata {
   front_matter: Record<string, boolean>;
   back_matter: Record<string, boolean>;
   chapters: ChapterMeta[];
+  settings: BookSettings;
+}
+
+export interface BookSettings {
+  pov: string;
+  tense: string;
 }
 
 export interface ChapterMeta {

@@ -7,17 +7,16 @@ temperature = 0.7
 
 [context]
 always_include = [
-    "project_overview/project_brainstorm_notes.md",
+    "overview/brainstorm.md",
     "project.json",
 ]
 max_context_tokens = 30000
 
 [context.optional]
 include_if_exists = [
-    "project_overview/*.md",
-    "series/foundation.md",
-    "world/world-bible.md",
-    "characters/*.md",
+    "overview/*.md",
+    "world/**/entry.md",
+    "characters/**/profile.md",
 ]
 
 [system_prompt]

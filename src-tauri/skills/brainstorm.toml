@@ -11,8 +11,9 @@ max_context_tokens = 20000
 
 [context.optional]
 include_if_exists = [
-    "series/foundation.md",
-    "world/world-bible.md",
+    "overview/brainstorm.md",
+    "overview/overview.md",
+    "world/**/entry.md",
 ]
 
 [system_prompt]

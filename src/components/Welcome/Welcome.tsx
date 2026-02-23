@@ -28,7 +28,8 @@ export function Welcome() {
 
   const handleOpen = async () => {
     try {
-      const selected = await open({ directory: true, title: 'Open SAiPLING Project' });
+      const config = await getConfig();
+      const selected = await open({ directory: true, title: 'Open SAiPLING Project', defaultPath: config.projects_root });
       if (selected) {
         const meta = await openProject(selected as string);
         setProject(meta, selected as string);
@@ -45,7 +46,7 @@ export function Welcome() {
     try {
       const config = await getConfig();
       const dir = `${config.projects_root}\\${newName.trim().toLowerCase().replace(/\s+/g, '-')}`;
-      const meta = await createProject(newName.trim(), false, newDescription.trim() || null, dir);
+      const meta = await createProject(newName.trim(), newDescription.trim() || null, dir);
       setProject(meta, dir);
       setTotalProjectCost(0);
       loadProjectChat(dir);

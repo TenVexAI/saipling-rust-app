@@ -7,18 +7,20 @@ temperature = 0.8
 
 [context]
 always_include = [
-    "series/foundation.md",
+    "overview/overview.md",
 ]
 max_context_tokens = 30000
 
 [context.when_book]
 include = [
-    "{book}/foundation/story-foundation.md",
+    "{book}/overview/overview.md",
+    "{book}/phase-1-seed/**/draft.md",
 ]
 
 [context.optional]
 include_if_exists = [
-    "world/world-bible.md",
+    "world/**/entry.md",
+    "characters/**/profile.md",
 ]
 
 [system_prompt]

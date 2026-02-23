@@ -7,14 +7,13 @@ temperature = 0.7
 
 [context]
 always_include = [
-    "series/foundation.md",
-    "series/arc.md",
+    "overview/overview.md",
 ]
 max_context_tokens = 80000
 
 [context.optional]
 include_if_exists = [
-    "characters/*.md",
+    "characters/**/profile.md",
 ]
 
 [system_prompt]

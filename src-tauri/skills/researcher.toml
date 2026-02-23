@@ -7,13 +7,13 @@ temperature = 0.5
 
 [context]
 always_include = [
-    "series/foundation.md",
+    "overview/overview.md",
 ]
 max_context_tokens = 30000
 
 [context.optional]
 include_if_exists = [
-    "world/world-bible.md",
+    "world/**/entry.md",
     "notes/*.md",
 ]
 

@@ -6,8 +6,8 @@ import type {
 import type { AgentPlan, ContextScope, Message, TokenEstimate, ModelsConfig, SkillSettingsEntry, SkillOverride } from '../types/ai';
 
 // ─── Project Management ───
-export const createProject = (name: string, isSeries: boolean, description: string | null, directory: string) =>
-  invoke<ProjectMetadata>('create_project', { name, isSeries, description, directory });
+export const createProject = (name: string, description: string | null, directory: string) =>
+  invoke<ProjectMetadata>('create_project', { name, description, directory });
 
 export const openProject = (directory: string) =>
   invoke<ProjectMetadata>('open_project', { directory });
@@ -25,8 +25,8 @@ export const deleteProject = (directory: string) =>
   invoke<void>('delete_project', { directory });
 
 // ─── Book Management ───
-export const createBook = (projectDir: string, title: string) =>
-  invoke<BookMetadata>('create_book', { projectDir, title });
+export const createBook = (projectDir: string, title: string, author: string, genre: string) =>
+  invoke<BookMetadata>('create_book', { projectDir, title, author, genre });
 
 export const getBookMetadata = (projectDir: string, bookId: string) =>
   invoke<BookMetadata>('get_book_metadata', { projectDir, bookId });

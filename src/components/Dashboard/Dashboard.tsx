@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useProjectStore } from '../../stores/projectStore';
 import { useAIStore } from '../../stores/aiStore';
-import { listDirectory } from '../../utils/tauri';
+import { listDirectory, createBook } from '../../utils/tauri';
 import { saveProjectChat } from '../../utils/projectChat';
 import { BookOpen, Plus, Lightbulb, LogOut, Pencil, Trash2 } from 'lucide-react';
 import { SaiplingDashLogo } from './SaiplingDashLogo';
@@ -20,6 +20,11 @@ export function Dashboard() {
   const [overviewPath, setOverviewPath] = useState<string | null>(null);
   const [overviewChecked, setOverviewChecked] = useState(false);
   const [showGettingStarted, setShowGettingStarted] = useState(false);
+  const [showNewBook, setShowNewBook] = useState(false);
+  const [newBookTitle, setNewBookTitle] = useState('');
+  const [newBookAuthor, setNewBookAuthor] = useState('');
+  const [newBookGenre, setNewBookGenre] = useState('');
+  const [bookError, setBookError] = useState('');
 
   const handleExitProject = async () => {
     if (projectDir) await saveProjectChat(projectDir);
@@ -28,10 +33,10 @@ export function Dashboard() {
 
   useEffect(() => {
     if (!projectDir) return;
-    const overviewDir = `${projectDir}\\project_overview`;
+    const overviewDir = `${projectDir}\\overview`;
     listDirectory(overviewDir)
       .then((entries) => {
-        const overview = entries.find((e) => /^project_overview(_v\d+)?\.md$/.test(e.name));
+        const overview = entries.find((e) => e.name === 'overview.md');
         setOverviewPath(overview ? overview.path : null);
         setOverviewChecked(true);
         if (!overview) setShowGettingStarted(true);
@@ -46,7 +51,25 @@ export function Dashboard() {
   const handleBrainstorm = () => {
     if (!projectDir) return;
     setActiveSkill('brainstorm');
-    setActiveFile(overviewPath ?? `${projectDir}\\project_overview\\project_brainstorm_notes.md`);
+    setActiveFile(overviewPath ?? `${projectDir}\\overview\\brainstorm.md`);
+  };
+
+  const handleCreateBook = async () => {
+    if (!projectDir || !project || !newBookTitle.trim()) return;
+    setBookError('');
+    try {
+      const meta = await createBook(projectDir, newBookTitle.trim(), newBookAuthor.trim(), newBookGenre);
+      useProjectStore.getState().updateBooks([
+        ...project.books,
+        { id: meta.id, title: meta.title, sort_order: meta.sort_order, genre: meta.genre },
+      ]);
+      setShowNewBook(false);
+      setNewBookTitle('');
+      setNewBookAuthor('');
+      setNewBookGenre('');
+    } catch (e) {
+      setBookError(String(e));
+    }
   };
 
   if (!project) {
@@ -129,6 +152,7 @@ export function Dashboard() {
             {overviewPath ? 'Project Overview' : 'Brainstorm'}
           </button>
           <button
+            onClick={() => setShowNewBook(true)}
             className="flex items-center gap-2 rounded-lg text-sm font-medium hover-btn"
             style={{
               backgroundColor: 'var(--bg-tertiary)',
@@ -170,6 +194,9 @@ export function Dashboard() {
                     {book.title}
                   </span>
                 </div>
+                {book.genre && (
+                  <p className="text-xs" style={{ color: 'var(--text-tertiary)', marginBottom: '8px' }}>{book.genre}</p>
+                )}
                 <div className="flex items-center justify-between">
                   <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
                     0 words
@@ -216,6 +243,129 @@ export function Dashboard() {
           }}
           onDismiss={() => setShowGettingStarted(false)}
         />
+      )}
+
+      {/* New Book Modal */}
+      {showNewBook && (
+        <div
+          className="fixed inset-0 flex items-center justify-center"
+          style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000 }}
+          onClick={() => setShowNewBook(false)}
+        >
+          <div
+            className="rounded-xl"
+            style={{
+              backgroundColor: 'var(--bg-primary)',
+              border: '1px solid var(--border-primary)',
+              boxShadow: 'var(--shadow-lg)',
+              padding: '24px',
+              maxWidth: '420px',
+              width: '90%',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)', marginBottom: '16px' }}>
+              New Book
+            </h3>
+
+            {bookError && (
+              <div className="rounded-lg text-xs" style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--color-error)', padding: '8px 12px', marginBottom: '12px' }}>
+                {bookError}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div>
+                <label className="block text-xs font-medium" style={{ color: 'var(--text-secondary)', marginBottom: '4px' }}>Title</label>
+                <input
+                  value={newBookTitle}
+                  onChange={(e) => setNewBookTitle(e.target.value)}
+                  placeholder="Book title"
+                  className="w-full rounded-lg text-sm"
+                  style={{
+                    backgroundColor: 'var(--bg-input)',
+                    border: '1px solid var(--border-primary)',
+                    color: 'var(--text-primary)',
+                    padding: '8px 12px',
+                  }}
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium" style={{ color: 'var(--text-secondary)', marginBottom: '4px' }}>Author</label>
+                <input
+                  value={newBookAuthor}
+                  onChange={(e) => setNewBookAuthor(e.target.value)}
+                  placeholder="Author name"
+                  className="w-full rounded-lg text-sm"
+                  style={{
+                    backgroundColor: 'var(--bg-input)',
+                    border: '1px solid var(--border-primary)',
+                    color: 'var(--text-primary)',
+                    padding: '8px 12px',
+                  }}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium" style={{ color: 'var(--text-secondary)', marginBottom: '4px' }}>Primary Genre</label>
+                <select
+                  value={newBookGenre}
+                  onChange={(e) => setNewBookGenre(e.target.value)}
+                  className="w-full rounded-lg text-sm"
+                  style={{
+                    backgroundColor: 'var(--bg-input)',
+                    border: '1px solid var(--border-primary)',
+                    color: 'var(--text-primary)',
+                    padding: '8px 12px',
+                  }}
+                >
+                  <option value="">Select genre...</option>
+                  <option value="Fantasy">Fantasy</option>
+                  <option value="Science Fiction">Science Fiction</option>
+                  <option value="Romance">Romance</option>
+                  <option value="Mystery">Mystery</option>
+                  <option value="Thriller">Thriller</option>
+                  <option value="Suspense">Suspense</option>
+                  <option value="Horror">Horror</option>
+                  <option value="Historical Fiction">Historical Fiction</option>
+                  <option value="Literary Fiction">Literary Fiction</option>
+                  <option value="Young Adult">Young Adult</option>
+                  <option value="Middle Grade">Middle Grade</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex gap-2 justify-end" style={{ marginTop: '20px' }}>
+              <button
+                onClick={() => setShowNewBook(false)}
+                className="rounded-lg text-xs font-medium hover-btn"
+                style={{
+                  backgroundColor: 'var(--bg-tertiary)',
+                  color: 'var(--text-primary)',
+                  border: '1px solid var(--border-primary)',
+                  padding: '8px 16px',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateBook}
+                disabled={!newBookTitle.trim()}
+                className="rounded-lg text-xs font-medium hover-btn-primary"
+                style={{
+                  backgroundColor: 'var(--accent)',
+                  color: 'var(--text-inverse)',
+                  border: 'none',
+                  padding: '8px 16px',
+                  opacity: newBookTitle.trim() ? 1 : 0.5,
+                }}
+              >
+                Create
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

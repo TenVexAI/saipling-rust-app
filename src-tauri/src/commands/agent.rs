@@ -122,30 +122,42 @@ fn skills_dir() -> PathBuf {
 fn substitute_prompt_vars(template: &str, project_dir: &PathBuf, scope: &ContextScope) -> String {
     let mut prompt = template.to_string();
 
-    let genre_context = std::fs::read_to_string(project_dir.join("project.json"))
-        .ok()
-        .and_then(|data| serde_json::from_str::<serde_json::Value>(&data).ok())
-        .and_then(|meta| meta.get("genre").and_then(|g| g.as_str()).map(|g| format!("The story's genre is: {}", g)))
-        .unwrap_or_default();
+    // Genre comes from book.json if a book is in scope
+    let genre_context = if let Some(book_id) = &scope.book {
+        let book_path = project_dir.join("books").join(book_id).join("book.json");
+        std::fs::read_to_string(&book_path)
+            .ok()
+            .and_then(|data| serde_json::from_str::<serde_json::Value>(&data).ok())
+            .and_then(|meta| meta.get("genre").and_then(|g| g.as_str()).filter(|g| !g.is_empty()).map(|g| format!("The story's genre is: {}", g)))
+            .unwrap_or_default()
+    } else {
+        String::new()
+    };
 
     let foundation_context = if let Some(book_id) = &scope.book {
-        let path = project_dir.join("books").join(book_id).join("foundation").join("story-foundation.md");
+        let path = project_dir.join("books").join(book_id).join("phase-1-seed").join("story-foundation.md");
         std::fs::read_to_string(&path).ok().map(|c| format!("Current story foundation:\n{}", c))
     } else {
-        let path = project_dir.join("series").join("foundation.md");
-        std::fs::read_to_string(&path).ok().map(|c| format!("Series foundation:\n{}", c))
+        let path = project_dir.join("overview").join("overview.md");
+        std::fs::read_to_string(&path).ok().map(|c| format!("Project overview:\n{}", c))
     }.unwrap_or_default();
 
-    let (pov, tense, style_notes) = std::fs::read_to_string(project_dir.join("project.json"))
-        .ok()
-        .and_then(|data| serde_json::from_str::<serde_json::Value>(&data).ok())
-        .map(|meta| {
-            let pov = meta.pointer("/settings/pov").and_then(|v| v.as_str()).unwrap_or("third person limited").to_string();
-            let tense = meta.pointer("/settings/tense").and_then(|v| v.as_str()).unwrap_or("past").to_string();
-            let notes = meta.pointer("/settings/writing_style_notes").and_then(|v| v.as_str()).unwrap_or("").to_string();
-            (pov, tense, notes)
-        })
-        .unwrap_or_else(|| ("third person limited".into(), "past".into(), String::new()));
+    // POV and tense now come from book.json settings
+    let (pov, tense, style_notes) = if let Some(book_id) = &scope.book {
+        let book_path = project_dir.join("books").join(book_id).join("book.json");
+        std::fs::read_to_string(&book_path)
+            .ok()
+            .and_then(|data| serde_json::from_str::<serde_json::Value>(&data).ok())
+            .map(|meta| {
+                let pov = meta.pointer("/settings/pov").and_then(|v| v.as_str()).filter(|s| !s.is_empty()).unwrap_or("third person limited").to_string();
+                let tense = meta.pointer("/settings/tense").and_then(|v| v.as_str()).filter(|s| !s.is_empty()).unwrap_or("past").to_string();
+                let notes = meta.pointer("/settings/writing_style_notes").and_then(|v| v.as_str()).unwrap_or("").to_string();
+                (pov, tense, notes)
+            })
+            .unwrap_or_else(|| ("third person limited".into(), "past".into(), String::new()))
+    } else {
+        ("third person limited".into(), "past".into(), String::new())
+    };
 
     let style_block = format!("POV: {}\nTense: {}\n{}", pov, tense, style_notes);
     prompt = prompt.replace("{genre_context}", &genre_context);

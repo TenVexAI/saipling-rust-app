@@ -26,13 +26,18 @@ pub struct LoadedFile {
 }
 
 /// Resolve a context path pattern against the project directory.
-/// Supports `{book}` placeholder and simple glob `*.md` in the last segment.
+/// Supports `{book}` placeholder, `**` recursive glob, and simple `*` glob in the last segment.
 fn resolve_paths(pattern: &str, project_dir: &PathBuf, book_id: Option<&str>) -> Vec<PathBuf> {
     let resolved = if let Some(bid) = book_id {
         pattern.replace("{book}", &format!("books/{}", bid))
     } else {
         pattern.replace("{book}", "books/_default")
     };
+
+    // Handle ** recursive glob (e.g. "world/**/entry.md" or "characters/**/profile.md")
+    if resolved.contains("**") {
+        return resolve_recursive_glob(&resolved, project_dir);
+    }
 
     let full = project_dir.join(&resolved);
 
@@ -63,6 +68,60 @@ fn resolve_paths(pattern: &str, project_dir: &PathBuf, book_id: Option<&str>) ->
         vec![full]
     } else {
         Vec::new()
+    }
+}
+
+/// Resolve a pattern containing `**` by walking the directory tree recursively.
+/// Example: "world/**/entry.md" — find all files named "entry.md" under "world/".
+/// Example: "characters/**/profile.md" — find all "profile.md" under "characters/".
+fn resolve_recursive_glob(pattern: &str, project_dir: &PathBuf) -> Vec<PathBuf> {
+    // Split on the first "**" occurrence
+    let parts: Vec<&str> = pattern.splitn(2, "**").collect();
+    if parts.len() != 2 {
+        return Vec::new();
+    }
+
+    let base_rel = parts[0].trim_end_matches('/').trim_end_matches('\\');
+    let suffix = parts[1].trim_start_matches('/').trim_start_matches('\\');
+
+    let base_dir = if base_rel.is_empty() {
+        project_dir.clone()
+    } else {
+        project_dir.join(base_rel)
+    };
+
+    if !base_dir.is_dir() {
+        return Vec::new();
+    }
+
+    let mut results = Vec::new();
+    walk_dir_recursive(&base_dir, suffix, &mut results);
+    results.sort();
+    results
+}
+
+/// Recursively walk a directory and collect files whose name matches the suffix pattern.
+fn walk_dir_recursive(dir: &PathBuf, suffix: &str, results: &mut Vec<PathBuf>) {
+    let entries = match std::fs::read_dir(dir) {
+        Ok(e) => e,
+        Err(_) => return,
+    };
+
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.is_dir() {
+            walk_dir_recursive(&path, suffix, results);
+        } else if path.is_file() {
+            // Check if the file name matches the suffix (e.g. "entry.md", "*.md")
+            let file_name = path.file_name().and_then(|f| f.to_str()).unwrap_or("");
+            if suffix.contains('*') {
+                if matches_simple_glob(suffix, file_name) {
+                    results.push(path);
+                }
+            } else if file_name == suffix {
+                results.push(path);
+            }
+        }
     }
 }
 
