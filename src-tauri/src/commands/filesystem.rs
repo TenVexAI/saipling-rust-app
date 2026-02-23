@@ -285,6 +285,20 @@ pub fn get_book_word_count(project_dir: PathBuf, book_id: String) -> Result<Word
     Ok(WordCountSummary { book_total, target, chapters })
 }
 
+/// Load the set of excluded file paths from .context_settings.json.
+fn load_excluded_paths(project_dir: &PathBuf) -> std::collections::HashSet<String> {
+    let settings_path = project_dir.join(".context_settings.json");
+    if let Ok(content) = std::fs::read_to_string(&settings_path) {
+        if let Ok(map) = serde_json::from_str::<std::collections::HashMap<String, String>>(&content) {
+            return map.into_iter()
+                .filter(|(_, mode)| mode == "exclude")
+                .map(|(path, _)| path.replace('/', "\\"))
+                .collect();
+        }
+    }
+    std::collections::HashSet::new()
+}
+
 /// Count words in ALL .md files recursively within a book directory.
 /// Used to estimate full-context token count on the dashboard.
 #[tauri::command]
@@ -293,10 +307,24 @@ pub fn get_book_total_doc_words(project_dir: PathBuf, book_id: String) -> Result
     if !book_dir.exists() {
         return Err(AppError::BookNotFound(book_id));
     }
-    Ok(count_md_words_recursive(&book_dir))
+    let excluded = load_excluded_paths(&project_dir);
+    Ok(count_md_words_recursive(&book_dir, &excluded))
 }
 
-fn count_md_words_recursive(dir: &PathBuf) -> u64 {
+/// Count words in ALL .md files recursively within the entire project directory.
+/// Used to estimate full-context token count for the project.
+#[tauri::command]
+pub fn get_project_total_doc_words(project_dir: PathBuf) -> Result<u64, AppError> {
+    if !project_dir.exists() {
+        return Err(AppError::ProjectNotFound(
+            project_dir.to_string_lossy().to_string(),
+        ));
+    }
+    let excluded = load_excluded_paths(&project_dir);
+    Ok(count_md_words_recursive(&project_dir, &excluded))
+}
+
+fn count_md_words_recursive(dir: &PathBuf, excluded: &std::collections::HashSet<String>) -> u64 {
     let mut total: u64 = 0;
     let entries = match std::fs::read_dir(dir) {
         Ok(e) => e,
@@ -305,8 +333,12 @@ fn count_md_words_recursive(dir: &PathBuf) -> u64 {
     for entry in entries.flatten() {
         let path = entry.path();
         if path.is_dir() {
-            total += count_md_words_recursive(&path);
+            total += count_md_words_recursive(&path, excluded);
         } else if path.extension().map(|e| e == "md").unwrap_or(false) {
+            let path_str = path.to_string_lossy().to_string();
+            if excluded.contains(&path_str) {
+                continue;
+            }
             if let Ok(content) = std::fs::read_to_string(&path) {
                 let (_, body) = parse_frontmatter(&content);
                 total += body.split_whitespace().count() as u64;

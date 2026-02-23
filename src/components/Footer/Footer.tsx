@@ -1,15 +1,35 @@
+import { useState, useEffect } from 'react';
 import { useProjectStore } from '../../stores/projectStore';
 import { useEditorStore } from '../../stores/editorStore';
+import { getBookTotalDocWords, getProjectTotalDocWords } from '../../utils/tauri';
 
 export function Footer() {
   const project = useProjectStore((s) => s.project);
   const activeBookId = useProjectStore((s) => s.activeBookId);
   const activeChapterId = useProjectStore((s) => s.activeChapterId);
   const activeSceneId = useProjectStore((s) => s.activeSceneId);
+  const projectDir = useProjectStore((s) => s.projectDir);
   const totalProjectCost = useProjectStore((s) => s.totalProjectCost);
-  const wordCount = useEditorStore((s) => s.wordCount);
   const isDirty = useEditorStore((s) => s.isDirty);
   const isSaving = useEditorStore((s) => s.isSaving);
+  const [bookTokens, setBookTokens] = useState(0);
+  const [projectTokens, setProjectTokens] = useState(0);
+
+  useEffect(() => {
+    if (!projectDir || !activeBookId) {
+      setBookTokens(0);
+      return;
+    }
+    getBookTotalDocWords(projectDir, activeBookId).then((total) => setBookTokens(Math.round(total * 0.75))).catch(() => setBookTokens(0));
+  }, [projectDir, activeBookId]);
+
+  useEffect(() => {
+    if (!projectDir) {
+      setProjectTokens(0);
+      return;
+    }
+    getProjectTotalDocWords(projectDir).then((total) => setProjectTokens(Math.round(total * 0.75))).catch(() => setProjectTokens(0));
+  }, [projectDir]);
 
   const bookTitle = project?.books.find((b) => b.id === activeBookId)?.title;
 
@@ -44,8 +64,14 @@ export function Footer() {
       </div>
 
       <div className="flex items-center gap-3">
-        {wordCount > 0 && (
-          <span>{wordCount.toLocaleString()} words</span>
+        {bookTokens > 0 && (
+          <span>Book Tokens: ~{bookTokens.toLocaleString()}</span>
+        )}
+        {projectTokens > 0 && (
+          <>
+            {bookTokens > 0 && <span style={{ color: 'var(--border-primary)' }}>│</span>}
+            <span>Project Tokens: ~{projectTokens.toLocaleString()}</span>
+          </>
         )}
         {totalProjectCost > 0 && (
           <>

@@ -74,6 +74,9 @@ export const getBookWordCount = (projectDir: string, bookId: string) =>
 export const getBookTotalDocWords = (projectDir: string, bookId: string) =>
   invoke<number>('get_book_total_doc_words', { projectDir, bookId });
 
+export const getProjectTotalDocWords = (projectDir: string) =>
+  invoke<number>('get_project_total_doc_words', { projectDir });
+
 // ─── Draft Management ───
 export const saveDraft = (path: string, content: string) =>
   invoke<void>('save_draft', { path, content });
