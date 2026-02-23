@@ -14,7 +14,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'dashboard', icon: <LayoutDashboard size={20} />, label: 'Dashboard' },
   { id: 'book', icon: <BookOpen size={20} />, label: 'Book' },
   { id: 'characters', icon: <Users size={20} />, label: 'Characters' },
-  { id: 'world', icon: <Globe size={20} />, label: 'World' },
+  { id: 'world', icon: <Globe size={20} />, label: 'World Bible' },
   { id: 'notes', icon: <StickyNote size={20} />, label: 'Notes' },
   { id: 'files', icon: <FolderOpen size={20} />, label: 'Files & Context' },
 ];

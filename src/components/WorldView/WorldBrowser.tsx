@@ -1,31 +1,74 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Globe, FolderOpen, FileText, ChevronRight, ChevronDown, Folder, Plus } from 'lucide-react';
 import { useProjectStore } from '../../stores/projectStore';
 import { listDirectory, createDirectory, createFromTemplate } from '../../utils/tauri';
 import type { FileEntry } from '../../types/project';
 
 interface WorldFolder {
+  slug: string;
   name: string;
   path: string;
   entries: FileEntry[];
   expanded: boolean;
 }
 
-const WORLD_CATEGORIES = [
-  { dir: 'locations', label: 'Locations' },
-  { dir: 'factions', label: 'Factions' },
-  { dir: 'technology', label: 'Technology' },
-  { dir: 'history', label: 'History' },
-  { dir: 'magic-systems', label: 'Magic Systems' },
-  { dir: 'rules', label: 'Rules & Conventions' },
+interface SectionDef {
+  slug: string;
+  label: string;
+  description: string;
+}
+
+const SECTION_GROUPS: { group: string; sections: SectionDef[] }[] = [
+  {
+    group: 'Common',
+    sections: [
+      { slug: 'history', label: 'History & Backstory', description: 'Events that precede the story' },
+      { slug: 'factions', label: 'Factions & Organizations', description: 'Groups, companies, families, agencies' },
+      { slug: 'culture', label: 'Culture & Society', description: 'Customs, social norms, class structures, daily life' },
+      { slug: 'rules', label: 'Rules & Conventions', description: 'Genre-specific logic, story-world constraints' },
+    ],
+  },
+  {
+    group: 'Genre-leaning',
+    sections: [
+      { slug: 'technology', label: 'Technology', description: 'Systems, devices, infrastructure' },
+      { slug: 'magic-systems', label: 'Magic Systems', description: 'Rules, costs, limitations' },
+      { slug: 'religion', label: 'Religion & Belief Systems', description: 'Faiths, philosophies, superstitions' },
+      { slug: 'government', label: 'Government & Politics', description: 'Power structures, laws, jurisdictions' },
+      { slug: 'economy', label: 'Economy & Trade', description: 'Money, resources, commerce, wealth dynamics' },
+      { slug: 'flora-fauna', label: 'Flora & Fauna', description: 'Creatures, plants, ecosystems' },
+    ],
+  },
+  {
+    group: 'Specialized',
+    sections: [
+      { slug: 'languages', label: 'Languages & Communication', description: 'Dialects, slang, constructed languages, codes' },
+      { slug: 'mythology', label: 'Mythology & Legends', description: 'In-world myths, prophecies, folklore' },
+      { slug: 'geography', label: 'Geography & Climate', description: 'Physical world, weather patterns, natural features' },
+      { slug: 'medicine', label: 'Medicine & Science', description: 'Medical systems, scientific understanding, health' },
+      { slug: 'arts', label: 'Arts & Entertainment', description: 'In-world media, music, literature, sports' },
+      { slug: 'food', label: 'Food & Cuisine', description: 'Culinary traditions' },
+      { slug: 'calendar', label: 'Calendar & Timekeeping', description: 'Seasons, festivals, how time is marked' },
+      { slug: 'transportation', label: 'Transportation & Travel', description: 'How people get around, travel times, infrastructure' },
+    ],
+  },
 ];
+
+const ALL_SECTIONS: Record<string, string> = { locations: 'Locations', items: 'Items' };
+for (const group of SECTION_GROUPS) {
+  for (const s of group.sections) {
+    ALL_SECTIONS[s.slug] = s.label;
+  }
+}
 
 export function WorldBrowser() {
   const projectDir = useProjectStore((s) => s.projectDir);
   const setActiveFile = useProjectStore((s) => s.setActiveFile);
-  const [worldBible, setWorldBible] = useState<FileEntry | null>(null);
   const [folders, setFolders] = useState<WorldFolder[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showNewSection, setShowNewSection] = useState(false);
+  const [customName, setCustomName] = useState('');
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const worldDir = projectDir ? `${projectDir}\\world` : null;
 
@@ -34,29 +77,25 @@ export function WorldBrowser() {
     setLoading(true);
     try {
       const entries = await listDirectory(worldDir);
-      const bible = entries.find((e) => e.name === 'world-bible.md') || null;
-      setWorldBible(bible);
-
       const folderEntries: WorldFolder[] = [];
-      for (const cat of WORLD_CATEGORIES) {
-        const catDir = entries.find((e) => e.is_dir && e.name === cat.dir);
-        if (catDir) {
-          try {
-            const children = await listDirectory(catDir.path);
-            folderEntries.push({
-              name: cat.label,
-              path: catDir.path,
-              entries: children.filter((c) => !c.is_dir).sort((a, b) => a.name.localeCompare(b.name)),
-              expanded: true,
-            });
-          } catch {
-            folderEntries.push({ name: cat.label, path: catDir.path, entries: [], expanded: true });
-          }
+      const dirs = entries.filter((e) => e.is_dir).sort((a, b) => a.name.localeCompare(b.name));
+      for (const dir of dirs) {
+        const label = ALL_SECTIONS[dir.name] || dir.name.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+        try {
+          const children = await listDirectory(dir.path);
+          folderEntries.push({
+            slug: dir.name,
+            name: label,
+            path: dir.path,
+            entries: children.filter((c) => !c.is_dir).sort((a, b) => a.name.localeCompare(b.name)),
+            expanded: true,
+          });
+        } catch {
+          folderEntries.push({ slug: dir.name, name: label, path: dir.path, entries: [], expanded: true });
         }
       }
       setFolders(folderEntries);
     } catch {
-      setWorldBible(null);
       setFolders([]);
     }
     setLoading(false);
@@ -66,10 +105,33 @@ export function WorldBrowser() {
     loadWorld();
   }, [loadWorld]);
 
+  useEffect(() => {
+    if (!showNewSection) return;
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setShowNewSection(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showNewSection]);
+
   const toggleFolder = (index: number) => {
     setFolders((prev) =>
       prev.map((f, i) => (i === index ? { ...f, expanded: !f.expanded } : f))
     );
+  };
+
+  const existingSlugs = new Set(folders.map((f) => f.slug));
+
+  const handleCreateSection = async (slug: string) => {
+    if (!worldDir) return;
+    try {
+      await createDirectory(`${worldDir}\\${slug}`);
+      setShowNewSection(false);
+      setCustomName('');
+      loadWorld();
+    } catch { /* may already exist */ }
   };
 
   const handleAddEntry = async (folderPath: string, folderName: string) => {
@@ -81,7 +143,6 @@ export function WorldBrowser() {
       await createFromTemplate(filePath, 'world-entry', { title: name.trim(), type: folderName });
       loadWorld();
     } catch {
-      // Template might not exist, try creating directory and basic file
       try {
         await createDirectory(folderPath);
       } catch { /* may already exist */ }
@@ -101,9 +162,120 @@ export function WorldBrowser() {
   return (
     <div className="flex flex-col h-full" style={{ backgroundColor: 'var(--bg-primary)' }}>
       <div className="shrink-0" style={{ padding: '24px 28px 16px', borderBottom: '1px solid var(--border-secondary)' }}>
-        <div className="flex items-center gap-2">
-          <Globe size={18} style={{ color: 'var(--accent)' }} />
-          <h1 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>World</h1>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Globe size={18} style={{ color: 'var(--accent)' }} />
+            <h1 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>World Bible</h1>
+          </div>
+          <div style={{ position: 'relative' }} ref={dropdownRef}>
+            <button
+              onClick={() => setShowNewSection((v) => !v)}
+              className="flex items-center gap-1.5 rounded-lg text-xs font-medium hover-btn"
+              style={{
+                backgroundColor: 'var(--bg-tertiary)',
+                color: 'var(--text-primary)',
+                border: '1px solid var(--border-primary)',
+                padding: '6px 12px',
+              }}
+            >
+              <Plus size={14} />
+              New Section
+            </button>
+
+            {showNewSection && (
+              <div
+                className="rounded-lg"
+                style={{
+                  position: 'absolute',
+                  top: '100%',
+                  right: 0,
+                  marginTop: '4px',
+                  width: '280px',
+                  maxHeight: '400px',
+                  overflowY: 'auto',
+                  backgroundColor: 'var(--bg-elevated)',
+                  border: '1px solid var(--border-primary)',
+                  boxShadow: 'var(--shadow-lg)',
+                  zIndex: 100,
+                  padding: '8px 0',
+                }}
+              >
+                {SECTION_GROUPS.map((group) => {
+                  const available = group.sections.filter((s) => !existingSlugs.has(s.slug));
+                  if (available.length === 0) return null;
+                  return (
+                    <div key={group.group}>
+                      <div
+                        className="text-xs font-semibold uppercase tracking-wider"
+                        style={{ color: 'var(--text-tertiary)', padding: '8px 14px 4px' }}
+                      >
+                        {group.group}
+                      </div>
+                      {available.map((s) => (
+                        <button
+                          key={s.slug}
+                          onClick={() => handleCreateSection(s.slug)}
+                          className="flex flex-col w-full text-left"
+                          style={{ padding: '6px 14px', cursor: 'pointer', background: 'none', border: 'none' }}
+                          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--bg-hover)')}
+                          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                        >
+                          <span className="text-sm" style={{ color: 'var(--text-primary)' }}>{s.label}</span>
+                          <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{s.description}</span>
+                        </button>
+                      ))}
+                    </div>
+                  );
+                })}
+
+                {/* Custom section */}
+                <div
+                  className="text-xs font-semibold uppercase tracking-wider"
+                  style={{ color: 'var(--text-tertiary)', padding: '8px 14px 4px', borderTop: '1px solid var(--border-primary)', marginTop: '4px' }}
+                >
+                  Custom
+                </div>
+                <div style={{ padding: '4px 14px 8px', display: 'flex', gap: '6px' }}>
+                  <input
+                    value={customName}
+                    onChange={(e) => setCustomName(e.target.value)}
+                    placeholder="Section name..."
+                    className="flex-1 rounded text-xs"
+                    style={{
+                      backgroundColor: 'var(--bg-input)',
+                      border: '1px solid var(--border-primary)',
+                      color: 'var(--text-primary)',
+                      padding: '4px 8px',
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && customName.trim()) {
+                        handleCreateSection(customName.trim().toLowerCase().replace(/\s+/g, '-'));
+                      }
+                    }}
+                  />
+                  <button
+                    onClick={() => {
+                      if (customName.trim()) {
+                        handleCreateSection(customName.trim().toLowerCase().replace(/\s+/g, '-'));
+                      }
+                    }}
+                    disabled={!customName.trim()}
+                    className="rounded text-xs font-medium"
+                    style={{
+                      backgroundColor: 'var(--accent)',
+                      color: 'var(--text-inverse)',
+                      border: 'none',
+                      padding: '4px 10px',
+                      cursor: customName.trim() ? 'pointer' : 'default',
+                      opacity: customName.trim() ? 1 : 0.5,
+                    }}
+                  >
+                    Add
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -114,31 +286,11 @@ export function WorldBrowser() {
           </div>
         ) : (
           <>
-            {/* World Bible */}
-            {worldBible && (
-              <div style={{ marginBottom: '20px' }}>
-                <button
-                  onClick={() => setActiveFile(worldBible.path)}
-                  className="flex items-center gap-2 w-full text-left rounded-lg transition-colors"
-                  style={{ padding: '12px 14px', border: '1px solid var(--border-primary)', backgroundColor: 'var(--bg-elevated)' }}
-                  onMouseEnter={(e) => (e.currentTarget.style.borderColor = 'var(--accent)')}
-                  onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'var(--border-primary)')}
-                >
-                  <FileText size={16} style={{ color: 'var(--accent)', flexShrink: 0 }} />
-                  <div>
-                    <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>World Bible</span>
-                    <p className="text-xs" style={{ color: 'var(--text-tertiary)', marginTop: '2px' }}>Core world rules, tone, and era</p>
-                  </div>
-                </button>
-              </div>
-            )}
-
-            {/* Category Folders */}
-            {folders.length === 0 && !worldBible ? (
+            {folders.length === 0 ? (
               <div className="flex flex-col items-center" style={{ padding: '32px 0', color: 'var(--text-tertiary)' }}>
                 <FolderOpen size={24} style={{ marginBottom: '8px', opacity: 0.5 }} />
-                <p className="text-sm">No world-building files found</p>
-                <p className="text-xs" style={{ marginTop: '4px' }}>World data lives in the <code>world/</code> directory</p>
+                <p className="text-sm">No world-building sections yet</p>
+                <p className="text-xs" style={{ marginTop: '4px' }}>Click <strong>+ New Section</strong> to add one</p>
               </div>
             ) : (
               folders.map((folder, index) => (
