@@ -95,8 +95,8 @@ export function Welcome() {
               onClick={() => setShowCreate(true)}
               className="flex items-center gap-3 w-full rounded-lg text-sm font-medium hover-btn-primary"
               style={{
-                backgroundColor: 'var(--accent)',
-                color: 'var(--text-inverse)',
+                backgroundColor: '#3CF281',
+                color: '#000',
                 padding: '12px 16px',
               }}
             >
