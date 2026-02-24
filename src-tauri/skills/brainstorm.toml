@@ -9,6 +9,12 @@ temperature = 0.9
 always_include = []
 max_context_tokens = 20000
 
+[context.when_book]
+include = [
+    "{book}/overview/brainstorm.md",
+    "{book}/overview/overview.md",
+]
+
 [context.optional]
 include_if_exists = [
     "overview/brainstorm.md",

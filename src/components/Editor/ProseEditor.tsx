@@ -133,6 +133,7 @@ export function ProseEditor({ filePath }: ProseEditorProps) {
     try {
       await writeFile(filePathRef.current, frontmatterRef.current, markdown);
       markSaved();
+      useProjectStore.getState().bumpRefresh();
     } catch (e) {
       console.error('Save failed:', e);
       markSaved();

@@ -39,6 +39,7 @@ export function ContextSettings() {
     if (!settingsPath) return;
     try {
       await writeFile(settingsPath, {}, JSON.stringify(updated, null, 2));
+      useProjectStore.getState().bumpRefresh();
     } catch (e) {
       console.error('Failed to save context settings:', e);
     }
@@ -91,6 +92,7 @@ export function ContextSettings() {
       await deleteEntry(filePath);
       setDeleteConfirm(null);
       loadRoot();
+      useProjectStore.getState().bumpRefresh();
     } catch (e) {
       console.error('Failed to delete:', e);
     }

@@ -12,6 +12,7 @@ export function Footer() {
   const totalProjectCost = useProjectStore((s) => s.totalProjectCost);
   const isDirty = useEditorStore((s) => s.isDirty);
   const isSaving = useEditorStore((s) => s.isSaving);
+  const refreshCounter = useProjectStore((s) => s.refreshCounter);
   const [bookTokens, setBookTokens] = useState(0);
   const [projectTokens, setProjectTokens] = useState(0);
 
@@ -21,7 +22,7 @@ export function Footer() {
       return;
     }
     getBookTotalDocWords(projectDir, activeBookId).then((total) => setBookTokens(Math.round(total * 0.75))).catch(() => setBookTokens(0));
-  }, [projectDir, activeBookId]);
+  }, [projectDir, activeBookId, refreshCounter]);
 
   useEffect(() => {
     if (!projectDir) {
@@ -29,7 +30,7 @@ export function Footer() {
       return;
     }
     getProjectTotalDocWords(projectDir).then((total) => setProjectTokens(Math.round(total * 0.75))).catch(() => setProjectTokens(0));
-  }, [projectDir]);
+  }, [projectDir, refreshCounter]);
 
   const bookTitle = project?.books.find((b) => b.id === activeBookId)?.title;
 

@@ -50,7 +50,14 @@ export function BrainstormToolbar({ currentFilePath }: BrainstormToolbarProps) {
   const [pendingOverviewPath, setPendingOverviewPath] = useState<string | null>(null);
   const streamedRef = useRef<string>('');
 
-  const overviewDir = projectDir ? `${projectDir}\\overview` : null;
+  // Detect if we're in a book-level or project-level overview
+  const bookOverviewMatch = currentFilePath.match(/[\\/]books[\\/](book-\d+)[\\/]overview[\\/]/);
+  const isBookLevel = !!bookOverviewMatch;
+  const bookId = bookOverviewMatch?.[1] ?? null;
+  const overviewDir = projectDir
+    ? (isBookLevel && bookId ? `${projectDir}\\books\\${bookId}\\overview` : `${projectDir}\\overview`)
+    : null;
+  const overviewLabel = isBookLevel ? 'Book Overview' : 'Project Overview';
   const [showWelcome, setShowWelcome] = useState(true);
   const [creatingBlank, setCreatingBlank] = useState(false);
 
@@ -85,10 +92,10 @@ export function BrainstormToolbar({ currentFilePath }: BrainstormToolbarProps) {
       // Get current chat messages for context
       const chatMessages = useAIStore.getState().messages;
       const userMessage = chatMessages.length > 0
-        ? 'Generate a project overview based on the brainstorm notes and our conversation so far.'
-        : 'Generate a project overview based on the brainstorm notes.';
+        ? `Generate a ${isBookLevel ? 'book' : 'project'} overview based on the brainstorm notes and our conversation so far.`
+        : `Generate a ${isBookLevel ? 'book' : 'project'} overview based on the brainstorm notes.`;
 
-      const p = await agentPlan(projectDir, 'overview_generator', {}, userMessage);
+      const p = await agentPlan(projectDir, 'overview_generator', { book: bookId || undefined }, userMessage);
       setPlan(p);
       setPhase('confirming');
     } catch (e) {
@@ -106,7 +113,7 @@ export function BrainstormToolbar({ currentFilePath }: BrainstormToolbarProps) {
     const chatMessages = useAIStore.getState().messages;
     const history = [
       ...chatMessages.filter(m => m.content.length > 0).map(m => ({ role: m.role, content: m.content })),
-      { role: 'user' as const, content: 'Generate a project overview based on the brainstorm notes and our conversation so far.' },
+      { role: 'user' as const, content: `Generate a ${isBookLevel ? 'book' : 'project'} overview based on the brainstorm notes and our conversation so far.` },
     ];
 
     const unlistenChunk = await listen<{ text: string }>(`claude:chunk:${plan.plan_id}`, (event) => {
@@ -154,7 +161,8 @@ export function BrainstormToolbar({ currentFilePath }: BrainstormToolbarProps) {
     const nextVersion = getNextOverviewVersion(files);
     const overviewPath = `${overviewDir}\\${nextVersion}`;
     try {
-      await writeFile(overviewPath, { title: 'Project Overview' }, overviewContent);
+      await writeFile(overviewPath, { title: overviewLabel }, overviewContent);
+      useProjectStore.getState().bumpRefresh();
     } catch (e) {
       setError(`Failed to write overview: ${String(e)}`);
       setPhase('idle');
@@ -169,11 +177,11 @@ export function BrainstormToolbar({ currentFilePath }: BrainstormToolbarProps) {
     // Instead, store the path and open the file AFTER the description modal is dismissed.
     setPendingOverviewPath(overviewPath);
 
-    if (description) {
+    if (description && !isBookLevel) {
       setSuggestedDescription(description);
       setPhase('description_approval');
     } else {
-      // No description suggestion — open file now
+      // No description suggestion or book-level overview — open file now
       setActiveFile(overviewPath);
       setPendingOverviewPath(null);
       setPhase('idle');
@@ -222,7 +230,7 @@ export function BrainstormToolbar({ currentFilePath }: BrainstormToolbarProps) {
     try {
       const nextVersion = getNextOverviewVersion(files);
       const blankPath = `${overviewDir}\\${nextVersion}`;
-      await writeFile(blankPath, { title: 'Project Overview' }, '# Project Overview\n\n');
+      await writeFile(blankPath, { title: overviewLabel }, `# ${overviewLabel}\n\n`);
       await loadFiles();
       // Cancel any pending generation
       if (plan) {
@@ -392,12 +400,12 @@ export function BrainstormToolbar({ currentFilePath }: BrainstormToolbarProps) {
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)', marginBottom: '12px' }}>
-              {hasOverview ? 'Regenerate Project Overview' : 'Generate Project Overview'}
+              {hasOverview ? `Regenerate ${overviewLabel}` : `Generate ${overviewLabel}`}
             </h3>
             <p className="text-xs" style={{ color: 'var(--text-secondary)', marginBottom: '16px', lineHeight: '1.5' }}>
               {hasOverview
-                ? 'This will create a new version of your Project Overview using your brainstorm notes and chat history. Your existing overview will not be overwritten.'
-                : 'This will read your brainstorm notes and chat history, then generate a structured project overview and a suggested short description.'}
+                ? `This will create a new version of your ${overviewLabel} using your brainstorm notes and chat history. Your existing overview will not be overwritten.`
+                : `This will read your brainstorm notes and chat history, then generate a structured ${overviewLabel.toLowerCase()} and a suggested short description.`}
             </p>
 
             <div className="text-xs" style={{ color: 'var(--text-tertiary)', marginBottom: '8px' }}>
@@ -425,9 +433,26 @@ export function BrainstormToolbar({ currentFilePath }: BrainstormToolbarProps) {
                   Context files:
                 </div>
                 <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                  {plan.context_files.map((f) => (
-                    <div key={f.path} style={{ marginBottom: '2px' }}>• {f.path}</div>
-                  ))}
+                  {plan.context_files.map((f) => {
+                    const bm = f.path.match(/^books[\\/](book-\d+)[\\/](.*)/);
+                    const scope = bm ? bm[1] : 'project';
+                    const display = bm ? bm[2] : f.path;
+                    return (
+                      <div key={f.path} style={{ marginBottom: '2px' }}>
+                        • <span
+                            style={{
+                              backgroundColor: bm ? 'var(--bg-tertiary)' : 'var(--accent-subtle)',
+                              color: bm ? 'var(--text-tertiary)' : 'var(--accent)',
+                              fontSize: '10px',
+                              padding: '1px 5px',
+                              borderRadius: '3px',
+                              marginRight: '4px',
+                            }}
+                          >{scope}</span>
+                        {display}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -455,7 +480,7 @@ export function BrainstormToolbar({ currentFilePath }: BrainstormToolbarProps) {
                   padding: '8px 16px',
                 }}
                 disabled={creatingBlank}
-                title="Create a blank Project Overview to write your own"
+                title={`Create a blank ${overviewLabel} to write your own`}
               >
                 <FileText size={12} />
                 Create Blank
@@ -581,17 +606,18 @@ export function BrainstormToolbar({ currentFilePath }: BrainstormToolbarProps) {
               Welcome to the Brainstorm Workspace
             </h3>
             <p className="text-xs" style={{ color: 'var(--text-secondary)', lineHeight: '1.6', marginBottom: '12px' }}>
-              This is where you can jot down anything and everything about your project — ideas, themes, characters, plot
-              points, world details. Get your thoughts out first.
+              {isBookLevel
+                ? 'This is where you can jot down anything and everything about this book — ideas, themes, characters, plot points, structure. Get your thoughts out first.'
+                : 'This is where you can jot down anything and everything about your project — ideas, themes, characters, plot points, world details. Get your thoughts out first.'}
             </p>
             <p className="text-xs" style={{ color: 'var(--text-secondary)', lineHeight: '1.6', marginBottom: '12px' }}>
               When you're ready, open the chat panel and talk to Claude. Your notes are automatically used as context, so
-              Claude can help you explore and refine your ideas. Once Claude has a good understanding of your project, press
+              Claude can help you explore and refine your ideas. Once Claude has a good understanding, press
               the <strong style={{ color: 'var(--text-primary)' }}>Generate</strong> button to have Claude create a
-              comprehensive Project Overview document.
+              comprehensive {overviewLabel} document.
             </p>
             <p className="text-xs" style={{ color: 'var(--text-tertiary)', lineHeight: '1.6', marginBottom: '20px' }}>
-              You can also skip the AI and write your own Project Overview at any time.
+              You can also skip the AI and write your own {overviewLabel} at any time.
             </p>
 
             <div className="flex gap-2 justify-end">

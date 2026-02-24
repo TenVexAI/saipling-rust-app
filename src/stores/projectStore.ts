@@ -21,6 +21,7 @@ interface ProjectState {
   activePhase: Phase | null;
   contextExpandFolder: string | null;
   totalProjectCost: number;
+  refreshCounter: number;
 
   // Sidebar
   sidebarExpanded: boolean;
@@ -42,6 +43,7 @@ interface ProjectState {
   toggleRightPanel: () => void;
   setRightPanelOpen: (open: boolean) => void;
   updateBooks: (books: BookRef[]) => void;
+  bumpRefresh: () => void;
 }
 
 export const useProjectStore = create<ProjectState>((set) => ({
@@ -58,6 +60,7 @@ export const useProjectStore = create<ProjectState>((set) => ({
   activePhase: null,
   contextExpandFolder: null,
   totalProjectCost: 0,
+  refreshCounter: 0,
 
   sidebarExpanded: false,
   rightPanelOpen: true,
@@ -121,4 +124,5 @@ export const useProjectStore = create<ProjectState>((set) => ({
   updateBooks: (books) => set((s) => ({
     project: s.project ? { ...s.project, books } : null,
   })),
+  bumpRefresh: () => set((s) => ({ refreshCounter: s.refreshCounter + 1 })),
 }));

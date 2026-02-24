@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 use serde::Serialize;
 use crate::error::AppError;
@@ -152,7 +152,38 @@ fn load_file(path: &PathBuf, max_remaining: u64) -> Option<(String, u64)> {
     }
 }
 
+/// Load context settings from .context_settings.json.
+/// Returns a map of relative path (forward slashes) → mode ("auto", "exclude", "force").
+/// Keys in the JSON are absolute paths; we normalize them to relative forward-slash paths.
+fn load_context_settings(project_dir: &PathBuf) -> HashMap<String, String> {
+    let settings_path = project_dir.join(".context_settings.json");
+    if let Ok(content) = std::fs::read_to_string(&settings_path) {
+        if let Ok(raw_map) = serde_json::from_str::<HashMap<String, String>>(&content) {
+            let prefix = project_dir.to_string_lossy().to_string();
+            let mut normalized = HashMap::new();
+            for (path, mode) in raw_map {
+                let rel = if path.starts_with(&prefix) {
+                    path[prefix.len()..].trim_start_matches('\\').trim_start_matches('/')
+                } else {
+                    &path
+                };
+                let key = rel.replace('\\', "/");
+                normalized.insert(key, mode);
+            }
+            return normalized;
+        }
+    }
+    HashMap::new()
+}
+
+/// Check if a file should be excluded based on context settings.
+/// Returns true if the file is explicitly excluded.
+fn is_excluded(rel_path: &str, settings: &HashMap<String, String>) -> bool {
+    settings.get(rel_path).map(|m| m == "exclude").unwrap_or(false)
+}
+
 /// Assemble context files based on a skill's context definition.
+/// Respects .context_settings.json: "exclude" files are skipped, "force" files are always added.
 pub fn assemble_context(
     skill: &SkillDefinition,
     project_dir: &PathBuf,
@@ -165,30 +196,44 @@ pub fn assemble_context(
     let mut files_loaded = Vec::new();
     let mut context_parts: Vec<String> = Vec::new();
     let mut loaded_canonical: HashSet<PathBuf> = HashSet::new();
+    let ctx_settings = load_context_settings(project_dir);
+
+    // Helper closure to load a file respecting context settings
+    let mut try_load = |path: &PathBuf, total: &mut u64, max: u64,
+                        loaded: &mut HashSet<PathBuf>,
+                        parts: &mut Vec<String>,
+                        files: &mut Vec<LoadedFile>| -> bool {
+        if *total >= max {
+            return false;
+        }
+        let canonical = path.canonicalize().unwrap_or_else(|_| path.clone());
+        if loaded.contains(&canonical) {
+            return false;
+        }
+        let rel = path.strip_prefix(project_dir).unwrap_or(path);
+        let rel_str = normalize_rel_path(rel);
+        if is_excluded(&rel_str, &ctx_settings) {
+            return false;
+        }
+        if let Some((content, tokens)) = load_file(path, max - *total) {
+            parts.push(format!("--- {} ---\n{}", rel_str, content));
+            files.push(LoadedFile {
+                path: rel_str,
+                mode: "full".to_string(),
+                tokens,
+            });
+            *total += tokens;
+            loaded.insert(canonical);
+            return true;
+        }
+        false
+    };
 
     // 1. Always-include files
     for pattern in &skill.context.always_include {
         let paths = resolve_paths(pattern, project_dir, book_id);
         for path in paths {
-            if total_tokens >= max_tokens {
-                break;
-            }
-            let canonical = path.canonicalize().unwrap_or_else(|_| path.clone());
-            if loaded_canonical.contains(&canonical) {
-                continue;
-            }
-            if let Some((content, tokens)) = load_file(&path, max_tokens - total_tokens) {
-                let rel = path.strip_prefix(project_dir).unwrap_or(&path);
-                let rel_str = normalize_rel_path(rel);
-                context_parts.push(format!("--- {} ---\n{}", rel_str, content));
-                files_loaded.push(LoadedFile {
-                    path: rel_str,
-                    mode: "full".to_string(),
-                    tokens,
-                });
-                total_tokens += tokens;
-                loaded_canonical.insert(canonical);
-            }
+            try_load(&path, &mut total_tokens, max_tokens, &mut loaded_canonical, &mut context_parts, &mut files_loaded);
         }
     }
 
@@ -198,25 +243,7 @@ pub fn assemble_context(
             for pattern in &when_book.include {
                 let paths = resolve_paths(pattern, project_dir, book_id);
                 for path in paths {
-                    if total_tokens >= max_tokens {
-                        break;
-                    }
-                    let canonical = path.canonicalize().unwrap_or_else(|_| path.clone());
-                    if loaded_canonical.contains(&canonical) {
-                        continue;
-                    }
-                    if let Some((content, tokens)) = load_file(&path, max_tokens - total_tokens) {
-                        let rel = path.strip_prefix(project_dir).unwrap_or(&path);
-                        let rel_str = normalize_rel_path(rel);
-                        context_parts.push(format!("--- {} ---\n{}", rel_str, content));
-                        files_loaded.push(LoadedFile {
-                            path: rel_str,
-                            mode: "full".to_string(),
-                            tokens,
-                        });
-                        total_tokens += tokens;
-                        loaded_canonical.insert(canonical);
-                    }
+                    try_load(&path, &mut total_tokens, max_tokens, &mut loaded_canonical, &mut context_parts, &mut files_loaded);
                 }
             }
         }
@@ -227,27 +254,21 @@ pub fn assemble_context(
         for pattern in &optional.include_if_exists {
             let paths = resolve_paths(pattern, project_dir, book_id);
             for path in paths {
-                if total_tokens >= max_tokens {
-                    break;
-                }
-                let canonical = path.canonicalize().unwrap_or_else(|_| path.clone());
-                if loaded_canonical.contains(&canonical) {
-                    continue;
-                }
-                if let Some((content, tokens)) = load_file(&path, max_tokens - total_tokens) {
-                    let rel = path.strip_prefix(project_dir).unwrap_or(&path);
-                    let rel_str = normalize_rel_path(rel);
-                    context_parts.push(format!("--- {} ---\n{}", rel_str, content));
-                    files_loaded.push(LoadedFile {
-                        path: rel_str,
-                        mode: "full".to_string(),
-                        tokens,
-                    });
-                    total_tokens += tokens;
-                    loaded_canonical.insert(canonical);
-                }
+                try_load(&path, &mut total_tokens, max_tokens, &mut loaded_canonical, &mut context_parts, &mut files_loaded);
             }
         }
+    }
+
+    // 4. Force-include: load any files marked "force" in context settings that haven't been loaded yet
+    for (rel_path, mode) in &ctx_settings {
+        if mode != "force" {
+            continue;
+        }
+        let full_path = project_dir.join(rel_path.replace('/', "\\"));
+        if !full_path.exists() {
+            continue;
+        }
+        try_load(&full_path, &mut total_tokens, max_tokens, &mut loaded_canonical, &mut context_parts, &mut files_loaded);
     }
 
     // Build the context block

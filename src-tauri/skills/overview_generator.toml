@@ -12,6 +12,13 @@ always_include = [
 ]
 max_context_tokens = 30000
 
+[context.when_book]
+include = [
+    "{book}/overview/brainstorm.md",
+    "{book}/overview/*.md",
+    "{book}/book.json",
+]
+
 [context.optional]
 include_if_exists = [
     "overview/*.md",

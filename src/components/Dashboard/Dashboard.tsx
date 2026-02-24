@@ -111,9 +111,11 @@ export function Dashboard() {
     setBookCardData(data);
   }, [projectDir, project]);
 
+  const refreshCounter = useProjectStore((s) => s.refreshCounter);
+
   useEffect(() => {
     loadBookData();
-  }, [loadBookData]);
+  }, [loadBookData, refreshCounter]);
 
   const handleBrainstorm = () => {
     if (!projectDir) return;
