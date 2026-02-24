@@ -76,6 +76,18 @@ export function HelpWindow() {
     return () => { unlisten?.(); };
   }, [applyCustomColors]);
 
+  // Close help window on Ctrl+Shift+H
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toUpperCase() === 'H') {
+        e.preventDefault();
+        appWindow.close();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [appWindow]);
+
   // Read target section from URL params and scroll to it
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);

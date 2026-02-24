@@ -34,3 +34,26 @@ export async function openHelpWindow(section?: string) {
     center: true,
   });
 }
+
+export async function closeHelpWindow(): Promise<boolean> {
+  const existing = await WebviewWindow.getByLabel('help');
+  if (existing) {
+    await existing.close();
+    return true;
+  }
+  return false;
+}
+
+export async function isHelpWindowOpen(): Promise<boolean> {
+  const existing = await WebviewWindow.getByLabel('help');
+  return existing !== null;
+}
+
+export async function toggleHelpWindow() {
+  const existing = await WebviewWindow.getByLabel('help');
+  if (existing) {
+    await existing.close();
+  } else {
+    await openHelpWindow();
+  }
+}

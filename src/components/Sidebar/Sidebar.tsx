@@ -1,8 +1,10 @@
+import { useState, useEffect, useCallback } from 'react';
 import {
   LayoutDashboard, FolderOpen, BookOpen, Globe, Users, StickyNote, Settings, HelpCircle,
 } from 'lucide-react';
 import { useProjectStore, type SidebarView } from '../../stores/projectStore';
-import { openHelpWindow } from '../../utils/helpWindow';
+import { toggleHelpWindow, isHelpWindowOpen } from '../../utils/helpWindow';
+import { listen } from '@tauri-apps/api/event';
 
 interface NavItem {
   id: SidebarView;
@@ -24,6 +26,34 @@ export function Sidebar() {
   const setActiveView = useProjectStore((s) => s.setActiveView);
   const sidebarExpanded = useProjectStore((s) => s.sidebarExpanded);
   const project = useProjectStore((s) => s.project);
+  const [helpOpen, setHelpOpen] = useState(false);
+
+  // Track help window open/close via Tauri webview events
+  useEffect(() => {
+    // Check initial state
+    isHelpWindowOpen().then(setHelpOpen).catch(() => {});
+
+    // Listen for window created/destroyed events
+    const unlistenCreated = listen('tauri://webview-created', () => {
+      isHelpWindowOpen().then(setHelpOpen).catch(() => {});
+    });
+    const unlistenDestroyed = listen('tauri://window-destroyed', () => {
+      // Small delay to let the window fully close
+      setTimeout(() => isHelpWindowOpen().then(setHelpOpen).catch(() => {}), 100);
+    });
+
+    return () => {
+      unlistenCreated.then((fn) => fn());
+      unlistenDestroyed.then((fn) => fn());
+    };
+  }, []);
+
+  const handleHelpClick = useCallback(() => {
+    toggleHelpWindow().then(() => {
+      // Update state after toggle
+      setTimeout(() => isHelpWindowOpen().then(setHelpOpen).catch(() => {}), 150);
+    });
+  }, []);
 
   return (
     <div
@@ -67,15 +97,18 @@ export function Sidebar() {
 
       <div className="pb-3 px-1.5 flex flex-col gap-1">
         <button
-          onClick={() => openHelpWindow()}
-          className="flex items-center gap-3 w-full rounded-md hover-sidebar"
+          onClick={handleHelpClick}
+          className={`flex items-center gap-3 w-full rounded-md ${helpOpen ? '' : 'hover-sidebar'}`}
           style={{
-            color: 'var(--text-secondary)',
+            color: helpOpen ? 'var(--accent)' : 'var(--text-secondary)',
             backgroundColor: 'transparent',
+            transition: 'color 0.15s ease',
             justifyContent: sidebarExpanded ? 'flex-start' : 'center',
             padding: sidebarExpanded ? '8px 12px' : '10px 0',
           }}
-          title="Help"
+          onMouseEnter={(e) => { if (helpOpen) e.currentTarget.style.color = 'var(--color-error)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.color = helpOpen ? 'var(--accent)' : 'var(--text-secondary)'; }}
+          title={helpOpen ? 'Close Help' : 'Help'}
         >
           <HelpCircle size={20} />
           {sidebarExpanded && <span className="text-sm">Help</span>}

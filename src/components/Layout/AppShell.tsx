@@ -19,7 +19,7 @@ import { ProseEditor } from '../Editor/ProseEditor';
 import { useProjectStore } from '../../stores/projectStore';
 import { useEditorStore } from '../../stores/editorStore';
 import { getModelsConfig, getConfig } from '../../utils/tauri';
-import { openHelpWindow } from '../../utils/helpWindow';
+import { toggleHelpWindow } from '../../utils/helpWindow';
 import { listen } from '@tauri-apps/api/event';
 import { useThemeStore } from '../../stores/themeStore';
 import { setModelsConfig } from '../../utils/modelPricing';
@@ -162,7 +162,7 @@ export function AppShell() {
           setActiveView('notes');
           setTimeout(() => window.dispatchEvent(new Event('trigger-new-note')), 100);
           break;
-        case 'H': e.preventDefault(); openHelpWindow(); break;
+        case 'H': e.preventDefault(); toggleHelpWindow(); break;
         default:
           if (e.code === 'Comma') { e.preventDefault(); setActiveView('settings'); }
           break;
