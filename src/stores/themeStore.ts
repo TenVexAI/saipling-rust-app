@@ -9,9 +9,14 @@ interface ThemeState {
 }
 
 const CUSTOM_COLOR_KEYS = [
-  '--bg-primary', '--bg-secondary', '--bg-elevated', '--bg-sidebar',
-  '--text-primary', '--text-secondary', '--accent', '--accent-hover',
-  '--accent-subtle', '--border-primary', '--logo-stroke',
+  '--bg-primary', '--bg-secondary', '--bg-tertiary', '--bg-elevated', '--bg-sidebar',
+  '--bg-input', '--bg-hover', '--bg-active', '--bg-selection',
+  '--text-primary', '--text-secondary', '--text-tertiary', '--text-inverse',
+  '--border-primary', '--border-secondary', '--border-focus',
+  '--accent', '--accent-hover', '--accent-subtle',
+  '--shadow-sm', '--shadow-md', '--shadow-lg',
+  '--scrollbar-thumb', '--scrollbar-track',
+  '--logo-stroke',
 ];
 
 export const useThemeStore = create<ThemeState>((set) => ({
