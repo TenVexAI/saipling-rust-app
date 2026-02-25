@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Globe, FolderOpen, FileText, ChevronRight, ChevronDown, Folder, Plus } from 'lucide-react';
+import { Globe, FolderOpen, FileText, ChevronRight, ChevronDown, Folder, Plus, X } from 'lucide-react';
 import { useProjectStore } from '../../stores/projectStore';
-import { listDirectory, createDirectory, createFromTemplate } from '../../utils/tauri';
+import { listDirectory, createDirectory, writeFile } from '../../utils/tauri';
 import type { FileEntry } from '../../types/project';
 
 interface WorldFolder {
@@ -69,6 +69,10 @@ export function WorldBrowser() {
   const [showNewSection, setShowNewSection] = useState(false);
   const [customName, setCustomName] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [showNewEntryModal, setShowNewEntryModal] = useState(false);
+  const [newEntryName, setNewEntryName] = useState('');
+  const [newEntryFolder, setNewEntryFolder] = useState<{ path: string; name: string; slug: string } | null>(null);
+  const entryInputRef = useRef<HTMLInputElement>(null);
 
   const worldDir = projectDir ? `${projectDir}\\world` : null;
 
@@ -87,7 +91,7 @@ export function WorldBrowser() {
             slug: dir.name,
             name: label,
             path: dir.path,
-            entries: children.filter((c) => !c.is_dir).sort((a, b) => a.name.localeCompare(b.name)),
+            entries: children.filter((c) => c.is_dir).sort((a, b) => a.name.localeCompare(b.name)),
             expanded: true,
           });
         } catch {
@@ -134,20 +138,42 @@ export function WorldBrowser() {
     } catch { /* may already exist */ }
   };
 
-  const handleAddEntry = async (folderPath: string, folderName: string) => {
-    const name = prompt(`New ${folderName.toLowerCase().replace(/s$/, '')} name:`);
-    if (!name?.trim()) return;
-    const slug = name.trim().toLowerCase().replace(/\s+/g, '-');
-    const filePath = `${folderPath}\\${slug}.md`;
+  const handleOpenNewEntry = (folderPath: string, folderName: string, folderSlug: string) => {
+    setNewEntryName('');
+    setNewEntryFolder({ path: folderPath, name: folderName, slug: folderSlug });
+    setShowNewEntryModal(true);
+    setTimeout(() => entryInputRef.current?.focus(), 50);
+  };
+
+  const handleConfirmNewEntry = async () => {
+    if (!newEntryName.trim() || !newEntryFolder) return;
+    const name = newEntryName.trim();
+    const slug = name.toLowerCase().replace(/\s+/g, '-');
+    const entryDir = `${newEntryFolder.path}\\${slug}`;
+    const brainstormPath = `${entryDir}\\brainstorm.md`;
+    setShowNewEntryModal(false);
+    setNewEntryName('');
     try {
-      await createFromTemplate(filePath, 'world-entry', { title: name.trim(), type: folderName });
+      await createDirectory(entryDir);
+      const now = new Date().toISOString().slice(0, 10);
+      const frontmatter: Record<string, unknown> = {
+        type: 'brainstorm',
+        scope: 'series',
+        subject: 'world-entry',
+        category: newEntryFolder.slug,
+        entry_id: slug,
+        created: now,
+        modified: now,
+        status: 'empty',
+      };
+      const body = `# World Entry Brainstorm \u2014 ${name}\n\nDump everything you know about this element of your world. Remember: every\nworld-building detail should ultimately serve your story \u2014 connecting to\ncharacters, conflict, or theme.\n\nThink about:\n- What is it and how does it work?\n- What are its rules and limitations?\n- How does it affect daily life in your world?\n- How does it create conflict or story possibilities?\n- What's its history \u2014 how did it come to exist?\n- How do different characters or groups relate to it?\n\nWrite freely below.\n\n---\n\n`;
+      await writeFile(brainstormPath, frontmatter, body);
       loadWorld();
-    } catch {
-      try {
-        await createDirectory(folderPath);
-      } catch { /* may already exist */ }
-      loadWorld();
+      setActiveFile(brainstormPath);
+    } catch (e) {
+      console.error('Failed to create world entry:', e);
     }
+    setNewEntryFolder(null);
   };
 
   if (!projectDir) {
@@ -160,6 +186,7 @@ export function WorldBrowser() {
   }
 
   return (
+    <>
     <div className="flex flex-col h-full" style={{ backgroundColor: 'var(--bg-primary)' }}>
       <div className="shrink-0" style={{ padding: '24px 28px 16px', borderBottom: '1px solid var(--border-secondary)' }}>
         <div className="flex items-center justify-between">
@@ -313,7 +340,7 @@ export function WorldBrowser() {
                       </span>
                     </button>
                     <button
-                      onClick={() => handleAddEntry(folder.path, folder.name)}
+                      onClick={() => handleOpenNewEntry(folder.path, folder.name, folder.slug)}
                       className="flex items-center hover-icon"
                       style={{ color: 'var(--text-tertiary)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}
                       title={`Add ${folder.name}`}
@@ -327,14 +354,14 @@ export function WorldBrowser() {
                       {folder.entries.map((entry) => (
                         <button
                           key={entry.path}
-                          onClick={() => setActiveFile(entry.path)}
+                          onClick={() => setActiveFile(`${entry.path}\\brainstorm.md`)}
                           className="flex items-center gap-2 w-full text-left text-xs rounded-md transition-colors"
                           style={{ padding: '5px 10px', color: 'var(--text-primary)' }}
                           onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--bg-hover)')}
                           onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
                         >
                           <FileText size={12} style={{ color: 'var(--text-tertiary)', flexShrink: 0 }} />
-                          <span className="truncate">{entry.name.replace(/\.md$/, '').replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}</span>
+                          <span className="truncate">{entry.name.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}</span>
                         </button>
                       ))}
                     </div>
@@ -346,5 +373,91 @@ export function WorldBrowser() {
         )}
       </div>
     </div>
+
+    {/* New Entry Modal */}
+    {showNewEntryModal && newEntryFolder && (
+      <div
+        className="fixed inset-0 flex items-center justify-center"
+        style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000 }}
+        onClick={() => { setShowNewEntryModal(false); setNewEntryFolder(null); }}
+      >
+        <div
+          className="rounded-xl"
+          style={{
+            backgroundColor: 'var(--bg-elevated)',
+            border: '1px solid var(--border-primary)',
+            padding: '24px',
+            width: '360px',
+            maxWidth: '90vw',
+            boxShadow: 'var(--shadow-lg)',
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-center justify-between" style={{ marginBottom: '16px' }}>
+            <h2 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+              New {newEntryFolder.name} Entry
+            </h2>
+            <button
+              onClick={() => { setShowNewEntryModal(false); setNewEntryFolder(null); }}
+              className="hover-icon"
+              style={{ color: 'var(--text-tertiary)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}
+            >
+              <X size={16} />
+            </button>
+          </div>
+
+          <label className="block text-xs font-medium" style={{ color: 'var(--text-secondary)', marginBottom: '6px' }}>
+            Entry name
+          </label>
+          <input
+            ref={entryInputRef}
+            value={newEntryName}
+            onChange={(e) => setNewEntryName(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') handleConfirmNewEntry(); if (e.key === 'Escape') { setShowNewEntryModal(false); setNewEntryFolder(null); } }}
+            placeholder="e.g. Warp Drive"
+            className="w-full rounded-lg text-sm"
+            style={{
+              backgroundColor: 'var(--bg-input)',
+              border: '1px solid var(--border-primary)',
+              color: 'var(--text-primary)',
+              padding: '10px 12px',
+              marginBottom: '20px',
+            }}
+          />
+
+          <div className="flex justify-end" style={{ gap: '8px' }}>
+            <button
+              onClick={() => { setShowNewEntryModal(false); setNewEntryFolder(null); }}
+              className="rounded-lg text-xs font-medium hover-btn"
+              style={{
+                backgroundColor: 'var(--bg-tertiary)',
+                color: 'var(--text-primary)',
+                border: '1px solid var(--border-primary)',
+                padding: '8px 16px',
+                cursor: 'pointer',
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleConfirmNewEntry}
+              disabled={!newEntryName.trim()}
+              className="rounded-lg text-xs font-medium hover-btn-primary"
+              style={{
+                backgroundColor: 'var(--accent)',
+                color: 'var(--text-inverse)',
+                border: 'none',
+                padding: '8px 16px',
+                cursor: newEntryName.trim() ? 'pointer' : 'default',
+                opacity: newEntryName.trim() ? 1 : 0.5,
+              }}
+            >
+              Create
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }

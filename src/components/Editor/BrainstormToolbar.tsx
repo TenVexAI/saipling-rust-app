@@ -161,7 +161,19 @@ export function BrainstormToolbar({ currentFilePath }: BrainstormToolbarProps) {
     const nextVersion = getNextOverviewVersion(files);
     const overviewPath = `${overviewDir}\\${nextVersion}`;
     try {
-      await writeFile(overviewPath, { title: overviewLabel }, overviewContent);
+      const now = new Date().toISOString().slice(0, 10);
+      const genFrontmatter: Record<string, unknown> = {
+        type: 'overview',
+        scope: isBookLevel ? bookId : 'series',
+        subject: isBookLevel ? 'book' : 'project',
+        created: now,
+        modified: now,
+        status: 'generated',
+        generated_from: isBookLevel
+          ? [`overview/overview.md`, `books/${bookId}/overview/brainstorm.md`]
+          : ['overview/brainstorm.md'],
+      };
+      await writeFile(overviewPath, genFrontmatter, overviewContent);
       useProjectStore.getState().bumpRefresh();
     } catch (e) {
       setError(`Failed to write overview: ${String(e)}`);
@@ -230,7 +242,16 @@ export function BrainstormToolbar({ currentFilePath }: BrainstormToolbarProps) {
     try {
       const nextVersion = getNextOverviewVersion(files);
       const blankPath = `${overviewDir}\\${nextVersion}`;
-      await writeFile(blankPath, { title: overviewLabel }, `# ${overviewLabel}\n\n`);
+      const now = new Date().toISOString().slice(0, 10);
+      const blankFrontmatter: Record<string, unknown> = {
+        type: 'overview',
+        scope: isBookLevel ? bookId : 'series',
+        subject: isBookLevel ? 'book' : 'project',
+        created: now,
+        modified: now,
+        status: 'empty',
+      };
+      await writeFile(blankPath, blankFrontmatter, `# ${overviewLabel}\n\n`);
       await loadFiles();
       // Cancel any pending generation
       if (plan) {
