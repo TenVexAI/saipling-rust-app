@@ -404,7 +404,7 @@ export function Dashboard() {
           <h2 className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-tertiary)', marginBottom: '16px' }}>
             Books
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" style={{ gap: '16px' }}>
+          <div className="flex flex-col" style={{ gap: '12px' }}>
             {project.books.map((book) => {
               const data = bookCardData[book.id];
               const sceneWords = data?.sceneWords ?? 0;
@@ -426,8 +426,17 @@ export function Dashboard() {
                   onMouseLeave={(e) => { if (!isActive) { e.currentTarget.style.borderColor = 'var(--border-primary)'; e.currentTarget.style.boxShadow = 'none'; } }}
                   onClick={() => handleCardClick(book.id)}
                 >
-                  {/* Action icons: top-right */}
-                  <div className="absolute flex flex-col gap-1" style={{ top: '10px', right: '10px' }}>
+                  {/* Phase tag + edit icon: top-right */}
+                  <div className="absolute flex items-center gap-2" style={{ top: '10px', right: '10px' }}>
+                    <span className="text-xs font-semibold" style={{
+                      color: '#fff',
+                      backgroundColor: 'var(--accent)',
+                      padding: '2px 10px',
+                      borderRadius: '999px',
+                      letterSpacing: '0.02em',
+                    }}>
+                      {phase}
+                    </span>
                     <button
                       onClick={(e) => { e.stopPropagation(); handleOpenEditBook(book.id); }}
                       className="flex items-center justify-center rounded hover-icon"
@@ -439,38 +448,22 @@ export function Dashboard() {
                   </div>
 
                   {/* Title + icon */}
-                  <div className="flex items-center gap-2" style={{ marginBottom: '6px', paddingRight: '28px' }}>
+                  <div className="flex items-center gap-2" style={{ marginBottom: '10px', paddingRight: '100px' }}>
                     <BookOpen size={18} style={{ color: 'var(--accent)', flexShrink: 0 }} />
                     <span className="font-semibold text-sm truncate" style={{ color: 'var(--text-primary)' }}>
                       {book.title}
                     </span>
                   </div>
 
-                  {/* Genre */}
-                  {book.genre && (
-                    <p className="text-xs" style={{ color: 'var(--text-tertiary)', marginBottom: '10px' }}>{book.genre}</p>
-                  )}
-
-                  {/* Word count + phase tag */}
-                  <div className="flex items-center justify-between" style={{ marginBottom: '4px' }}>
-                    <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
-                      {sceneWords.toLocaleString()} words
+                  {/* Token estimate + word count */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                      ~{tokenEstimate.toLocaleString()} tokens in full context
                     </span>
-                    <span className="text-xs font-semibold" style={{
-                      color: '#fff',
-                      backgroundColor: 'var(--accent)',
-                      padding: '2px 10px',
-                      borderRadius: '999px',
-                      letterSpacing: '0.02em',
-                    }}>
-                      {phase}
+                    <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
+                      {sceneWords.toLocaleString()} / {(data?.meta?.target_word_count ?? 0).toLocaleString()} words
                     </span>
                   </div>
-
-                  {/* Token estimate */}
-                  <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                    ~{tokenEstimate.toLocaleString()} tokens in full context
-                  </span>
 
                   {/* Active indicator + Open Book button */}
                   {isActive && (
