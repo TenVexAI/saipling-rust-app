@@ -248,7 +248,7 @@ export function Dashboard() {
 
   return (
     <div className="overflow-y-auto h-full" style={{ backgroundColor: 'var(--bg-primary)' }}>
-      <div className="max-w-4xl mx-auto" style={{ padding: '32px 40px' }}>
+      <div style={{ padding: '32px 40px' }}>
         {/* Header */}
         <div className="flex items-start gap-4" style={{ marginBottom: '32px' }}>
           <div className="shrink-0">
@@ -266,8 +266,8 @@ export function Dashboard() {
           <div className="flex-1 min-w-0">
             {/* Title row: name + edit/delete icons + exit button floated right */}
             <div className="flex items-center gap-2" style={{ marginBottom: '4px' }}>
-              <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
-                {project.name.length > 35 ? `${project.name.slice(0, 35)}…` : project.name}
+              <h1 className="text-2xl font-bold truncate" style={{ color: 'var(--text-primary)', minWidth: 0 }}>
+                {project.name}
               </h1>
               <button
                 onClick={() => setShowEditModal(true)}
@@ -404,7 +404,7 @@ export function Dashboard() {
           <h2 className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-tertiary)', marginBottom: '16px' }}>
             Books
           </h2>
-          <div className="flex flex-col" style={{ gap: '12px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(450px, 1fr))', gap: '12px' }}>
             {project.books.map((book) => {
               const data = bookCardData[book.id];
               const sceneWords = data?.sceneWords ?? 0;
