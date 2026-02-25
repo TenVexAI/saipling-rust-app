@@ -29,6 +29,7 @@ pub enum AppError {
     #[error("Chapter not found: {0}")]
     ChapterNotFound(String),
 
+    #[allow(dead_code)]
     #[error("Scene not found: {0}")]
     SceneNotFound(String),
 

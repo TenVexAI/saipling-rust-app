@@ -199,7 +199,7 @@ pub fn assemble_context(
     let ctx_settings = load_context_settings(project_dir);
 
     // Helper closure to load a file respecting context settings
-    let mut try_load = |path: &PathBuf, total: &mut u64, max: u64,
+    let try_load = |path: &PathBuf, total: &mut u64, max: u64,
                         loaded: &mut HashSet<PathBuf>,
                         parts: &mut Vec<String>,
                         files: &mut Vec<LoadedFile>| -> bool {

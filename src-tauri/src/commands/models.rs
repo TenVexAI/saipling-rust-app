@@ -46,10 +46,6 @@ fn config_dir() -> Result<PathBuf, AppError> {
     Ok(docs.join("SAiPLING").join(".saipling"))
 }
 
-fn models_config_path() -> Result<PathBuf, AppError> {
-    Ok(config_dir()?.join("models.toml"))
-}
-
 fn default_models_toml() -> &'static str {
     include_str!("../../defaults/models.toml")
 }

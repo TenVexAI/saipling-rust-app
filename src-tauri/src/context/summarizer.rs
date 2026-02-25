@@ -5,10 +5,12 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::time::Instant;
 
+#[allow(dead_code)]
 pub struct SummaryCache {
     entries: HashMap<PathBuf, CacheEntry>,
 }
 
+#[allow(dead_code)]
 struct CacheEntry {
     summary: String,
     source_hash: u64,
@@ -16,6 +18,7 @@ struct CacheEntry {
     created_at: Instant,
 }
 
+#[allow(dead_code)]
 impl SummaryCache {
     pub fn new() -> Self {
         Self { entries: HashMap::new() }
