@@ -5,6 +5,7 @@ import { listDirectory, createBook, getBookWordCount, getBookTotalDocWords, getB
 import { saveProjectChat } from '../../utils/projectChat';
 import { BookOpen, Plus, Lightbulb, LogOut, Pencil, Trash2, Check, ArrowRight } from 'lucide-react';
 import { SaiplingDashLogo } from './SaiplingDashLogo';
+import { PhaseIcon } from '../PhaseWorkflow/PhaseIcon';
 import { EditProjectModal } from './EditProjectModal';
 import { DeleteProjectModal } from './DeleteProjectModal';
 import { GettingStartedModal } from './GettingStartedModal';
@@ -16,6 +17,7 @@ interface BookCardData {
   sceneWords: number;
   totalDocWords: number;
   currentPhase: string;
+  hasOverview: boolean;
   meta: BookMetadata | null;
 }
 
@@ -138,14 +140,22 @@ export function Dashboard() {
           getBookTotalDocWords(projectDir, book.id),
           getBookMetadata(projectDir, book.id),
         ]);
+        const bookOverviewDir = `${projectDir}\\books\\${book.id}\\overview`;
+        let hasOverview = false;
+        try {
+          const entries = await listDirectory(bookOverviewDir);
+          hasOverview = entries.some((e) => e.name === 'overview.md');
+        } catch { /* no overview dir */ }
+        const rawPhase = getCurrentPhase(meta.phase_progress as Record<string, { status: string }>);
         data[book.id] = {
           sceneWords: wc.book_total,
           totalDocWords: totalWords,
-          currentPhase: getCurrentPhase(meta.phase_progress as Record<string, { status: string }>),
+          currentPhase: !hasOverview && rawPhase === 'Seed' ? 'Brainstorm' : rawPhase,
+          hasOverview,
           meta,
         };
       } catch {
-        data[book.id] = { sceneWords: 0, totalDocWords: 0, currentPhase: 'Seed', meta: null };
+        data[book.id] = { sceneWords: 0, totalDocWords: 0, currentPhase: 'Brainstorm', hasOverview: false, meta: null };
       }
     }
     setBookCardData(data);
@@ -242,7 +252,16 @@ export function Dashboard() {
         {/* Header */}
         <div className="flex items-start gap-4" style={{ marginBottom: '32px' }}>
           <div className="shrink-0">
-            <SaiplingDashLogo size={60} />
+            {(() => {
+              if (activeBookId && activeBookHasOverview) {
+                const data = bookCardData[activeBookId];
+                const phaseId = data?.meta
+                  ? getCurrentPhaseId(data.meta.phase_progress as Record<string, { status: string }>)
+                  : null;
+                if (phaseId) return <PhaseIcon phase={phaseId} size={60} />;
+              }
+              return <SaiplingDashLogo size={60} />;
+            })()}
           </div>
           <div className="flex-1 min-w-0">
             {/* Title row: name + edit/delete icons + exit button floated right */}

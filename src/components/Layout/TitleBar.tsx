@@ -9,7 +9,8 @@ export function TitleBar() {
   const appWindow = getCurrentWindow();
 
   const bookTitle = project?.books.find((b) => b.id === activeBookId)?.title;
-  const title = [project?.name, bookTitle].filter(Boolean).join(' — ') || 'SAiPLING';
+  const parts = [project?.name, bookTitle && bookTitle !== project?.name ? bookTitle : null].filter(Boolean);
+  const title = parts.length > 0 ? parts.join(' — ') : 'SAiPLING';
 
   const handleDragStart = (e: React.MouseEvent) => {
     // Only start drag if not clicking a button
