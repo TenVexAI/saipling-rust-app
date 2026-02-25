@@ -100,7 +100,7 @@ export function AppShell() {
   const handleResize = useCallback((delta: number) => {
     setChatWidth((prev) => {
       const containerWidth = contentRef.current?.offsetWidth ?? Infinity;
-      const maxChat = containerWidth - 560; // reserve main content min-width
+      const maxChat = containerWidth - 740; // reserve main content min-width
       return Math.max(300, Math.min(maxChat, prev - delta));
     });
   }, []);
@@ -180,7 +180,7 @@ export function AppShell() {
         {!focusMode && <Sidebar />}
 
         <div ref={contentRef} className="flex-1 flex min-w-0">
-          <div className="flex-1 flex flex-col" style={{ minWidth: '560px' }}>
+          <div className="flex-1 shrink-0 flex flex-col" style={{ minWidth: '740px' }}>
             <div className="flex-1 min-h-0 overflow-hidden">
               <MainContent />
             </div>

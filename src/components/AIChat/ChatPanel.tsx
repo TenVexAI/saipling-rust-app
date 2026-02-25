@@ -169,9 +169,11 @@ export function ChatPanel({ width }: ChatPanelProps) {
 
   return (
     <div
-      className="flex flex-col h-full shrink-0 overflow-hidden"
+      className="flex flex-col h-full overflow-hidden"
       style={{
         width: width ? `${width}px` : 'var(--right-panel-width)',
+        minWidth: '300px',
+        flexShrink: 1,
         backgroundColor: 'var(--bg-secondary)',
       }}
     >

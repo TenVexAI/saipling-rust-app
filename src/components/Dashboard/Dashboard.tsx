@@ -3,12 +3,14 @@ import { useProjectStore } from '../../stores/projectStore';
 import { useAIStore } from '../../stores/aiStore';
 import { listDirectory, createBook, getBookWordCount, getBookTotalDocWords, getBookMetadata, updateBookMetadata } from '../../utils/tauri';
 import { saveProjectChat } from '../../utils/projectChat';
-import { BookOpen, Plus, Lightbulb, LogOut, Pencil, Trash2, ExternalLink, Check } from 'lucide-react';
+import { BookOpen, Plus, Lightbulb, LogOut, Pencil, Trash2, Check, ArrowRight } from 'lucide-react';
 import { SaiplingDashLogo } from './SaiplingDashLogo';
 import { EditProjectModal } from './EditProjectModal';
 import { DeleteProjectModal } from './DeleteProjectModal';
 import { GettingStartedModal } from './GettingStartedModal';
 import type { BookMetadata } from '../../types/project';
+import { PHASES } from '../../types/sapling';
+import type { Phase } from '../../types/sapling';
 
 interface BookCardData {
   sceneWords: number;
@@ -40,6 +42,27 @@ function getCurrentPhase(phaseProgress: Record<string, { status: string }>): str
   return 'Seed';
 }
 
+const PHASE_ID_MAP: Record<string, Phase> = {
+  'phase-1-seed': 'seed',
+  'phase-2-root': 'root',
+  'phase-3-sprout': 'sprout',
+  'phase-4-flourish': 'flourish',
+  'phase-5-bloom': 'bloom',
+};
+
+function getCurrentPhaseId(phaseProgress: Record<string, { status: string }>): Phase | null {
+  for (let i = PHASE_ORDER.length - 1; i >= 0; i--) {
+    const p = phaseProgress[PHASE_ORDER[i]];
+    if (p && p.status === 'complete') {
+      return PHASE_ORDER[i + 1] ? PHASE_ID_MAP[PHASE_ORDER[i + 1]] : null;
+    }
+    if (p && p.status === 'in_progress') {
+      return PHASE_ID_MAP[PHASE_ORDER[i]];
+    }
+  }
+  return 'seed';
+}
+
 export function Dashboard() {
   const project = useProjectStore((s) => s.project);
   const projectDir = useProjectStore((s) => s.projectDir);
@@ -47,6 +70,7 @@ export function Dashboard() {
   const clearProjectStore = useProjectStore((s) => s.clearProject);
   const setActiveFile = useProjectStore((s) => s.setActiveFile);
   const setActiveSkill = useAIStore((s) => s.setActiveSkill);
+  const setActivePhase = useProjectStore((s) => s.setActivePhase);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [overviewPath, setOverviewPath] = useState<string | null>(null);
@@ -64,6 +88,22 @@ export function Dashboard() {
   const [editGenre, setEditGenre] = useState('');
   const [editTargetWords, setEditTargetWords] = useState('');
   const [editError, setEditError] = useState('');
+  const [activeBookHasOverview, setActiveBookHasOverview] = useState(false);
+  const refreshCounter = useProjectStore((s) => s.refreshCounter);
+
+  // Check if the active book has an overview document
+  useEffect(() => {
+    if (!projectDir || !activeBookId) {
+      setActiveBookHasOverview(false);
+      return;
+    }
+    const bookOverviewDir = `${projectDir}\\books\\${activeBookId}\\overview`;
+    listDirectory(bookOverviewDir)
+      .then((entries) => {
+        setActiveBookHasOverview(entries.some((e) => e.name === 'overview.md'));
+      })
+      .catch(() => setActiveBookHasOverview(false));
+  }, [projectDir, activeBookId, refreshCounter]);
 
   const handleExitProject = async () => {
     if (projectDir) await saveProjectChat(projectDir);
@@ -110,8 +150,6 @@ export function Dashboard() {
     }
     setBookCardData(data);
   }, [projectDir, project]);
-
-  const refreshCounter = useProjectStore((s) => s.refreshCounter);
 
   useEffect(() => {
     loadBookData();
@@ -282,6 +320,64 @@ export function Dashboard() {
             <Plus size={16} />
             New Book
           </button>
+
+          {/* Current Phase / Book Brainstorm indicator */}
+          {overviewPath && activeBookId && (() => {
+            if (!activeBookHasOverview) {
+              return (
+                <>
+                  <div className="flex-1" />
+                  <button
+                    onClick={() => handleOpenBook(activeBookId)}
+                    className="flex items-center gap-2 rounded-lg text-sm font-medium hover-btn"
+                    style={{
+                      backgroundColor: 'var(--bg-tertiary)',
+                      color: 'var(--text-primary)',
+                      border: '1px solid var(--border-primary)',
+                      padding: '10px 20px',
+                    }}
+                    title="Create your book overview via a brainstorming session"
+                  >
+                    <Lightbulb size={14} style={{ color: 'var(--accent)' }} />
+                    <span style={{ color: 'var(--accent)', fontWeight: 700, fontSize: '13px' }}>
+                      Book Brainstorm
+                    </span>
+                    <ArrowRight size={14} style={{ color: 'var(--accent)' }} />
+                  </button>
+                </>
+              );
+            }
+            const data = bookCardData[activeBookId];
+            const phaseId = data?.meta
+              ? getCurrentPhaseId(data.meta.phase_progress as Record<string, { status: string }>)
+              : null;
+            if (!phaseId) return null;
+            const phaseInfo = PHASES.find((p) => p.id === phaseId);
+            if (!phaseInfo) return null;
+            const activeBookTitle = project.books.find((b) => b.id === activeBookId)?.title;
+            return (
+              <>
+                <div className="flex-1" />
+                <button
+                  onClick={() => setActivePhase(phaseId)}
+                  className="flex items-center gap-2 rounded-lg text-sm font-medium hover-btn"
+                  style={{
+                    backgroundColor: 'var(--bg-tertiary)',
+                    color: 'var(--text-primary)',
+                    border: '1px solid var(--border-primary)',
+                    padding: '10px 20px',
+                  }}
+                  title={`${phaseInfo.question} — ${activeBookTitle ?? 'Active Book'}`}
+                >
+                  <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>Current Phase:</span>
+                  <span style={{ color: 'var(--accent)', fontWeight: 700, fontSize: '13px' }}>
+                    {phaseInfo.label}
+                  </span>
+                  <ArrowRight size={14} style={{ color: 'var(--accent)' }} />
+                </button>
+              </>
+            );
+          })()}
         </div>
 
         {/* Books Section */}
@@ -321,14 +417,6 @@ export function Dashboard() {
                     >
                       <Pencil size={13} />
                     </button>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); handleOpenBook(book.id); }}
-                      className="flex items-center justify-center rounded hover-icon"
-                      style={{ color: 'var(--text-tertiary)', background: 'none', border: 'none', cursor: 'pointer', padding: '3px' }}
-                      title="Open book page"
-                    >
-                      <ExternalLink size={13} />
-                    </button>
                   </div>
 
                   {/* Title + icon */}
@@ -365,11 +453,26 @@ export function Dashboard() {
                     ~{tokenEstimate.toLocaleString()} tokens in full context
                   </span>
 
-                  {/* Active indicator */}
+                  {/* Active indicator + Open Book button */}
                   {isActive && (
-                    <div className="flex items-center gap-1" style={{ marginTop: '8px' }}>
-                      <Check size={12} style={{ color: 'var(--accent)' }} />
-                      <span className="text-xs font-medium" style={{ color: 'var(--accent)' }}>Active</span>
+                    <div className="flex items-center" style={{ marginTop: '8px' }}>
+                      <div className="flex items-center gap-1">
+                        <Check size={12} style={{ color: 'var(--accent)' }} />
+                        <span className="text-xs font-medium" style={{ color: 'var(--accent)' }}>Active</span>
+                      </div>
+                      <div className="flex-1" />
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleOpenBook(book.id); }}
+                        className="flex items-center gap-1.5 rounded-md text-xs font-medium hover-btn-primary"
+                        style={{
+                          backgroundColor: 'var(--accent)',
+                          color: 'var(--text-inverse)',
+                          padding: '5px 12px',
+                        }}
+                      >
+                        Open Book
+                        <ArrowRight size={12} />
+                      </button>
                     </div>
                   )}
                 </div>
