@@ -449,9 +449,9 @@ export function BrainstormToolbar({ currentFilePath }: BrainstormToolbarProps) {
             </div>
 
             {plan.context_files.length > 0 && (
-              <div style={{ marginBottom: '16px', marginTop: '12px' }}>
+              <div style={{ marginBottom: '12px', marginTop: '12px' }}>
                 <div className="text-xs font-medium" style={{ color: 'var(--text-tertiary)', marginBottom: '4px' }}>
-                  Context files:
+                  Context files (via skill):
                 </div>
                 <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>
                   {plan.context_files.map((f) => {
@@ -474,6 +474,24 @@ export function BrainstormToolbar({ currentFilePath }: BrainstormToolbarProps) {
                       </div>
                     );
                   })}
+                </div>
+              </div>
+            )}
+
+            {plan.search_results && plan.search_results.length > 0 && (
+              <div style={{ marginBottom: '16px' }}>
+                <div className="text-xs font-medium" style={{ color: 'var(--text-tertiary)', marginBottom: '4px' }}>
+                  Context files (via search):
+                </div>
+                <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                  {plan.search_results.map((r, i) => (
+                    <div key={i} style={{ marginBottom: '2px' }}>
+                      🔍 {r.file_path}
+                      {r.section && <span style={{ color: 'var(--text-tertiary)' }}> § {r.section}</span>}
+                      {' '}— {r.tokens_est.toLocaleString()} tokens
+                      <span style={{ color: 'var(--text-tertiary)' }}> ({(r.similarity_score * 100).toFixed(0)}% match)</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}

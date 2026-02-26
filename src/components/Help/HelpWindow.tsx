@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { getCurrentWindow } from '@tauri-apps/api/window';
+import { emit } from '@tauri-apps/api/event';
 import { Minus, Square, X, ChevronRight, ChevronDown, Search, BookOpen } from 'lucide-react';
 import { HELP_SECTIONS, type HelpSection, type HelpSubsection } from '../../data/helpContent';
 import { useThemeStore } from '../../stores/themeStore';
@@ -76,17 +77,23 @@ export function HelpWindow() {
     return () => { unlisten?.(); };
   }, [applyCustomColors]);
 
+  // Helper: notify sidebar then close
+  const emitCloseAndExit = useCallback(async () => {
+    await emit('help-window-closed');
+    appWindow.close();
+  }, [appWindow]);
+
   // Close help window on Ctrl+Shift+H
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toUpperCase() === 'H') {
         e.preventDefault();
-        appWindow.close();
+        emitCloseAndExit();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [appWindow]);
+  }, [appWindow, emitCloseAndExit]);
 
   // Read target section from URL params and scroll to it
   useEffect(() => {
@@ -215,7 +222,7 @@ export function HelpWindow() {
             <Square size={12} />
           </button>
           <button
-            onClick={() => appWindow.close()}
+            onClick={() => emitCloseAndExit()}
             className="flex items-center justify-center w-11 h-full transition-colors"
             style={{ color: 'var(--text-secondary)' }}
             onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#dc2626'; e.currentTarget.style.color = '#fff'; }}

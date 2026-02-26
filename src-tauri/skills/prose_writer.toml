@@ -20,6 +20,13 @@ include_if_exists = [
     "world/**/entry.md",
 ]
 
+[context.vector_search]
+enabled = true
+mode = "auto"
+max_results = 5
+max_search_tokens = 15000
+filter_entity_types = []
+
 [system_prompt]
 template = """
 You are a prose writing collaborator helping a writer draft their novel during

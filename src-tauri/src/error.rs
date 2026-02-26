@@ -51,6 +51,18 @@ pub enum AppError {
     #[error("Export error: {0}")]
     ExportError(String),
 
+    #[error("Vector search error: {0}")]
+    VectorSearch(String),
+
+    #[error("Embedding error: {0}")]
+    Embedding(String),
+
+    #[error("Index error: {0}")]
+    IndexError(String),
+
+    #[error("SQLite error: {0}")]
+    Sqlite(#[from] rusqlite::Error),
+
     #[error("{0}")]
     General(String),
 }

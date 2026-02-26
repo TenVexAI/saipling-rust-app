@@ -9,7 +9,7 @@ import { AgentPlanCard } from './AgentPlanCard';
 import { SaiplingChatLogo } from './SaiplingChatLogo';
 import { useAIStore } from '../../stores/aiStore';
 import { useProjectStore } from '../../stores/projectStore';
-import { agentPlan, agentExecute, agentCancel, listAvailableSkills, getConfig } from '../../utils/tauri';
+import { agentPlan, agentExecute, agentCancel, listAvailableSkills, getConfig, vectorSearch } from '../../utils/tauri';
 import { trackCost } from '../../utils/projectCost';
 import { saveCurrentChat } from '../../utils/projectChat';
 import { calculateCost } from '../../utils/modelPricing';
@@ -104,6 +104,40 @@ export function ChatPanel({ width }: ChatPanelProps) {
     }
   }, [setStreaming, setConversationId, appendToLastAssistant, setLastCost, addSessionCost]);
 
+  const handleSearch = useCallback(async (query: string) => {
+    const projectDir = useProjectStore.getState().projectDir;
+    const bookId = useProjectStore.getState().activeBookId;
+
+    if (!projectDir) {
+      appendToLastAssistant('Please open a project first.');
+      return;
+    }
+
+    try {
+      const results = await vectorSearch(projectDir, query, 10, [], bookId || undefined, true);
+
+      if (results.length === 0) {
+        appendToLastAssistant('No relevant passages found for your search query. Make sure your project is indexed (Settings → Vector Search → Re-index Project).');
+        return;
+      }
+
+      let response = `Found **${results.length}** relevant passage${results.length === 1 ? '' : 's'}:\n\n`;
+      results.forEach((r, i) => {
+        const section = r.section_heading ? ` § ${r.section_heading}` : '';
+        const score = (r.similarity_score * 100).toFixed(0);
+        const preview = r.content_preview.length > 150
+          ? r.content_preview.substring(0, 150) + '...'
+          : r.content_preview;
+        response += `**${i + 1}.** \`${r.file_path}${section}\` (${score}% match)\n`;
+        response += `> ${preview.replace(/\n/g, ' ')}\n\n`;
+      });
+
+      appendToLastAssistant(response.trim());
+    } catch (e) {
+      appendToLastAssistant(`Search error: ${String(e)}`);
+    }
+  }, [appendToLastAssistant]);
+
   const handleSend = useCallback(async (text: string) => {
     const userMsg = { role: 'user' as const, content: text };
     addMessage(userMsg);
@@ -114,6 +148,17 @@ export function ChatPanel({ width }: ChatPanelProps) {
 
     if (!projectDir) {
       appendToLastAssistant('Please open a project first.');
+      return;
+    }
+
+    // Handle /search command
+    if (text.trimStart().startsWith('/search ')) {
+      const query = text.trimStart().replace(/^\/search\s+/, '');
+      if (query.trim()) {
+        await handleSearch(query.trim());
+      } else {
+        appendToLastAssistant('Usage: `/search <your query>`\n\nExample: `/search Marcus\'s relationship with his father`');
+      }
       return;
     }
 
@@ -138,7 +183,7 @@ export function ChatPanel({ width }: ChatPanelProps) {
     } catch (e) {
       appendToLastAssistant(`Error: ${String(e)}`);
     }
-  }, [addMessage, appendToLastAssistant, activeSkill, executeWithStreaming]);
+  }, [addMessage, appendToLastAssistant, activeSkill, executeWithStreaming, handleSearch]);
 
   const handleCancel = useCallback(async () => {
     if (conversationId) {

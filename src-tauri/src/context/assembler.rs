@@ -2,8 +2,10 @@ use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 use serde::Serialize;
 use crate::error::AppError;
+use crate::commands::config::get_config;
 use super::skills::SkillDefinition;
 use super::tokens::estimate_tokens;
+use super::vector;
 
 /// Normalize a relative path to always use forward slashes for display consistency.
 fn normalize_rel_path(rel: &std::path::Path) -> String {
@@ -155,7 +157,7 @@ fn load_file(path: &PathBuf, max_remaining: u64) -> Option<(String, u64)> {
 /// Load context settings from .context_settings.json.
 /// Returns a map of relative path (forward slashes) → mode ("auto", "exclude", "force").
 /// Keys in the JSON are absolute paths; we normalize them to relative forward-slash paths.
-fn load_context_settings(project_dir: &PathBuf) -> HashMap<String, String> {
+pub fn load_context_settings(project_dir: &PathBuf) -> HashMap<String, String> {
     let settings_path = project_dir.join(".context_settings.json");
     if let Ok(content) = std::fs::read_to_string(&settings_path) {
         if let Ok(raw_map) = serde_json::from_str::<HashMap<String, String>>(&content) {
@@ -178,7 +180,7 @@ fn load_context_settings(project_dir: &PathBuf) -> HashMap<String, String> {
 
 /// Check if a file should be excluded based on context settings.
 /// Returns true if the file is explicitly excluded.
-fn is_excluded(rel_path: &str, settings: &HashMap<String, String>) -> bool {
+pub fn is_excluded(rel_path: &str, settings: &HashMap<String, String>) -> bool {
     settings.get(rel_path).map(|m| m == "exclude").unwrap_or(false)
 }
 
@@ -293,4 +295,162 @@ pub fn assemble_context(
         total_tokens: prompt_tokens,
         files_loaded,
     })
+}
+
+/// Enrich an already-assembled context with vector search results.
+/// Returns the search results found (empty if vector search is disabled or unavailable).
+/// Also modifies the AssembledContext to append search result content to the prompt.
+pub async fn enrich_with_search(
+    assembled: &mut AssembledContext,
+    skill: &SkillDefinition,
+    project_dir: &PathBuf,
+    query: &str,
+    book_id: Option<&str>,
+) -> Vec<vector::SearchResult> {
+    // Check global config
+    let config = match get_config() {
+        Ok(c) => c,
+        Err(_) => return Vec::new(),
+    };
+    if !config.vector_search.enabled || config.vector_search.embedding_api_key_encrypted.is_empty() {
+        return Vec::new();
+    }
+
+    // Check skill-level config
+    let skill_vs = skill.context.vector_search.as_ref();
+    let skill_enabled = skill_vs.map(|vs| vs.enabled).unwrap_or(false);
+    if !skill_enabled {
+        return Vec::new();
+    }
+
+    // Check mode: "never" skips, "always" always searches, "auto" searches
+    // (true agent-decision logic for "auto" is future work — for now, always search)
+    let mode = skill_vs.map(|vs| vs.mode.as_str()).unwrap_or("auto");
+    if mode == "never" {
+        return Vec::new();
+    }
+
+    // Resolve search parameters from skill config (with global defaults as fallback)
+    let max_results = skill_vs.map(|vs| vs.max_results).unwrap_or(config.vector_search.max_results_default);
+    let max_search_tokens = skill_vs.map(|vs| vs.max_search_tokens).unwrap_or(config.vector_search.max_search_tokens_default);
+    let filter_entity_types = skill_vs.map(|vs| vs.filter_entity_types.clone()).unwrap_or_default();
+
+    // Decode API key
+    let api_key = match decode_base64_key(&config.vector_search.embedding_api_key_encrypted) {
+        Some(k) => k,
+        None => return Vec::new(),
+    };
+
+    let client = vector::embeddings::VoyageClient::new(
+        api_key,
+        config.vector_search.embedding_model.clone(),
+    );
+
+    // Build the set of already-loaded file paths for deduplication
+    let already_loaded: HashSet<String> = assembled.files_loaded.iter()
+        .map(|f| f.path.clone())
+        .collect();
+
+    // Load context settings for exclusion filtering
+    let ctx_settings = load_context_settings(project_dir);
+
+    // Run the search
+    let results = match vector::search::search(
+        project_dir,
+        query,
+        &client,
+        max_results,
+        &filter_entity_types,
+        book_id,
+        &ctx_settings,
+        &already_loaded,
+    ).await {
+        Ok(r) => r,
+        Err(e) => {
+            eprintln!("Vector search enrichment failed: {}", e);
+            return Vec::new();
+        }
+    };
+
+    if results.is_empty() {
+        return results;
+    }
+
+    // Append search results to the context within the search token budget
+    let mut search_parts: Vec<String> = Vec::new();
+    let mut search_tokens: u64 = 0;
+    let mut included_results: Vec<vector::SearchResult> = Vec::new();
+
+    for result in &results {
+        if search_tokens >= max_search_tokens {
+            break;
+        }
+        let section_label = result.section_heading.as_deref().unwrap_or("full file");
+        let header = format!("--- {} (SEARCH: {}) ---", result.file_path, section_label);
+        let part = format!("{}\n{}", header, result.content_preview);
+        let part_tokens = estimate_tokens(&part).unwrap_or(part.len() / 4) as u64;
+
+        if search_tokens + part_tokens > max_search_tokens {
+            break;
+        }
+
+        search_parts.push(part);
+        search_tokens += part_tokens;
+        included_results.push(result.clone());
+    }
+
+    // Token budget shedding: if combined total exceeds max_context_tokens,
+    // shed search results (lowest similarity = last in list) first
+    let max_context = skill.context.max_context_tokens;
+    while !search_parts.is_empty() && assembled.total_tokens + search_tokens > max_context {
+        // Remove the last (least relevant) search result
+        if let Some(removed) = search_parts.pop() {
+            let removed_tokens = estimate_tokens(&removed).unwrap_or(removed.len() / 4) as u64;
+            search_tokens = search_tokens.saturating_sub(removed_tokens);
+            included_results.pop();
+        }
+    }
+
+    if !search_parts.is_empty() {
+        let search_block = format!(
+            "\n\n<search_context>\nThe following additional context was found via semantic search and may be relevant:\n\n{}\n</search_context>",
+            search_parts.join("\n\n")
+        );
+        assembled.system_prompt.push_str(&search_block);
+        assembled.total_tokens += search_tokens;
+    }
+
+    included_results
+}
+
+/// Decode a base64-encoded API key string.
+fn decode_base64_key(encoded: &str) -> Option<String> {
+    let trimmed = encoded.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+    // Use the same base64 decoding as the general crate approach
+    let decoded = trimmed.as_bytes();
+    if decoded.len() % 4 != 0 {
+        return None;
+    }
+    let mut output = Vec::with_capacity(decoded.len() * 3 / 4);
+    for chunk in decoded.chunks(4) {
+        let vals: Vec<u8> = chunk.iter().map(|&c| match c {
+            b'A'..=b'Z' => c - b'A',
+            b'a'..=b'z' => c - b'a' + 26,
+            b'0'..=b'9' => c - b'0' + 52,
+            b'+' => 62,
+            b'/' => 63,
+            _ => 0,
+        }).collect();
+        output.push((vals[0] << 2) | (vals[1] >> 4));
+        if chunk[2] != b'=' {
+            output.push((vals[1] << 4) | (vals[2] >> 2));
+        }
+        if chunk[3] != b'=' {
+            output.push((vals[2] << 6) | vals[3]);
+        }
+    }
+    String::from_utf8(output).ok()
 }

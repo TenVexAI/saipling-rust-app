@@ -2,16 +2,20 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   FolderOpen, RefreshCw, ChevronRight, ChevronDown, Folder, FolderOpenIcon,
   FileText, File, Image, ExternalLink, Pencil, Trash2, AlertTriangle,
+  Search, Plus,
 } from 'lucide-react';
 import { useProjectStore } from '../../stores/projectStore';
-import { listDirectory, deleteEntry, readFile, writeFile, revealInExplorer } from '../../utils/tauri';
+import { listDirectory, deleteEntry, readFile, writeFile, revealInExplorer, vectorSearch } from '../../utils/tauri';
 import type { FileEntry } from '../../types/project';
+import type { SearchResult } from '../../types/vectorSearch';
 
 type ContextMode = 'auto' | 'exclude' | 'force';
 
 interface ContextSettingsMap {
   [filePath: string]: ContextMode;
 }
+
+type ContextTab = 'files' | 'search';
 
 export function ContextSettings() {
   const projectDir = useProjectStore((s) => s.projectDir);
@@ -21,6 +25,10 @@ export function ContextSettings() {
   const [loading, setLoading] = useState(true);
   const [contextSettings, setContextSettings] = useState<ContextSettingsMap>({});
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<ContextTab>('files');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
 
   const settingsPath = projectDir ? `${projectDir}\\.context_settings.json` : null;
 
@@ -98,6 +106,25 @@ export function ContextSettings() {
     }
   };
 
+  const handleSearchSubmit = async () => {
+    if (!projectDir || !searchQuery.trim()) return;
+    setIsSearching(true);
+    try {
+      const bookId = useProjectStore.getState().activeBookId;
+      const results = await vectorSearch(projectDir, searchQuery.trim(), 10, [], bookId || undefined, true);
+      setSearchResults(results);
+    } catch {
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleForceInclude = async (filePath: string) => {
+    const absPath = projectDir ? `${projectDir}\\${filePath.replace(/\//g, '\\')}` : filePath;
+    await handleContextChange(absPath, 'force');
+  };
+
   if (!projectDir) {
     return (
       <div className="flex flex-col items-center justify-center h-full" style={{ color: 'var(--text-tertiary)' }}>
@@ -126,8 +153,136 @@ export function ContextSettings() {
         </button>
       </div>
 
+      {/* Tab bar */}
+      <div className="flex shrink-0" style={{ borderBottom: '1px solid var(--border-secondary)' }}>
+        <button
+          onClick={() => setActiveTab('files')}
+          className="flex-1 flex items-center justify-center gap-1.5 text-xs font-medium transition-colors"
+          style={{
+            padding: '8px 0',
+            color: activeTab === 'files' ? 'var(--accent)' : 'var(--text-tertiary)',
+            borderBottom: activeTab === 'files' ? '2px solid var(--accent)' : '2px solid transparent',
+            background: 'none',
+            border: 'none',
+            borderBottomWidth: '2px',
+            borderBottomStyle: 'solid',
+            borderBottomColor: activeTab === 'files' ? 'var(--accent)' : 'transparent',
+            cursor: 'pointer',
+          }}
+        >
+          <FolderOpen size={12} />
+          Files
+        </button>
+        <button
+          onClick={() => setActiveTab('search')}
+          className="flex-1 flex items-center justify-center gap-1.5 text-xs font-medium transition-colors"
+          style={{
+            padding: '8px 0',
+            color: activeTab === 'search' ? 'var(--accent)' : 'var(--text-tertiary)',
+            background: 'none',
+            border: 'none',
+            borderBottomWidth: '2px',
+            borderBottomStyle: 'solid',
+            borderBottomColor: activeTab === 'search' ? 'var(--accent)' : 'transparent',
+            cursor: 'pointer',
+          }}
+        >
+          <Search size={12} />
+          Search
+        </button>
+      </div>
+
       <div className="flex-1 overflow-y-auto" style={{ padding: '8px 0' }}>
-        {loading ? (
+      {/* Search tab */}
+      {activeTab === 'search' && (
+        <div style={{ padding: '8px 16px' }}>
+          <form
+            onSubmit={(e) => { e.preventDefault(); handleSearchSubmit(); }}
+            className="flex gap-2"
+            style={{ marginBottom: '12px' }}
+          >
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search project content..."
+              className="flex-1 text-xs rounded-lg"
+              style={{
+                backgroundColor: 'var(--bg-input)',
+                border: '1px solid var(--border-primary)',
+                color: 'var(--text-primary)',
+                padding: '6px 10px',
+                outline: 'none',
+              }}
+            />
+            <button
+              type="submit"
+              disabled={isSearching || !searchQuery.trim()}
+              className="flex items-center justify-center rounded-lg text-xs"
+              style={{
+                backgroundColor: 'var(--accent)',
+                color: 'var(--text-inverse)',
+                border: 'none',
+                padding: '6px 12px',
+                cursor: isSearching || !searchQuery.trim() ? 'not-allowed' : 'pointer',
+                opacity: isSearching || !searchQuery.trim() ? 0.5 : 1,
+              }}
+            >
+              {isSearching ? <RefreshCw size={12} className="animate-spin" /> : <Search size={12} />}
+            </button>
+          </form>
+
+          {searchResults.length === 0 && !isSearching && searchQuery && (
+            <p className="text-xs" style={{ color: 'var(--text-tertiary)', textAlign: 'center', padding: '16px 0' }}>
+              No results found. Make sure your project is indexed.
+            </p>
+          )}
+
+          {searchResults.map((r, i) => {
+            const score = (r.similarity_score * 100).toFixed(0);
+            const section = r.section_heading ? ` § ${r.section_heading}` : '';
+            const preview = r.content_preview.length > 120
+              ? r.content_preview.substring(0, 120) + '...'
+              : r.content_preview;
+            return (
+              <div
+                key={i}
+                className="rounded-lg"
+                style={{
+                  backgroundColor: 'var(--bg-elevated)',
+                  border: '1px solid var(--border-primary)',
+                  padding: '8px 10px',
+                  marginBottom: '6px',
+                }}
+              >
+                <div className="flex items-center justify-between" style={{ marginBottom: '4px' }}>
+                  <span className="text-xs font-medium truncate" style={{ color: 'var(--text-primary)', flex: 1 }}>
+                    {r.file_path}{section}
+                  </span>
+                  <div className="flex items-center gap-2 shrink-0" style={{ marginLeft: '8px' }}>
+                    <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{score}%</span>
+                    <button
+                      onClick={() => handleForceInclude(r.file_path)}
+                      title="Force include in context"
+                      className="flex items-center justify-center hover-icon"
+                      style={{ color: 'var(--color-success)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px' }}
+                    >
+                      <Plus size={12} />
+                    </button>
+                  </div>
+                </div>
+                <p className="text-xs" style={{ color: 'var(--text-tertiary)', lineHeight: '1.4' }}>
+                  {preview.replace(/\n/g, ' ')}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Files tab */}
+      {activeTab === 'files' && (
+        loading ? (
           <div className="flex items-center justify-center" style={{ padding: '24px', color: 'var(--text-tertiary)' }}>
             <span className="text-xs">Loading...</span>
           </div>
@@ -149,7 +304,8 @@ export function ContextSettings() {
               expandFolder={expandFolder ?? undefined}
             />
           ))
-        )}
+        )
+      )}
       </div>
 
       {deleteConfirm && (

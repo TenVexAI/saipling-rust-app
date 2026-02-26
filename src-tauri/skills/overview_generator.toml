@@ -26,6 +26,13 @@ include_if_exists = [
     "characters/**/profile.md",
 ]
 
+[context.vector_search]
+enabled = true
+mode = "auto"
+max_results = 5
+max_search_tokens = 15000
+filter_entity_types = []
+
 [system_prompt]
 template = """
 You are a project overview generator for a fiction writing project. Your job is to synthesize the author's brainstorm notes, any existing project context, and conversation history into two outputs:

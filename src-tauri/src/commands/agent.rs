@@ -6,7 +6,7 @@ use once_cell::sync::Lazy;
 use crate::error::AppError;
 use crate::commands::config::{get_config, get_api_key_internal};
 use crate::context::skills::{load_skill, list_skills, SkillMeta};
-use crate::context::assembler::assemble_context;
+use crate::context::assembler::{assemble_context, enrich_with_search};
 use crate::context::tokens::{estimate_tokens, estimate_cost, format_cost};
 use crate::agent::claude::{stream_claude, ClaudeMessage};
 
@@ -75,11 +75,22 @@ pub struct ContextFileInfo {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SearchResultInfo {
+    pub file_path: String,
+    pub section: Option<String>,
+    pub similarity_score: f32,
+    pub tokens_est: u64,
+    pub content_preview: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AgentPlan {
     pub plan_id: String,
     pub skills: Vec<String>,
     pub model: String,
     pub context_files: Vec<ContextFileInfo>,
+    #[serde(default)]
+    pub search_results: Vec<SearchResultInfo>,
     pub total_tokens_est: u64,
     pub estimated_cost: String,
     pub approach: String,
@@ -196,6 +207,7 @@ pub async fn agent_plan(
                 when_book: None,
                 optional: None,
                 max_context_tokens: 20000,
+                vector_search: None,
             },
             system_prompt: crate::context::skills::SkillPrompt {
                 template: "You are a creative writing assistant. Help the author brainstorm ideas.".to_string(),
@@ -207,7 +219,7 @@ pub async fn agent_plan(
     skill_def.context.max_context_tokens = resolve_skill_max_tokens(&skill_name, skill_def.context.max_context_tokens);
 
     // Assemble context using the skill definition
-    let assembled = assemble_context(
+    let mut assembled = assemble_context(
         &skill_def,
         &project_dir,
         scope.book.as_deref(),
@@ -220,6 +232,29 @@ pub async fn agent_plan(
             path: f.path.clone(),
             mode: f.mode.clone(),
             tokens_est: f.tokens,
+        }
+    }).collect();
+
+    // Vector search enrichment step
+    let vs_results = enrich_with_search(
+        &mut assembled,
+        &skill_def,
+        &project_dir,
+        &message,
+        scope.book.as_deref(),
+    ).await;
+
+    let search_results: Vec<SearchResultInfo> = vs_results.iter().map(|r| {
+        SearchResultInfo {
+            file_path: r.file_path.clone(),
+            section: r.section_heading.clone(),
+            similarity_score: r.similarity_score,
+            tokens_est: r.token_count,
+            content_preview: if r.content_preview.len() > 200 {
+                format!("{}...", &r.content_preview[..200])
+            } else {
+                r.content_preview.clone()
+            },
         }
     }).collect();
 
@@ -255,6 +290,7 @@ pub async fn agent_plan(
         skills: vec![skill_def.skill.name],
         model: preferred_model,
         context_files,
+        search_results,
         total_tokens_est: total_tokens,
         estimated_cost: format!("~{}", format_cost(cost)),
         approach: format!("Using {} skill to process: {}", skill_def.skill.display_name, message),

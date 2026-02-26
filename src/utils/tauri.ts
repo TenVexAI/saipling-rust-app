@@ -4,6 +4,7 @@ import type {
   WordCountSummary, DraftSnapshot, MatterEntry,
 } from '../types/project';
 import type { AgentPlan, ContextScope, Message, TokenEstimate, ModelsConfig, SkillSettingsEntry, SkillOverride } from '../types/ai';
+import type { SearchResult, IndexStatus } from '../types/vectorSearch';
 
 // ─── Project Management ───
 export const createProject = (name: string, description: string | null, directory: string) =>
@@ -178,6 +179,14 @@ export interface AppConfig {
   };
   skill_overrides: Record<string, SkillOverride>;
   custom_theme_colors: Record<string, string>;
+  vector_search: {
+    enabled: boolean;
+    embedding_model: string;
+    embedding_api_key_encrypted: string;
+    auto_index: boolean;
+    max_results_default: number;
+    max_search_tokens_default: number;
+  };
 }
 
 export const getConfig = () =>
@@ -234,6 +243,29 @@ export const getGenres = () =>
 // ─── File Watcher ───
 export const startFileWatcher = (projectDir: string) =>
   invoke<void>('start_file_watcher', { projectDir });
+
+// ─── Vector Search ───
+
+export const vectorSearch = (
+  projectDir: string,
+  query: string,
+  maxResults?: number,
+  filterEntityTypes?: string[],
+  filterBookId?: string,
+  respectContextSettings?: boolean,
+) => invoke<SearchResult[]>('vector_search', {
+  projectDir, query, maxResults, filterEntityTypes, filterBookId,
+  respectContextSettings: respectContextSettings ?? true,
+});
+
+export const getIndexStatus = (projectDir: string) =>
+  invoke<IndexStatus>('get_index_status', { projectDir });
+
+export const reindexProject = (projectDir: string) =>
+  invoke<void>('reindex_project', { projectDir });
+
+export const clearIndex = (projectDir: string) =>
+  invoke<void>('clear_index', { projectDir });
 
 // ─── Export ───
 export const exportBook = (projectDir: string, bookId: string, format: string, options: Record<string, unknown>, outputPath: string) =>

@@ -10,11 +10,20 @@ export interface ContextFileInfo {
   tokens_est: number;
 }
 
+export interface SearchResultInfo {
+  file_path: string;
+  section: string | null;
+  similarity_score: number;
+  tokens_est: number;
+  content_preview: string;
+}
+
 export interface AgentPlan {
   plan_id: string;
   skills: string[];
   model: string;
   context_files: ContextFileInfo[];
+  search_results: SearchResultInfo[];
   total_tokens_est: number;
   estimated_cost: string;
   approach: string;

@@ -310,7 +310,56 @@ const apiKeySection: HelpSection = {
 };
 
 // ────────────────────────────────────────────────────────
-// Section 4: Keyboard Shortcuts
+// Section 4: Voyage AI API Key (Vector Search)
+// ────────────────────────────────────────────────────────
+const voyageApiKeySection: HelpSection = {
+  id: 'voyage-api-key',
+  title: 'Voyage AI API Key (Vector Search)',
+  content:
+    'SAiPLING\'s optional Vector Search feature uses Voyage AI\'s embedding models to create a semantic search index of your project. This lets the AI find relevant context across your entire project — even when files aren\'t explicitly listed in a skill\'s context definition. To use Vector Search, you need a separate Voyage AI API key. Your key is stored locally and is only sent to Voyage AI\'s servers.',
+  subsections: [
+    {
+      id: 'voyage-api-key-how-to-get',
+      title: 'How to Get a Voyage AI API Key',
+      content: 'Follow these steps to obtain your Voyage AI API key:',
+      bullets: [
+        'Go to https://dash.voyageai.com and create an account (or sign in with Google/GitHub).',
+        'Once logged in, navigate to "API Keys" in the left sidebar.',
+        'Click "Create new API key" and give it a name (e.g. "SAiPLING").',
+        'Copy the key — it starts with "pa-" — and paste it into SAiPLING\'s Settings → Vector Search section.',
+        'You can now use the "Re-index Project" button to build your search index.',
+      ],
+    },
+    {
+      id: 'voyage-api-key-what-is-vector-search',
+      title: 'What is Vector Search?',
+      content:
+        'Vector Search is an optional feature that creates a semantic index of all the markdown files in your project. When you use AI skills, SAiPLING can automatically search this index to find additional relevant context — character details, world-building notes, plot points — that the skill\'s default context definition might not include.\n\nThis is especially useful for large projects with many characters, locations, and plot threads. Vector Search helps the AI "remember" details from across your entire project, not just the files explicitly configured for each skill.\n\nVector Search is completely optional. All AI features work perfectly without it — it just provides supplementary context when enabled.',
+    },
+    {
+      id: 'voyage-api-key-costs',
+      title: 'How Costs Work',
+      content:
+        'Voyage AI charges per token for embeddings. The cost is extremely low — typically less than $0.01 to index an entire novel-length project.\n\nThe default model (voyage-4) costs $0.06 per million tokens. A typical 80,000-word novel is roughly 100,000 tokens, so indexing the entire project costs around $0.006 (less than one cent).\n\nRe-indexing is incremental — only changed files are re-embedded, so ongoing costs are negligible. SAiPLING tracks your total embedding cost in the Settings → Vector Search panel.',
+      table: [
+        { label: 'voyage-4', desc: '$0.06 per million tokens — recommended default, excellent quality' },
+      ],
+    },
+    {
+      id: 'voyage-api-key-links',
+      title: 'Useful Links',
+      content: 'Here are the key links you\'ll need:',
+      bullets: [
+        'Voyage AI Dashboard (sign up & manage keys): https://dash.voyageai.com',
+        'Voyage AI Pricing: https://docs.voyageai.com/pricing',
+        'Voyage AI Documentation: https://docs.voyageai.com',
+      ],
+    },
+  ],
+};
+
+// ────────────────────────────────────────────────────────
+// Section 5: Keyboard Shortcuts
 // ────────────────────────────────────────────────────────
 const keyboardShortcuts: HelpSection = {
   id: 'keyboard-shortcuts',
@@ -339,5 +388,6 @@ export const HELP_SECTIONS: HelpSection[] = [
   howToUse,
   saplingMethod,
   apiKeySection,
+  voyageApiKeySection,
   keyboardShortcuts,
 ];

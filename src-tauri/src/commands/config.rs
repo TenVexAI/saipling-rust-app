@@ -52,6 +52,30 @@ impl Default for AiConfig {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct VectorSearchConfig {
+    pub enabled: bool,
+    pub embedding_model: String,
+    #[serde(default)]
+    pub embedding_api_key_encrypted: String,
+    pub auto_index: bool,
+    pub max_results_default: u32,
+    pub max_search_tokens_default: u64,
+}
+
+impl Default for VectorSearchConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            embedding_model: "voyage-4".to_string(),
+            embedding_api_key_encrypted: String::new(),
+            auto_index: true,
+            max_results_default: 5,
+            max_search_tokens_default: 15000,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppConfig {
     pub version: String,
     #[serde(default)]
@@ -65,6 +89,8 @@ pub struct AppConfig {
     pub skill_overrides: HashMap<String, SkillOverride>,
     #[serde(default)]
     pub custom_theme_colors: HashMap<String, String>,
+    #[serde(default)]
+    pub vector_search: VectorSearchConfig,
 }
 
 impl Default for AppConfig {
@@ -80,6 +106,7 @@ impl Default for AppConfig {
             ai: AiConfig::default(),
             skill_overrides: HashMap::new(),
             custom_theme_colors: HashMap::new(),
+            vector_search: VectorSearchConfig::default(),
         }
     }
 }

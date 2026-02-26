@@ -9,6 +9,7 @@ import { setModelsConfig } from '../../utils/modelPricing';
 import { useProjectStore } from '../../stores/projectStore';
 import { openThemeEditor } from '../../utils/themeEditorWindow';
 import type { ModelEntry } from '../../types/ai';
+import { VectorSearchSettings } from './VectorSearchSettings';
 
 export function SettingsView() {
   const { theme, setTheme } = useThemeStore();
@@ -250,6 +251,9 @@ export function SettingsView() {
             <ChevronRight size={14} style={{ color: 'var(--text-tertiary)' }} />
           </button>
         </section>
+
+        {/* Vector Search */}
+        <VectorSearchSettings />
 
         {/* Theme */}
         <section>

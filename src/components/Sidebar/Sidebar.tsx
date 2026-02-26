@@ -38,13 +38,19 @@ export function Sidebar() {
       isHelpWindowOpen().then(setHelpOpen).catch(() => {});
     });
     const unlistenDestroyed = listen('tauri://window-destroyed', () => {
-      // Small delay to let the window fully close
-      setTimeout(() => isHelpWindowOpen().then(setHelpOpen).catch(() => {}), 100);
+      // Check with delays to let the window fully clean up
+      setTimeout(() => isHelpWindowOpen().then(setHelpOpen).catch(() => setHelpOpen(false)), 300);
+      setTimeout(() => isHelpWindowOpen().then(setHelpOpen).catch(() => setHelpOpen(false)), 600);
+    });
+    // Listen for the custom event emitted by the help window on close
+    const unlistenHelpClosed = listen('help-window-closed', () => {
+      setHelpOpen(false);
     });
 
     return () => {
       unlistenCreated.then((fn) => fn());
       unlistenDestroyed.then((fn) => fn());
+      unlistenHelpClosed.then((fn) => fn());
     };
   }, []);
 

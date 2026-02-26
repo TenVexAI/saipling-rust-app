@@ -16,6 +16,13 @@ include_if_exists = [
     "characters/**/profile.md",
 ]
 
+[context.vector_search]
+enabled = true
+mode = "auto"
+max_results = 5
+max_search_tokens = 15000
+filter_entity_types = []
+
 [system_prompt]
 template = """
 You are a series-level story architect helping a writer plan and maintain

@@ -9,3 +9,4 @@ pub mod agent;
 pub mod config;
 pub mod models;
 pub mod export;
+pub mod vector_search;

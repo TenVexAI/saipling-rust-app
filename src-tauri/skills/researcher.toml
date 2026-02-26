@@ -17,6 +17,13 @@ include_if_exists = [
     "notes/*.md",
 ]
 
+[context.vector_search]
+enabled = true
+mode = "always"
+max_results = 10
+max_search_tokens = 15000
+filter_entity_types = []
+
 [system_prompt]
 template = """
 You are a research assistant helping a fiction writer ground their story

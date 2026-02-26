@@ -19,6 +19,24 @@ pub struct SkillMeta {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SkillVectorSearchConfig {
+    #[serde(default)]
+    pub enabled: bool,
+    #[serde(default = "default_auto_mode")]
+    pub mode: String,
+    #[serde(default = "default_max_results")]
+    pub max_results: u32,
+    #[serde(default = "default_max_search_tokens")]
+    pub max_search_tokens: u64,
+    #[serde(default)]
+    pub filter_entity_types: Vec<String>,
+}
+
+fn default_auto_mode() -> String { "auto".to_string() }
+fn default_max_results() -> u32 { 5 }
+fn default_max_search_tokens() -> u64 { 15000 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SkillContext {
     #[serde(default)]
     pub always_include: Vec<String>,
@@ -28,6 +46,8 @@ pub struct SkillContext {
     pub optional: Option<SkillContextOptional>,
     #[serde(default)]
     pub max_context_tokens: u64,
+    #[serde(default)]
+    pub vector_search: Option<SkillVectorSearchConfig>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
