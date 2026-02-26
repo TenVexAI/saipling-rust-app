@@ -568,7 +568,7 @@ export function Dashboard() {
               boxShadow: 'var(--shadow-lg)',
               width: '780px',
               maxWidth: '95vw',
-              maxHeight: '85vh',
+              maxHeight: '92vh',
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -587,7 +587,7 @@ export function Dashboard() {
                 </div>
               )}
 
-              <div className="flex-1 overflow-y-auto" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div className="flex-1 overflow-y-auto" style={{ display: 'flex', flexDirection: 'column', gap: '12px', margin: '0 -4px', padding: '0 4px' }}>
                 <div>
                   <label className="block text-xs font-medium" style={{ color: 'var(--text-secondary)', marginBottom: '4px' }}>Title</label>
                   <input
@@ -614,7 +614,7 @@ export function Dashboard() {
                 {/* Genre list */}
                 <div>
                   <label className="block text-xs font-medium" style={{ color: 'var(--text-secondary)', marginBottom: '6px' }}>Genre</label>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', maxHeight: '180px', overflowY: 'auto', border: '1px solid var(--border-primary)', borderRadius: '8px', padding: '4px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', maxHeight: '140px', overflowY: 'auto', border: '1px solid var(--border-primary)', borderRadius: '8px', padding: '4px 6px' }}>
                     {genres.map((g) => (
                       <button
                         key={g.id}
@@ -700,28 +700,11 @@ export function Dashboard() {
                   />
                 </div>
               </div>
-
-              <div className="flex gap-2 justify-end" style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid var(--border-primary)' }}>
-                <button
-                  onClick={() => setShowNewBook(false)}
-                  className="rounded-lg text-xs font-medium hover-btn"
-                  style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-primary)', padding: '8px 16px' }}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleCreateBook}
-                  disabled={!newBookTitle.trim()}
-                  className="rounded-lg text-xs font-medium hover-btn-primary"
-                  style={{ backgroundColor: 'var(--accent)', color: 'var(--text-inverse)', border: 'none', padding: '8px 16px', opacity: newBookTitle.trim() ? 1 : 0.5 }}
-                >
-                  Create
-                </button>
-              </div>
             </div>
 
             {/* Right Panel — Genre Detail */}
-            <div className="flex-1 overflow-y-auto" style={{ padding: '24px' }}>
+            <div className="flex-1 flex flex-col" style={{ padding: '24px' }}>
+              <div className="flex-1 overflow-y-auto">
               {!selectedGenre && newBookGenreId !== 'other' ? (
                 <div className="flex flex-col items-center justify-center h-full" style={{ color: 'var(--text-tertiary)' }}>
                   <BookOpen size={28} style={{ marginBottom: '10px', opacity: 0.4 }} />
@@ -817,6 +800,24 @@ export function Dashboard() {
                   )}
                 </div>
               )}
+              </div>
+              <div className="flex gap-2 justify-end" style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid var(--border-primary)' }}>
+                <button
+                  onClick={() => setShowNewBook(false)}
+                  className="rounded-lg text-xs font-medium hover-btn"
+                  style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-primary)', padding: '8px 16px' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCreateBook}
+                  disabled={!newBookTitle.trim()}
+                  className="rounded-lg text-xs font-medium hover-btn-primary"
+                  style={{ backgroundColor: 'var(--accent)', color: 'var(--text-inverse)', border: 'none', padding: '8px 16px', opacity: newBookTitle.trim() ? 1 : 0.5 }}
+                >
+                  Create
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -841,7 +842,7 @@ export function Dashboard() {
               boxShadow: 'var(--shadow-lg)',
               width: '780px',
               maxWidth: '95vw',
-              maxHeight: '85vh',
+              maxHeight: '92vh',
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -860,7 +861,7 @@ export function Dashboard() {
                 </div>
               )}
 
-              <div className="flex-1 overflow-y-auto" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div className="flex-1 overflow-y-auto" style={{ display: 'flex', flexDirection: 'column', gap: '12px', margin: '0 -4px', padding: '0 4px' }}>
                 <div>
                   <label className="block text-xs font-medium" style={{ color: 'var(--text-secondary)', marginBottom: '4px' }}>Title</label>
                   <input
@@ -886,7 +887,7 @@ export function Dashboard() {
                 {/* Genre list */}
                 <div>
                   <label className="block text-xs font-medium" style={{ color: 'var(--text-secondary)', marginBottom: '6px' }}>Genre</label>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', maxHeight: '180px', overflowY: 'auto', border: '1px solid var(--border-primary)', borderRadius: '8px', padding: '4px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', maxHeight: '140px', overflowY: 'auto', border: '1px solid var(--border-primary)', borderRadius: '8px', padding: '4px 6px' }}>
                     {genres.map((g) => (
                       <button
                         key={g.id}
@@ -972,28 +973,11 @@ export function Dashboard() {
                   />
                 </div>
               </div>
-
-              <div className="flex gap-2 justify-end" style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid var(--border-primary)' }}>
-                <button
-                  onClick={() => setEditingBook(null)}
-                  className="rounded-lg text-xs font-medium hover-btn"
-                  style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-primary)', padding: '8px 16px' }}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSaveEditBook}
-                  disabled={!editTitle.trim()}
-                  className="rounded-lg text-xs font-medium hover-btn-primary"
-                  style={{ backgroundColor: 'var(--accent)', color: 'var(--text-inverse)', border: 'none', padding: '8px 16px', opacity: editTitle.trim() ? 1 : 0.5 }}
-                >
-                  Save
-                </button>
-              </div>
             </div>
 
             {/* Right Panel — Genre Detail */}
-            <div className="flex-1 overflow-y-auto" style={{ padding: '24px' }}>
+            <div className="flex-1 flex flex-col" style={{ padding: '24px' }}>
+              <div className="flex-1 overflow-y-auto">
               {!editSelectedGenre && editGenreId !== 'other' ? (
                 <div className="flex flex-col items-center justify-center h-full" style={{ color: 'var(--text-tertiary)' }}>
                   <BookOpen size={28} style={{ marginBottom: '10px', opacity: 0.4 }} />
@@ -1089,6 +1073,24 @@ export function Dashboard() {
                   )}
                 </div>
               )}
+              </div>
+              <div className="flex gap-2 justify-end" style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid var(--border-primary)' }}>
+                <button
+                  onClick={() => setEditingBook(null)}
+                  className="rounded-lg text-xs font-medium hover-btn"
+                  style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-primary)', padding: '8px 16px' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveEditBook}
+                  disabled={!editTitle.trim()}
+                  className="rounded-lg text-xs font-medium hover-btn-primary"
+                  style={{ backgroundColor: 'var(--accent)', color: 'var(--text-inverse)', border: 'none', padding: '8px 16px', opacity: editTitle.trim() ? 1 : 0.5 }}
+                >
+                  Save
+                </button>
+              </div>
             </div>
           </div>
         </div>
