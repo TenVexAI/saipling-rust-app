@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 import { Wand2, RefreshCw, Scissors, Expand, ArrowUpRight } from 'lucide-react';
 import { useAIStore } from '../../stores/aiStore';
 import { agentQuick } from '../../utils/tauri';
@@ -20,7 +20,7 @@ const ACTIONS = [
 
 export function InlineAIToolbar({ editor }: InlineAIToolbarProps) {
   const [visible, setVisible] = useState(false);
-  const [position, setPosition] = useState({ top: 0, left: 0 });
+  const [position, setPosition] = useState({ top: 0, left: 0, containerWidth: 0 });
   const [loading, setLoading] = useState(false);
   const toolbarRef = useRef<HTMLDivElement>(null);
   const addMessage = useAIStore((s) => s.addMessage);
@@ -52,7 +52,8 @@ export function InlineAIToolbar({ editor }: InlineAIToolbarProps) {
 
     setPosition({
       top: coords.bottom - editorRect.top + 8,
-      left: Math.min(coords.left - editorRect.left, editorRect.width - 280),
+      left: coords.left - editorRect.left,
+      containerWidth: editorRect.width,
     });
     setVisible(true);
   }, [editor]);
@@ -127,6 +128,16 @@ export function InlineAIToolbar({ editor }: InlineAIToolbarProps) {
     setVisible(false);
   };
 
+  // Clamp toolbar position after render so it doesn't overflow the container
+  useLayoutEffect(() => {
+    if (!visible || !toolbarRef.current) return;
+    const toolbarWidth = toolbarRef.current.offsetWidth;
+    const maxLeft = position.containerWidth - toolbarWidth - 8;
+    if (position.left > maxLeft && maxLeft > 0) {
+      setPosition((prev) => ({ ...prev, left: maxLeft }));
+    }
+  }, [visible, position.left, position.containerWidth]);
+
   if (!visible || !editor) return null;
 
   return (
@@ -135,7 +146,7 @@ export function InlineAIToolbar({ editor }: InlineAIToolbarProps) {
       className="absolute flex items-center gap-0.5 rounded-lg shadow-lg"
       style={{
         top: `${position.top}px`,
-        left: `${position.left}px`,
+        left: `${Math.max(0, position.left)}px`,
         zIndex: 50,
         backgroundColor: 'var(--bg-elevated)',
         border: '1px solid var(--border-primary)',

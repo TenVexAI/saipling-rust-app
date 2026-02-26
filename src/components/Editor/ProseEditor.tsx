@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
+import { TextSelection } from '@tiptap/pm/state';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import CharacterCount from '@tiptap/extension-character-count';
@@ -61,6 +62,71 @@ export function ProseEditor({ filePath }: ProseEditorProps) {
           'max-width: 720px',
           'margin: 0 auto',
         ].join('; '),
+      },
+      handleClick(view, pos, event) {
+        if (event.ctrlKey && !event.shiftKey) {
+          const $pos = view.state.doc.resolve(pos);
+          const text = $pos.parent.textContent;
+          const offset = $pos.parentOffset;
+          let start = offset;
+          let end = offset;
+          while (start > 0 && /\w/.test(text[start - 1])) start--;
+          while (end < text.length && /\w/.test(text[end])) end++;
+          if (start !== end) {
+            const base = pos - offset;
+            const tr = view.state.tr.setSelection(TextSelection.create(view.state.doc, base + start, base + end));
+            view.dispatch(tr);
+            return true;
+          }
+        }
+        return false;
+      },
+      handleDOMEvents: {
+        mousedown(view, event) {
+          if (event.ctrlKey && event.shiftKey) {
+            const coords = { left: event.clientX, top: event.clientY };
+            const clickPos = view.posAtCoords(coords);
+            if (!clickPos) return false;
+            const pos = clickPos.pos;
+            const $pos = view.state.doc.resolve(pos);
+            const from = $pos.start($pos.depth);
+            const to = $pos.end($pos.depth);
+            const tr = view.state.tr.setSelection(TextSelection.create(view.state.doc, from, to));
+            view.dispatch(tr);
+            event.preventDefault();
+            return true;
+          }
+          if (event.shiftKey && !event.ctrlKey) {
+            const coords = { left: event.clientX, top: event.clientY };
+            const clickPos = view.posAtCoords(coords);
+            if (!clickPos) return false;
+
+            const anchor = view.state.selection.anchor;
+            const head = clickPos.pos;
+
+            const wordAt = (p: number) => {
+              const $p = view.state.doc.resolve(p);
+              const t = $p.parent.textContent;
+              const o = $p.parentOffset;
+              let s = o, e = o;
+              while (s > 0 && /\w/.test(t[s - 1])) s--;
+              while (e < t.length && /\w/.test(t[e])) e++;
+              const base = p - o;
+              return { from: base + s, to: base + e };
+            };
+
+            const anchorWord = wordAt(anchor);
+            const headWord = wordAt(head);
+            const from = head >= anchor ? anchorWord.from : headWord.from;
+            const to = head >= anchor ? headWord.to : anchorWord.to;
+
+            const tr = view.state.tr.setSelection(TextSelection.create(view.state.doc, from, to));
+            view.dispatch(tr);
+            event.preventDefault();
+            return true;
+          }
+          return false;
+        },
       },
     },
     onUpdate: ({ editor: ed }) => {
