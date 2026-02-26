@@ -43,15 +43,16 @@ export function InlineAIToolbar({ editor }: InlineAIToolbarProps) {
 
     // Get the position of the selection end in the DOM
     const coords = editor.view.coordsAtPos(to);
-    const editorRect = editor.view.dom.closest('.flex-1.overflow-y-auto')?.getBoundingClientRect();
+    const container = editor.view.dom.closest('.flex-1.overflow-y-auto') as HTMLElement | null;
 
-    if (!editorRect) {
+    if (!container) {
       setVisible(false);
       return;
     }
 
+    const editorRect = container.getBoundingClientRect();
     setPosition({
-      top: coords.bottom - editorRect.top + 8,
+      top: coords.bottom - editorRect.top + container.scrollTop + 8,
       left: coords.left - editorRect.left,
       containerWidth: editorRect.width,
     });
