@@ -262,6 +262,17 @@ export function ContextSettings() {
                   <div className="flex items-center gap-2 shrink-0" style={{ marginLeft: '8px' }}>
                     <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{score}%</span>
                     <button
+                      onClick={() => {
+                        const absPath = projectDir ? `${projectDir}\\${r.file_path.replace(/\//g, '\\')}` : r.file_path;
+                        setActiveFile(absPath);
+                      }}
+                      title="Open in editor"
+                      className="flex items-center justify-center hover-icon"
+                      style={{ color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px' }}
+                    >
+                      <Pencil size={12} />
+                    </button>
+                    <button
                       onClick={() => handleForceInclude(r.file_path)}
                       title="Force include in context"
                       className="flex items-center justify-center hover-icon"
