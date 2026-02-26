@@ -1,0 +1,576 @@
+# ============================================================================
+# sAIpling Genre Classification
+# ============================================================================
+# This file defines all supported genres and sub-genres for book projects.
+# It is loaded by the Rust backend and serves as the data source for the
+# genre selection UI (two-panel layout) and AI context (word count targets,
+# genre-aware prompting).
+#
+# Structure:
+#   [meta]                     - File version for future migration support
+#   [[genres]]                 - Array of genre entries (order = display order)
+#     id                       - Unique snake_case identifier (stored in project.json)
+#     name                     - Display name shown in the UI
+#     sort_order               - Explicit ordering for the genre list
+#     description              - Short paragraph shown in the info panel
+#     novel_word_count_min/max - Recommended total word count range
+#     chapter_word_count_min/max - Recommended per-chapter word count range
+#     [[genres.sub_genres]]    - Array of sub-genre entries for this genre
+#       id                     - Unique snake_case identifier (scoped to parent)
+#       name                   - Display name
+#       description            - Short description shown when sub-genre selected
+#
+# Adding a new genre or sub-genre:
+#   1. Append a new [[genres]] or [[genres.sub_genres]] block
+#   2. Assign a unique `id` (snake_case, no spaces)
+#   3. The UI and Rust structs pick it up automatically — no code changes needed
+# ============================================================================
+
+[meta]
+version = "1.0.0"
+
+# --------------------------------------------------------------------------
+# 1. Literary Fiction
+# --------------------------------------------------------------------------
+[[genres]]
+id = "literary_fiction"
+name = "Literary Fiction"
+sort_order = 1
+description = "Focuses on character, style, and thematic depth rather than plot. Often explores the human condition with nuanced prose."
+novel_word_count_min = 70_000
+novel_word_count_max = 110_000
+chapter_word_count_min = 2_000
+chapter_word_count_max = 4_000
+
+[[genres.sub_genres]]
+id = "coming_of_age"
+name = "Coming-of-Age"
+description = "Focuses on a character's psychological or moral growth from youth to maturity."
+
+[[genres.sub_genres]]
+id = "slice_of_life"
+name = "Slice of Life"
+description = "Realistic portrayals of ordinary, everyday life without high-stakes conflict."
+
+[[genres.sub_genres]]
+id = "experimental"
+name = "Experimental"
+description = "Nonlinear or unconventional narrative techniques that push the boundaries of form."
+
+[[genres.sub_genres]]
+id = "magical_realism"
+name = "Magical Realism"
+description = "Blends the real world with subtle magical elements treated as mundane."
+
+[[genres.sub_genres]]
+id = "metafiction"
+name = "Metafiction"
+description = "Fiction about fiction; self-referential or structurally experimental works."
+
+[[genres.sub_genres]]
+id = "satire"
+name = "Satire"
+description = "Uses humor, irony, or exaggeration to criticize social, political, or cultural flaws."
+
+# --------------------------------------------------------------------------
+# 2. Romance
+# --------------------------------------------------------------------------
+[[genres]]
+id = "romance"
+name = "Romance"
+sort_order = 2
+description = "Centers on a romantic relationship, often with an emotionally satisfying and optimistic ending."
+novel_word_count_min = 70_000
+novel_word_count_max = 90_000
+chapter_word_count_min = 2_000
+chapter_word_count_max = 3_000
+
+[[genres.sub_genres]]
+id = "historical_romance"
+name = "Historical Romance"
+description = "Set in past time periods with attention to historical detail and romantic relationships."
+
+[[genres.sub_genres]]
+id = "contemporary_romance"
+name = "Contemporary Romance"
+description = "Set in modern times with relatable, present-day romantic dynamics."
+
+[[genres.sub_genres]]
+id = "romantic_suspense"
+name = "Romantic Suspense"
+description = "Combines romance with elements of mystery or thriller."
+
+[[genres.sub_genres]]
+id = "paranormal_romance"
+name = "Paranormal Romance"
+description = "Incorporates supernatural elements such as vampires, shifters, or psychic abilities."
+
+[[genres.sub_genres]]
+id = "erotica"
+name = "Erotica"
+description = "Focuses on explicit sexual content as a central element of the narrative."
+
+[[genres.sub_genres]]
+id = "ya_romance"
+name = "Young Adult Romance"
+description = "Romance aimed at teenage readers with age-appropriate content."
+
+# --------------------------------------------------------------------------
+# 3. Science Fiction
+# --------------------------------------------------------------------------
+[[genres]]
+id = "science_fiction"
+name = "Science Fiction"
+sort_order = 3
+description = "Explores futuristic concepts, technology, space travel, time travel, and speculative scientific developments."
+novel_word_count_min = 90_000
+novel_word_count_max = 120_000
+chapter_word_count_min = 2_500
+chapter_word_count_max = 4_000
+
+[[genres.sub_genres]]
+id = "hard_sci_fi"
+name = "Hard Sci-Fi"
+description = "Emphasizes scientific accuracy and technical detail as core to the story."
+
+[[genres.sub_genres]]
+id = "soft_sci_fi"
+name = "Soft Sci-Fi"
+description = "Focuses on psychology, social science, and human relationships within speculative settings."
+
+[[genres.sub_genres]]
+id = "cyberpunk"
+name = "Cyberpunk"
+description = "High-tech, low-life scenarios often set in dystopian futures with heavy technology integration."
+
+[[genres.sub_genres]]
+id = "space_opera"
+name = "Space Opera"
+description = "Epic adventures across space with advanced technology, large casts, and sweeping stakes."
+
+[[genres.sub_genres]]
+id = "dystopian"
+name = "Dystopian"
+description = "Depicts societies in oppressive, negative future states controlled by authoritarian systems."
+
+[[genres.sub_genres]]
+id = "post_apocalyptic"
+name = "Post-Apocalyptic"
+description = "Set after a global catastrophe, exploring survival and rebuilding."
+
+[[genres.sub_genres]]
+id = "cli_fi"
+name = "Cli-Fi"
+description = "Climate fiction focusing on ecological collapse, environmental change, or sustainability."
+
+[[genres.sub_genres]]
+id = "afrofuturism"
+name = "Afrofuturism / Indigenous Futurism"
+description = "Fuses cultural perspectives from the African diaspora or Indigenous peoples with futuristic narratives."
+
+[[genres.sub_genres]]
+id = "speculative_fiction"
+name = "Speculative Fiction"
+description = "Broader category exploring 'what-if' scenarios that don't fit neatly into hard or soft sci-fi."
+
+# --------------------------------------------------------------------------
+# 4. Fantasy
+# --------------------------------------------------------------------------
+[[genres]]
+id = "fantasy"
+name = "Fantasy"
+sort_order = 4
+description = "Features magical or supernatural elements set in imaginary worlds or alternate realities."
+novel_word_count_min = 90_000
+novel_word_count_max = 150_000
+chapter_word_count_min = 3_000
+chapter_word_count_max = 5_000
+
+[[genres.sub_genres]]
+id = "high_fantasy"
+name = "High Fantasy"
+description = "Set entirely in fictional worlds with magic systems, mythical beings, and epic scope."
+
+[[genres.sub_genres]]
+id = "low_fantasy"
+name = "Low Fantasy"
+description = "Magical elements existing within the real world, often subtle and grounded."
+
+[[genres.sub_genres]]
+id = "urban_fantasy"
+name = "Urban Fantasy"
+description = "Fantasy elements woven into modern urban settings — cities, subways, nightlife."
+
+[[genres.sub_genres]]
+id = "dark_fantasy"
+name = "Dark Fantasy"
+description = "Incorporates horror elements with fantasy, featuring bleak atmospheres and morally grey worlds."
+
+[[genres.sub_genres]]
+id = "portal_fantasy"
+name = "Portal Fantasy"
+description = "Characters travel between worlds, often from the real world into a fantastical one."
+
+[[genres.sub_genres]]
+id = "sword_and_sorcery"
+name = "Sword & Sorcery"
+description = "Action-oriented fantasy with heroic protagonists, physical combat, and personal stakes."
+
+[[genres.sub_genres]]
+id = "grimdark"
+name = "Grimdark"
+description = "Marked by violence, moral ambiguity, cynicism, and a rejection of traditional heroic tropes."
+
+[[genres.sub_genres]]
+id = "mythopoeic"
+name = "Mythopoeic"
+description = "Constructed mythologies, legends, and creation narratives forming the backbone of the world."
+
+# --------------------------------------------------------------------------
+# 5. Mystery
+# --------------------------------------------------------------------------
+[[genres]]
+id = "mystery"
+name = "Mystery"
+sort_order = 5
+description = "Involves a crime or puzzle that the protagonist must solve, often with a detective figure."
+novel_word_count_min = 70_000
+novel_word_count_max = 90_000
+chapter_word_count_min = 2_000
+chapter_word_count_max = 3_000
+
+[[genres.sub_genres]]
+id = "cozy_mystery"
+name = "Cozy Mystery"
+description = "Gentle, often humorous crime solving in small communities without graphic violence."
+
+[[genres.sub_genres]]
+id = "police_procedural"
+name = "Police Procedural"
+description = "Focus on realistic police work, investigation techniques, and forensic detail."
+
+[[genres.sub_genres]]
+id = "noir"
+name = "Noir"
+description = "Dark, cynical tone with morally ambiguous characters and a fatalistic worldview."
+
+[[genres.sub_genres]]
+id = "historical_mystery"
+name = "Historical Mystery"
+description = "Mystery narratives set in past time periods with historically grounded detail."
+
+[[genres.sub_genres]]
+id = "legal_mystery"
+name = "Legal Mystery"
+description = "Centers on courtroom drama, legal proceedings, and justice system intricacies."
+
+[[genres.sub_genres]]
+id = "locked_room"
+name = "Locked-Room Mystery"
+description = "A seemingly impossible crime committed under conditions that appear to rule out a perpetrator."
+
+# --------------------------------------------------------------------------
+# 6. Thriller / Suspense
+# --------------------------------------------------------------------------
+[[genres]]
+id = "thriller_suspense"
+name = "Thriller / Suspense"
+sort_order = 6
+description = "Focuses on tension, high stakes, and pacing — often involving danger, espionage, or psychological manipulation."
+novel_word_count_min = 80_000
+novel_word_count_max = 100_000
+chapter_word_count_min = 1_500
+chapter_word_count_max = 2_500
+
+[[genres.sub_genres]]
+id = "psychological_thriller"
+name = "Psychological Thriller"
+description = "Mental and emotional manipulation drives the tension and conflict."
+
+[[genres.sub_genres]]
+id = "techno_thriller"
+name = "Techno-Thriller"
+description = "Technology-driven plots where hardware, software, or systems are central to the conflict."
+
+[[genres.sub_genres]]
+id = "political_thriller"
+name = "Political Thriller"
+description = "Political intrigue, conspiracy, and power struggles at institutional scale."
+
+[[genres.sub_genres]]
+id = "legal_thriller"
+name = "Legal Thriller"
+description = "Courtroom drama with high personal and societal stakes."
+
+[[genres.sub_genres]]
+id = "medical_thriller"
+name = "Medical Thriller"
+description = "Medical settings, health-related threats, or bioethical dilemmas as central tension."
+
+[[genres.sub_genres]]
+id = "domestic_thriller"
+name = "Domestic Thriller"
+description = "Danger within family or intimate relationships — the threat comes from inside the home."
+
+[[genres.sub_genres]]
+id = "transgressive_fiction"
+name = "Transgressive Fiction"
+description = "Characters who defy societal norms in disturbing or provocative ways."
+
+# --------------------------------------------------------------------------
+# 7. Horror
+# --------------------------------------------------------------------------
+[[genres]]
+id = "horror"
+name = "Horror"
+sort_order = 7
+description = "Aims to elicit fear, dread, or shock. May include supernatural, psychological, or body horror elements."
+novel_word_count_min = 70_000
+novel_word_count_max = 100_000
+chapter_word_count_min = 2_000
+chapter_word_count_max = 3_500
+
+[[genres.sub_genres]]
+id = "gothic_horror"
+name = "Gothic Horror"
+description = "Romantic, dark settings with supernatural elements, decaying estates, and atmospheric dread."
+
+[[genres.sub_genres]]
+id = "supernatural_horror"
+name = "Supernatural Horror"
+description = "Features ghosts, demons, or other supernatural beings as the source of terror."
+
+[[genres.sub_genres]]
+id = "slasher"
+name = "Slasher"
+description = "Focuses on a violent antagonist pursuing victims, often with escalating tension."
+
+[[genres.sub_genres]]
+id = "psychological_horror"
+name = "Psychological Horror"
+description = "Exploits mental and emotional fears — unreliable reality, paranoia, and existential dread."
+
+[[genres.sub_genres]]
+id = "folk_horror"
+name = "Folk Horror"
+description = "Based on folklore and rural traditions, often with pagan or ritualistic elements."
+
+[[genres.sub_genres]]
+id = "lovecraftian"
+name = "Lovecraftian"
+description = "Cosmic horror with incomprehensible entities, existential insignificance, and forbidden knowledge."
+
+[[genres.sub_genres]]
+id = "transgressive_horror"
+name = "Transgressive Horror"
+description = "Pushes boundaries of taboos and social norms to provoke visceral discomfort."
+
+# --------------------------------------------------------------------------
+# 8. Historical Fiction
+# --------------------------------------------------------------------------
+[[genres]]
+id = "historical_fiction"
+name = "Historical Fiction"
+sort_order = 8
+description = "Set in the past with attention to historical detail; often incorporates real figures or events."
+novel_word_count_min = 90_000
+novel_word_count_max = 120_000
+chapter_word_count_min = 2_500
+chapter_word_count_max = 4_000
+
+[[genres.sub_genres]]
+id = "historical_romance"
+name = "Historical Romance"
+description = "Combines historical settings with romantic relationships as a central narrative thread."
+
+[[genres.sub_genres]]
+id = "historical_mystery"
+name = "Historical Mystery"
+description = "Mystery narratives set in past time periods with period-accurate detail."
+
+[[genres.sub_genres]]
+id = "historical_adventure"
+name = "Historical Adventure"
+description = "Action-oriented historical stories with journeys, battles, or exploration."
+
+[[genres.sub_genres]]
+id = "alt_history"
+name = "Alternate History"
+description = "Explores alternate historical outcomes — what if key events had gone differently?"
+
+[[genres.sub_genres]]
+id = "biographical_fiction"
+name = "Biographical Fiction"
+description = "Fictionalized accounts of real historical figures with creative liberties."
+
+[[genres.sub_genres]]
+id = "historical_fantasy"
+name = "Historical Fantasy"
+description = "Blends historical settings with fantasy elements like magic or mythical creatures."
+
+# --------------------------------------------------------------------------
+# 9. Adventure
+# --------------------------------------------------------------------------
+[[genres]]
+id = "adventure"
+name = "Adventure"
+sort_order = 9
+description = "Features action-packed journeys, exploration, and physical challenges; often overlaps with other genres."
+novel_word_count_min = 70_000
+novel_word_count_max = 100_000
+chapter_word_count_min = 2_000
+chapter_word_count_max = 3_000
+
+[[genres.sub_genres]]
+id = "survival"
+name = "Survival"
+description = "Characters facing extreme conditions, isolation, or life-threatening environments."
+
+[[genres.sub_genres]]
+id = "exploration"
+name = "Exploration"
+description = "Discovery of new lands, environments, or uncharted territories."
+
+[[genres.sub_genres]]
+id = "quest_fiction"
+name = "Quest Fiction"
+description = "A journey to obtain an object, rescue someone, or accomplish a specific mission."
+
+[[genres.sub_genres]]
+id = "sea_stories"
+name = "Sea Stories"
+description = "Maritime adventures — ships, oceans, naval conflict, and life at sea."
+
+[[genres.sub_genres]]
+id = "treasure_hunts"
+name = "Treasure Hunts"
+description = "Search for valuable objects, artifacts, or hidden riches."
+
+[[genres.sub_genres]]
+id = "western"
+name = "Western"
+description = "Set in the American Old West with frontier themes, cowboys, and lawlessness."
+
+# --------------------------------------------------------------------------
+# 10. Young Adult (YA)
+# --------------------------------------------------------------------------
+[[genres]]
+id = "young_adult"
+name = "Young Adult (YA)"
+sort_order = 10
+description = "Written for teen readers (ages 12–18), usually featuring teen protagonists and coming-of-age themes."
+novel_word_count_min = 50_000
+novel_word_count_max = 90_000
+chapter_word_count_min = 1_500
+chapter_word_count_max = 3_000
+
+[[genres.sub_genres]]
+id = "ya_romance"
+name = "YA Romance"
+description = "Teen romantic relationships with age-appropriate emotional depth."
+
+[[genres.sub_genres]]
+id = "ya_fantasy"
+name = "YA Fantasy"
+description = "Fantasy elements with teen protagonists, often with coming-of-age arcs."
+
+[[genres.sub_genres]]
+id = "ya_sci_fi"
+name = "YA Sci-Fi"
+description = "Science fiction with teen protagonists navigating futuristic or speculative settings."
+
+[[genres.sub_genres]]
+id = "ya_dystopian"
+name = "YA Dystopian"
+description = "Dark futures aimed at teens, often exploring rebellion and identity."
+
+[[genres.sub_genres]]
+id = "ya_contemporary"
+name = "YA Contemporary"
+description = "Realistic modern settings dealing with real-world teen experiences."
+
+[[genres.sub_genres]]
+id = "ya_thriller"
+name = "YA Thriller"
+description = "Suspense and danger with teen characters and age-appropriate stakes."
+
+[[genres.sub_genres]]
+id = "ya_coming_of_age"
+name = "YA Coming-of-Age"
+description = "Focus on character growth, identity formation, and the transition to adulthood."
+
+# --------------------------------------------------------------------------
+# 11. Middle Grade
+# --------------------------------------------------------------------------
+[[genres]]
+id = "middle_grade"
+name = "Middle Grade"
+sort_order = 11
+description = "Aimed at readers ages 8–12. Features age-appropriate themes of growth, friendship, and moral discovery with accessible prose."
+novel_word_count_min = 20_000
+novel_word_count_max = 50_000
+chapter_word_count_min = 1_000
+chapter_word_count_max = 1_500
+
+[[genres.sub_genres]]
+id = "mg_fantasy"
+name = "MG Fantasy"
+description = "Magical elements and imaginative worlds for middle grade readers."
+
+[[genres.sub_genres]]
+id = "mg_adventure"
+name = "MG Adventure"
+description = "Action-oriented stories with exploration, quests, and physical challenges for younger readers."
+
+[[genres.sub_genres]]
+id = "mg_mystery"
+name = "MG Mystery"
+description = "Age-appropriate puzzles and mysteries for young detectives to solve."
+
+[[genres.sub_genres]]
+id = "mg_animal_stories"
+name = "MG Animal Stories"
+description = "Featuring animal protagonists or deep human-animal bonds."
+
+[[genres.sub_genres]]
+id = "mg_realistic_fiction"
+name = "MG Realistic Fiction"
+description = "Real-world situations — school, family, friendships — relatable to middle grade readers."
+
+# --------------------------------------------------------------------------
+# 12. Children's Chapter Book
+# --------------------------------------------------------------------------
+[[genres]]
+id = "childrens_chapter_book"
+name = "Children's Chapter Book"
+sort_order = 12
+description = "Aimed at early readers ages 5–8. Simple prose with short chapters, often with illustrations, and themes of friendship, bravery, and basic morality."
+novel_word_count_min = 5_000
+novel_word_count_max = 15_000
+chapter_word_count_min = 500
+chapter_word_count_max = 1_000
+
+[[genres.sub_genres]]
+id = "cb_fantasy"
+name = "Chapter Book Fantasy"
+description = "Simple magical elements and whimsical worlds for early readers."
+
+[[genres.sub_genres]]
+id = "cb_adventure"
+name = "Chapter Book Adventure"
+description = "Fun, age-appropriate adventures with simple stakes and clear resolutions."
+
+[[genres.sub_genres]]
+id = "cb_mystery"
+name = "Chapter Book Mystery"
+description = "Simple puzzles and gentle mysteries perfect for early independent readers."
+
+[[genres.sub_genres]]
+id = "cb_animal_stories"
+name = "Chapter Book Animal Stories"
+description = "Animal protagonists in stories that teach empathy, responsibility, and friendship."
+
+[[genres.sub_genres]]
+id = "cb_realistic_fiction"
+name = "Chapter Book Realistic Fiction"
+description = "Everyday situations — first day of school, making friends, family dynamics — for young readers."

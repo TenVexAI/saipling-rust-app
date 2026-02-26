@@ -128,7 +128,7 @@ fn substitute_prompt_vars(template: &str, project_dir: &PathBuf, scope: &Context
         std::fs::read_to_string(&book_path)
             .ok()
             .and_then(|data| serde_json::from_str::<serde_json::Value>(&data).ok())
-            .and_then(|meta| meta.get("genre").and_then(|g| g.as_str()).filter(|g| !g.is_empty()).map(|g| format!("The story's genre is: {}", g)))
+            .and_then(|meta| meta.get("genre_id").and_then(|g| g.as_str()).filter(|g| !g.is_empty()).map(|g| format!("The story's genre is: {}", g)))
             .unwrap_or_default()
     } else {
         String::new()
@@ -149,7 +149,7 @@ fn substitute_prompt_vars(template: &str, project_dir: &PathBuf, scope: &Context
             .ok()
             .and_then(|data| serde_json::from_str::<serde_json::Value>(&data).ok())
             .map(|meta| {
-                let pov = meta.pointer("/settings/pov").and_then(|v| v.as_str()).filter(|s| !s.is_empty()).unwrap_or("third person limited").to_string();
+                let pov = meta.pointer("/settings/perspective").and_then(|v| v.as_str()).filter(|s| !s.is_empty()).unwrap_or("third person limited").to_string();
                 let tense = meta.pointer("/settings/tense").and_then(|v| v.as_str()).filter(|s| !s.is_empty()).unwrap_or("past").to_string();
                 let notes = meta.pointer("/settings/writing_style_notes").and_then(|v| v.as_str()).unwrap_or("").to_string();
                 (pov, tense, notes)

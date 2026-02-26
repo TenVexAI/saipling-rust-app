@@ -9,7 +9,7 @@ pub struct BookRef {
     pub title: String,
     pub sort_order: u32,
     #[serde(default)]
-    pub genre: String,
+    pub genre_id: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -157,7 +157,11 @@ pub fn create_book_dirs(
     book_dir: &PathBuf,
     title: &str,
     author: &str,
-    genre: &str,
+    genre_id: &str,
+    sub_genre_id: &str,
+    tense: &str,
+    perspective: &str,
+    target_word_count: u64,
     sort_order: u32,
 ) -> Result<(), AppError> {
     let subdirs = [
@@ -187,11 +191,12 @@ pub fn create_book_dirs(
         "id": book_id,
         "title": title,
         "author": author,
-        "genre": genre,
+        "genre_id": genre_id,
+        "sub_genre_id": sub_genre_id,
         "sort_order": sort_order,
         "created": now,
         "modified": now,
-        "target_word_count": 80000,
+        "target_word_count": target_word_count,
         "current_word_count": 0,
         "phase_progress": {
             "seed": {
@@ -238,8 +243,8 @@ pub fn create_book_dirs(
         "front_matter": {},
         "back_matter": {},
         "settings": {
-            "pov": "",
-            "tense": ""
+            "perspective": perspective,
+            "tense": tense
         }
     });
     std::fs::write(

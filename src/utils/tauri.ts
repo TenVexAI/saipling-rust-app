@@ -25,8 +25,17 @@ export const deleteProject = (directory: string) =>
   invoke<void>('delete_project', { directory });
 
 // ─── Book Management ───
-export const createBook = (projectDir: string, title: string, author: string, genre: string) =>
-  invoke<BookMetadata>('create_book', { projectDir, title, author, genre });
+export const createBook = (
+  projectDir: string,
+  title: string,
+  author: string,
+  genreId: string,
+  subGenreId: string,
+  tense: string,
+  perspective: string,
+  targetWordCount: number,
+) =>
+  invoke<BookMetadata>('create_book', { projectDir, title, author, genreId, subGenreId, tense, perspective, targetWordCount });
 
 export const getBookMetadata = (projectDir: string, bookId: string) =>
   invoke<BookMetadata>('get_book_metadata', { projectDir, bookId });
@@ -194,6 +203,33 @@ export const getModelsConfigPath = () =>
 // ─── Skill Settings ───
 export const getSkillSettings = () =>
   invoke<SkillSettingsEntry[]>('get_skill_settings');
+
+// ─── Genres ───
+export interface SubGenre {
+  id: string;
+  name: string;
+  description: string;
+}
+
+export interface Genre {
+  id: string;
+  name: string;
+  sort_order: number;
+  description: string;
+  novel_word_count_min: number;
+  novel_word_count_max: number;
+  chapter_word_count_min: number;
+  chapter_word_count_max: number;
+  sub_genres: SubGenre[];
+}
+
+export interface GenresConfig {
+  meta: { version: string };
+  genres: Genre[];
+}
+
+export const getGenres = () =>
+  invoke<GenresConfig>('get_genres');
 
 // ─── File Watcher ───
 export const startFileWatcher = (projectDir: string) =>

@@ -12,7 +12,9 @@ pub struct BookMetadata {
     #[serde(default)]
     pub author: String,
     #[serde(default)]
-    pub genre: String,
+    pub genre_id: String,
+    #[serde(default)]
+    pub sub_genre_id: String,
     pub sort_order: u32,
     pub created: String,
     pub modified: String,
@@ -30,7 +32,16 @@ pub struct BookMetadata {
 }
 
 #[tauri::command]
-pub fn create_book(project_dir: PathBuf, title: String, author: String, genre: String) -> Result<BookMetadata, AppError> {
+pub fn create_book(
+    project_dir: PathBuf,
+    title: String,
+    author: String,
+    genre_id: String,
+    sub_genre_id: String,
+    tense: String,
+    perspective: String,
+    target_word_count: u64,
+) -> Result<BookMetadata, AppError> {
     // Read project.json to determine next book number
     let project_json_path = project_dir.join("project.json");
     let project_data: serde_json::Value =
@@ -45,7 +56,7 @@ pub fn create_book(project_dir: PathBuf, title: String, author: String, genre: S
     let book_id = format!("book-{:02}", book_num);
     let book_dir = project_dir.join("books").join(&book_id);
 
-    create_book_dirs(&book_dir, &title, &author, &genre, book_num as u32)?;
+    create_book_dirs(&book_dir, &title, &author, &genre_id, &sub_genre_id, &tense, &perspective, target_word_count, book_num as u32)?;
 
     // Update project.json with new book ref
     let mut project_data: serde_json::Value =
@@ -55,7 +66,7 @@ pub fn create_book(project_dir: PathBuf, title: String, author: String, genre: S
         id: book_id.clone(),
         title: title.clone(),
         sort_order: book_num as u32,
-        genre: genre.clone(),
+        genre_id: genre_id.clone(),
     })?;
 
     if let Some(books) = project_data.get_mut("books").and_then(|v| v.as_array_mut()) {

@@ -20,7 +20,7 @@ export interface BookRef {
   id: string;
   title: string;
   sort_order: number;
-  genre: string;
+  genre_id: string;
 }
 
 export interface RecentProject {
@@ -34,7 +34,8 @@ export interface BookMetadata {
   id: string;
   title: string;
   author: string;
-  genre: string;
+  genre_id: string;
+  sub_genre_id: string;
   sort_order: number;
   created: string;
   modified: string;
@@ -48,7 +49,7 @@ export interface BookMetadata {
 }
 
 export interface BookSettings {
-  pov: string;
+  perspective: string;
   tense: string;
 }
 

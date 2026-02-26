@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useProjectStore } from '../../stores/projectStore';
 import { useAIStore } from '../../stores/aiStore';
-import { listDirectory, createBook, getBookWordCount, getBookTotalDocWords, getBookMetadata, updateBookMetadata } from '../../utils/tauri';
+import { listDirectory, createBook, getBookWordCount, getBookTotalDocWords, getBookMetadata, updateBookMetadata, getGenres } from '../../utils/tauri';
+import type { Genre } from '../../utils/tauri';
 import { saveProjectChat } from '../../utils/projectChat';
-import { BookOpen, Plus, Lightbulb, LogOut, Pencil, Trash2, Check, ArrowRight } from 'lucide-react';
+import { BookOpen, Plus, Lightbulb, LogOut, Pencil, Trash2, Check, ArrowRight, X, ChevronRight } from 'lucide-react';
 import { SaiplingDashLogo } from './SaiplingDashLogo';
 import { PhaseIcon } from '../PhaseWorkflow/PhaseIcon';
 import { EditProjectModal } from './EditProjectModal';
@@ -81,17 +82,33 @@ export function Dashboard() {
   const [showNewBook, setShowNewBook] = useState(false);
   const [newBookTitle, setNewBookTitle] = useState('');
   const [newBookAuthor, setNewBookAuthor] = useState('');
-  const [newBookGenre, setNewBookGenre] = useState('');
+  const [newBookGenreId, setNewBookGenreId] = useState('');
+  const [newBookSubGenreId, setNewBookSubGenreId] = useState('');
+  const [newBookTense, setNewBookTense] = useState('');
+  const [newBookPerspective, setNewBookPerspective] = useState('');
+  const [newBookTargetWords, setNewBookTargetWords] = useState('80000');
   const [bookError, setBookError] = useState('');
   const [bookCardData, setBookCardData] = useState<Record<string, BookCardData>>({});
   const [editingBook, setEditingBook] = useState<BookMetadata | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [editAuthor, setEditAuthor] = useState('');
-  const [editGenre, setEditGenre] = useState('');
+  const [editGenreId, setEditGenreId] = useState('');
+  const [editSubGenreId, setEditSubGenreId] = useState('');
+  const [editTense, setEditTense] = useState('');
+  const [editPerspective, setEditPerspective] = useState('');
   const [editTargetWords, setEditTargetWords] = useState('');
   const [editError, setEditError] = useState('');
   const [activeBookHasOverview, setActiveBookHasOverview] = useState(false);
+  const [genres, setGenres] = useState<Genre[]>([]);
+  const [expandedSubGenre, setExpandedSubGenre] = useState<string | null>(null);
+  const [editExpandedSubGenre, setEditExpandedSubGenre] = useState<string | null>(null);
+  const titleInputRef = useRef<HTMLInputElement>(null);
   const refreshCounter = useProjectStore((s) => s.refreshCounter);
+
+  // Load genres on mount
+  useEffect(() => {
+    getGenres().then((config) => setGenres(config.genres.sort((a, b) => a.sort_order - b.sort_order))).catch(() => {});
+  }, []);
 
   // Check if the active book has an overview document
   useEffect(() => {
@@ -175,15 +192,20 @@ export function Dashboard() {
     if (!projectDir || !project || !newBookTitle.trim()) return;
     setBookError('');
     try {
-      const meta = await createBook(projectDir, newBookTitle.trim(), newBookAuthor.trim(), newBookGenre);
+      const meta = await createBook(projectDir, newBookTitle.trim(), newBookAuthor.trim(), newBookGenreId, newBookSubGenreId, newBookTense, newBookPerspective, parseInt(newBookTargetWords) || 80000);
       useProjectStore.getState().updateBooks([
         ...project.books,
-        { id: meta.id, title: meta.title, sort_order: meta.sort_order, genre: meta.genre },
+        { id: meta.id, title: meta.title, sort_order: meta.sort_order, genre_id: meta.genre_id },
       ]);
       setShowNewBook(false);
       setNewBookTitle('');
       setNewBookAuthor('');
-      setNewBookGenre('');
+      setNewBookGenreId('');
+      setNewBookSubGenreId('');
+      setNewBookTense('');
+      setNewBookPerspective('');
+      setNewBookTargetWords('80000');
+      setExpandedSubGenre(null);
       loadBookData();
     } catch (e) {
       setBookError(String(e));
@@ -197,9 +219,13 @@ export function Dashboard() {
       setEditingBook(meta);
       setEditTitle(meta.title);
       setEditAuthor(meta.author || '');
-      setEditGenre(meta.genre || '');
+      setEditGenreId(meta.genre_id || '');
+      setEditSubGenreId(meta.sub_genre_id || '');
+      setEditTense(meta.settings?.tense || '');
+      setEditPerspective(meta.settings?.perspective || '');
       setEditTargetWords(String(meta.target_word_count || 80000));
       setEditError('');
+      setEditExpandedSubGenre(null);
     } catch (e) {
       setEditError(String(e));
     }
@@ -213,14 +239,15 @@ export function Dashboard() {
         ...editingBook,
         title: editTitle.trim(),
         author: editAuthor.trim(),
-        genre: editGenre,
+        genre_id: editGenreId,
+        sub_genre_id: editSubGenreId,
         target_word_count: parseInt(editTargetWords) || 80000,
+        settings: { ...editingBook.settings, tense: editTense, perspective: editPerspective },
       };
       await updateBookMetadata(projectDir, editingBook.id, updated);
-      // Update the book ref in project store
       const currentBooks = project?.books || [];
       useProjectStore.getState().updateBooks(
-        currentBooks.map((b) => b.id === editingBook.id ? { ...b, title: updated.title, genre: updated.genre } : b)
+        currentBooks.map((b) => b.id === editingBook.id ? { ...b, title: updated.title, genre_id: updated.genre_id } : b)
       );
       setEditingBook(null);
       loadBookData();
@@ -523,268 +550,550 @@ export function Dashboard() {
         />
       )}
 
-      {/* New Book Modal */}
-      {showNewBook && (
+      {/* New Book Modal — Two-Panel */}
+      {showNewBook && (() => {
+        const selectedGenre = genres.find((g) => g.id === newBookGenreId) || null;
+        const formatWordCount = (n: number) => n >= 1000 ? `${Math.round(n / 1000)}k` : String(n);
+        return (
         <div
           className="fixed inset-0 flex items-center justify-center"
           style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000 }}
           onClick={() => setShowNewBook(false)}
         >
           <div
-            className="rounded-xl"
+            className="rounded-xl flex"
             style={{
               backgroundColor: 'var(--bg-primary)',
               border: '1px solid var(--border-primary)',
               boxShadow: 'var(--shadow-lg)',
-              padding: '24px',
-              maxWidth: '420px',
-              width: '90%',
+              width: '780px',
+              maxWidth: '95vw',
+              maxHeight: '85vh',
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)', marginBottom: '16px' }}>
-              New Book
-            </h3>
+            {/* Left Panel — Form */}
+            <div className="flex flex-col" style={{ width: '340px', padding: '24px', borderRight: '1px solid var(--border-primary)', flexShrink: 0 }}>
+              <div className="flex items-center justify-between" style={{ marginBottom: '16px' }}>
+                <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>New Book</h3>
+                <button onClick={() => setShowNewBook(false)} className="hover-icon" style={{ color: 'var(--text-tertiary)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}>
+                  <X size={16} />
+                </button>
+              </div>
 
-            {bookError && (
-              <div className="rounded-lg text-xs" style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--color-error)', padding: '8px 12px', marginBottom: '12px' }}>
-                {bookError}
-              </div>
-            )}
+              {bookError && (
+                <div className="rounded-lg text-xs" style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--color-error)', padding: '8px 12px', marginBottom: '12px' }}>
+                  {bookError}
+                </div>
+              )}
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div>
-                <label className="block text-xs font-medium" style={{ color: 'var(--text-secondary)', marginBottom: '4px' }}>Title</label>
-                <input
-                  value={newBookTitle}
-                  onChange={(e) => setNewBookTitle(e.target.value)}
-                  placeholder="Book title"
-                  className="w-full rounded-lg text-sm"
-                  style={{
-                    backgroundColor: 'var(--bg-input)',
-                    border: '1px solid var(--border-primary)',
-                    color: 'var(--text-primary)',
-                    padding: '8px 12px',
-                  }}
-                  autoFocus
-                />
+              <div className="flex-1 overflow-y-auto" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div>
+                  <label className="block text-xs font-medium" style={{ color: 'var(--text-secondary)', marginBottom: '4px' }}>Title</label>
+                  <input
+                    ref={titleInputRef}
+                    value={newBookTitle}
+                    onChange={(e) => setNewBookTitle(e.target.value)}
+                    placeholder="Book title"
+                    className="w-full rounded-lg text-sm"
+                    style={{ backgroundColor: 'var(--bg-input)', border: '1px solid var(--border-primary)', color: 'var(--text-primary)', padding: '8px 12px' }}
+                    autoFocus
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium" style={{ color: 'var(--text-secondary)', marginBottom: '4px' }}>Author</label>
+                  <input
+                    value={newBookAuthor}
+                    onChange={(e) => setNewBookAuthor(e.target.value)}
+                    placeholder="Author name"
+                    className="w-full rounded-lg text-sm"
+                    style={{ backgroundColor: 'var(--bg-input)', border: '1px solid var(--border-primary)', color: 'var(--text-primary)', padding: '8px 12px' }}
+                  />
+                </div>
+
+                {/* Genre list */}
+                <div>
+                  <label className="block text-xs font-medium" style={{ color: 'var(--text-secondary)', marginBottom: '6px' }}>Genre</label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', maxHeight: '180px', overflowY: 'auto', border: '1px solid var(--border-primary)', borderRadius: '8px', padding: '4px' }}>
+                    {genres.map((g) => (
+                      <button
+                        key={g.id}
+                        onClick={() => { setNewBookGenreId(g.id); setNewBookSubGenreId(''); setExpandedSubGenre(null); setNewBookTargetWords(String(Math.round((g.novel_word_count_min + g.novel_word_count_max) / 2))); }}
+                        className="text-left text-xs rounded-md transition-colors"
+                        style={{
+                          padding: '6px 10px',
+                          backgroundColor: newBookGenreId === g.id ? 'var(--accent-subtle)' : 'transparent',
+                          color: newBookGenreId === g.id ? 'var(--accent)' : 'var(--text-primary)',
+                          fontWeight: newBookGenreId === g.id ? 600 : 400,
+                          border: 'none',
+                          cursor: 'pointer',
+                        }}
+                        onMouseEnter={(e) => { if (newBookGenreId !== g.id) e.currentTarget.style.backgroundColor = 'var(--bg-hover)'; }}
+                        onMouseLeave={(e) => { if (newBookGenreId !== g.id) e.currentTarget.style.backgroundColor = 'transparent'; }}
+                      >
+                        {g.name}
+                      </button>
+                    ))}
+                    <button
+                      onClick={() => { setNewBookGenreId('other'); setNewBookSubGenreId(''); setExpandedSubGenre(null); setNewBookTargetWords('80000'); }}
+                      className="text-left text-xs rounded-md transition-colors"
+                      style={{
+                        padding: '6px 10px',
+                        backgroundColor: newBookGenreId === 'other' ? 'var(--accent-subtle)' : 'transparent',
+                        color: newBookGenreId === 'other' ? 'var(--accent)' : 'var(--text-primary)',
+                        fontWeight: newBookGenreId === 'other' ? 600 : 400,
+                        border: 'none',
+                        cursor: 'pointer',
+                      }}
+                      onMouseEnter={(e) => { if (newBookGenreId !== 'other') e.currentTarget.style.backgroundColor = 'var(--bg-hover)'; }}
+                      onMouseLeave={(e) => { if (newBookGenreId !== 'other') e.currentTarget.style.backgroundColor = 'transparent'; }}
+                    >
+                      Other
+                    </button>
+                  </div>
+                </div>
+
+                {/* Tense */}
+                <div>
+                  <label className="block text-xs font-medium" style={{ color: 'var(--text-secondary)', marginBottom: '4px' }}>Tense</label>
+                  <select
+                    value={newBookTense}
+                    onChange={(e) => setNewBookTense(e.target.value)}
+                    className="w-full rounded-lg text-sm"
+                    style={{ backgroundColor: 'var(--bg-input)', border: '1px solid var(--border-primary)', color: 'var(--text-primary)', padding: '8px 12px' }}
+                  >
+                    <option value="">Not decided yet</option>
+                    <option value="past">Past Tense</option>
+                    <option value="present">Present Tense</option>
+                  </select>
+                </div>
+
+                {/* Perspective */}
+                <div>
+                  <label className="block text-xs font-medium" style={{ color: 'var(--text-secondary)', marginBottom: '4px' }}>Perspective</label>
+                  <select
+                    value={newBookPerspective}
+                    onChange={(e) => setNewBookPerspective(e.target.value)}
+                    className="w-full rounded-lg text-sm"
+                    style={{ backgroundColor: 'var(--bg-input)', border: '1px solid var(--border-primary)', color: 'var(--text-primary)', padding: '8px 12px' }}
+                  >
+                    <option value="">Not decided yet</option>
+                    <option value="first">First Person</option>
+                    <option value="second">Second Person</option>
+                    <option value="third_limited">Third Person Limited</option>
+                    <option value="third_omniscient">Third Person Omniscient</option>
+                    <option value="multiple">Multiple POV</option>
+                  </select>
+                </div>
+
+                {/* Target Word Count */}
+                <div>
+                  <label className="block text-xs font-medium" style={{ color: 'var(--text-secondary)', marginBottom: '4px' }}>Target Word Count</label>
+                  <input
+                    value={newBookTargetWords}
+                    onChange={(e) => setNewBookTargetWords(e.target.value)}
+                    type="number"
+                    min="0"
+                    step="1000"
+                    className="w-full rounded-lg text-sm"
+                    style={{ backgroundColor: 'var(--bg-input)', border: '1px solid var(--border-primary)', color: 'var(--text-primary)', padding: '8px 12px' }}
+                  />
+                </div>
               </div>
-              <div>
-                <label className="block text-xs font-medium" style={{ color: 'var(--text-secondary)', marginBottom: '4px' }}>Author</label>
-                <input
-                  value={newBookAuthor}
-                  onChange={(e) => setNewBookAuthor(e.target.value)}
-                  placeholder="Author name"
-                  className="w-full rounded-lg text-sm"
-                  style={{
-                    backgroundColor: 'var(--bg-input)',
-                    border: '1px solid var(--border-primary)',
-                    color: 'var(--text-primary)',
-                    padding: '8px 12px',
-                  }}
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium" style={{ color: 'var(--text-secondary)', marginBottom: '4px' }}>Primary Genre</label>
-                <select
-                  value={newBookGenre}
-                  onChange={(e) => setNewBookGenre(e.target.value)}
-                  className="w-full rounded-lg text-sm"
-                  style={{
-                    backgroundColor: 'var(--bg-input)',
-                    border: '1px solid var(--border-primary)',
-                    color: 'var(--text-primary)',
-                    padding: '8px 12px',
-                  }}
+
+              <div className="flex gap-2 justify-end" style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid var(--border-primary)' }}>
+                <button
+                  onClick={() => setShowNewBook(false)}
+                  className="rounded-lg text-xs font-medium hover-btn"
+                  style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-primary)', padding: '8px 16px' }}
                 >
-                  <option value="">Select genre...</option>
-                  <option value="Fantasy">Fantasy</option>
-                  <option value="Science Fiction">Science Fiction</option>
-                  <option value="Romance">Romance</option>
-                  <option value="Mystery">Mystery</option>
-                  <option value="Thriller">Thriller</option>
-                  <option value="Suspense">Suspense</option>
-                  <option value="Horror">Horror</option>
-                  <option value="Historical Fiction">Historical Fiction</option>
-                  <option value="Literary Fiction">Literary Fiction</option>
-                  <option value="Young Adult">Young Adult</option>
-                  <option value="Middle Grade">Middle Grade</option>
-                  <option value="Other">Other</option>
-                </select>
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCreateBook}
+                  disabled={!newBookTitle.trim()}
+                  className="rounded-lg text-xs font-medium hover-btn-primary"
+                  style={{ backgroundColor: 'var(--accent)', color: 'var(--text-inverse)', border: 'none', padding: '8px 16px', opacity: newBookTitle.trim() ? 1 : 0.5 }}
+                >
+                  Create
+                </button>
               </div>
             </div>
 
-            <div className="flex gap-2 justify-end" style={{ marginTop: '20px' }}>
-              <button
-                onClick={() => setShowNewBook(false)}
-                className="rounded-lg text-xs font-medium hover-btn"
-                style={{
-                  backgroundColor: 'var(--bg-tertiary)',
-                  color: 'var(--text-primary)',
-                  border: '1px solid var(--border-primary)',
-                  padding: '8px 16px',
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleCreateBook}
-                disabled={!newBookTitle.trim()}
-                className="rounded-lg text-xs font-medium hover-btn-primary"
-                style={{
-                  backgroundColor: 'var(--accent)',
-                  color: 'var(--text-inverse)',
-                  border: 'none',
-                  padding: '8px 16px',
-                  opacity: newBookTitle.trim() ? 1 : 0.5,
-                }}
-              >
-                Create
-              </button>
+            {/* Right Panel — Genre Detail */}
+            <div className="flex-1 overflow-y-auto" style={{ padding: '24px' }}>
+              {!selectedGenre && newBookGenreId !== 'other' ? (
+                <div className="flex flex-col items-center justify-center h-full" style={{ color: 'var(--text-tertiary)' }}>
+                  <BookOpen size={28} style={{ marginBottom: '10px', opacity: 0.4 }} />
+                  <p className="text-sm">Select a genre to see details</p>
+                </div>
+              ) : newBookGenreId === 'other' ? (
+                <div className="flex flex-col items-center justify-center h-full" style={{ color: 'var(--text-tertiary)' }}>
+                  <BookOpen size={28} style={{ marginBottom: '10px', opacity: 0.4 }} />
+                  <p className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Other</p>
+                  <p className="text-xs" style={{ marginTop: '6px', textAlign: 'center', maxWidth: '280px' }}>
+                    Your genre isn't listed? No problem — the AI will adapt based on your brainstorm content. You can always change this later.
+                  </p>
+                </div>
+              ) : selectedGenre && (
+                <div>
+                  <h4 className="text-sm font-semibold" style={{ color: 'var(--text-primary)', marginBottom: '8px' }}>{selectedGenre.name}</h4>
+                  <p className="text-xs" style={{ color: 'var(--text-secondary)', lineHeight: '1.6', marginBottom: '16px' }}>{selectedGenre.description}</p>
+
+                  {/* Word count ranges */}
+                  <div className="flex gap-4" style={{ marginBottom: '20px' }}>
+                    <div className="rounded-lg" style={{ backgroundColor: 'var(--bg-tertiary)', padding: '10px 14px', flex: 1 }}>
+                      <div className="text-xs" style={{ color: 'var(--text-tertiary)', marginBottom: '2px' }}>Novel Length</div>
+                      <div className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                        {formatWordCount(selectedGenre.novel_word_count_min)}–{formatWordCount(selectedGenre.novel_word_count_max)} words
+                      </div>
+                    </div>
+                    <div className="rounded-lg" style={{ backgroundColor: 'var(--bg-tertiary)', padding: '10px 14px', flex: 1 }}>
+                      <div className="text-xs" style={{ color: 'var(--text-tertiary)', marginBottom: '2px' }}>Chapter Length</div>
+                      <div className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                        {formatWordCount(selectedGenre.chapter_word_count_min)}–{formatWordCount(selectedGenre.chapter_word_count_max)} words
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Sub-genres */}
+                  {selectedGenre.sub_genres.length > 0 && (
+                    <div>
+                      <label className="block text-xs font-medium" style={{ color: 'var(--text-secondary)', marginBottom: '8px' }}>
+                        Sub-genre <span style={{ fontWeight: 400, color: 'var(--text-tertiary)' }}>(optional)</span>
+                      </label>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                        {selectedGenre.sub_genres.map((sg) => (
+                          <div key={sg.id}>
+                            <button
+                              onClick={() => {
+                                if (newBookSubGenreId === sg.id) { setNewBookSubGenreId(''); setExpandedSubGenre(null); }
+                                else { setNewBookSubGenreId(sg.id); setExpandedSubGenre(sg.id); }
+                              }}
+                              className="flex items-center gap-2 w-full text-left text-xs rounded-md transition-colors"
+                              style={{
+                                padding: '6px 10px',
+                                backgroundColor: newBookSubGenreId === sg.id ? 'var(--accent-subtle)' : 'transparent',
+                                color: newBookSubGenreId === sg.id ? 'var(--accent)' : 'var(--text-primary)',
+                                fontWeight: newBookSubGenreId === sg.id ? 600 : 400,
+                                border: 'none',
+                                cursor: 'pointer',
+                              }}
+                              onMouseEnter={(e) => { if (newBookSubGenreId !== sg.id) e.currentTarget.style.backgroundColor = 'var(--bg-hover)'; }}
+                              onMouseLeave={(e) => { if (newBookSubGenreId !== sg.id) e.currentTarget.style.backgroundColor = 'transparent'; }}
+                            >
+                              <ChevronRight size={12} style={{ transform: expandedSubGenre === sg.id ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s', flexShrink: 0 }} />
+                              {sg.name}
+                            </button>
+                            {expandedSubGenre === sg.id && (
+                              <div className="text-xs" style={{ color: 'var(--text-tertiary)', padding: '2px 10px 8px 28px', lineHeight: '1.5' }}>
+                                {sg.description}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                        <button
+                          onClick={() => {
+                            if (newBookSubGenreId === 'other') { setNewBookSubGenreId(''); setExpandedSubGenre(null); }
+                            else { setNewBookSubGenreId('other'); setExpandedSubGenre(null); }
+                          }}
+                          className="flex items-center gap-2 w-full text-left text-xs rounded-md transition-colors"
+                          style={{
+                            padding: '6px 10px',
+                            backgroundColor: newBookSubGenreId === 'other' ? 'var(--accent-subtle)' : 'transparent',
+                            color: newBookSubGenreId === 'other' ? 'var(--accent)' : 'var(--text-primary)',
+                            fontWeight: newBookSubGenreId === 'other' ? 600 : 400,
+                            border: 'none',
+                            cursor: 'pointer',
+                          }}
+                          onMouseEnter={(e) => { if (newBookSubGenreId !== 'other') e.currentTarget.style.backgroundColor = 'var(--bg-hover)'; }}
+                          onMouseLeave={(e) => { if (newBookSubGenreId !== 'other') e.currentTarget.style.backgroundColor = 'transparent'; }}
+                        >
+                          <ChevronRight size={12} style={{ opacity: 0 }} />
+                          Other
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
 
-      {/* Edit Book Modal */}
-      {editingBook && (
+      {/* Edit Book Modal — Two-Panel */}
+      {editingBook && (() => {
+        const editSelectedGenre = genres.find((g) => g.id === editGenreId) || null;
+        const formatWC = (n: number) => n >= 1000 ? `${Math.round(n / 1000)}k` : String(n);
+        return (
         <div
           className="fixed inset-0 flex items-center justify-center"
           style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000 }}
           onClick={() => setEditingBook(null)}
         >
           <div
-            className="rounded-xl"
+            className="rounded-xl flex"
             style={{
               backgroundColor: 'var(--bg-primary)',
               border: '1px solid var(--border-primary)',
               boxShadow: 'var(--shadow-lg)',
-              padding: '24px',
-              maxWidth: '420px',
-              width: '90%',
+              width: '780px',
+              maxWidth: '95vw',
+              maxHeight: '85vh',
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)', marginBottom: '16px' }}>
-              Edit Book
-            </h3>
+            {/* Left Panel — Form */}
+            <div className="flex flex-col" style={{ width: '340px', padding: '24px', borderRight: '1px solid var(--border-primary)', flexShrink: 0 }}>
+              <div className="flex items-center justify-between" style={{ marginBottom: '16px' }}>
+                <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Edit Book</h3>
+                <button onClick={() => setEditingBook(null)} className="hover-icon" style={{ color: 'var(--text-tertiary)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}>
+                  <X size={16} />
+                </button>
+              </div>
 
-            {editError && (
-              <div className="rounded-lg text-xs" style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--color-error)', padding: '8px 12px', marginBottom: '12px' }}>
-                {editError}
-              </div>
-            )}
+              {editError && (
+                <div className="rounded-lg text-xs" style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--color-error)', padding: '8px 12px', marginBottom: '12px' }}>
+                  {editError}
+                </div>
+              )}
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div>
-                <label className="block text-xs font-medium" style={{ color: 'var(--text-secondary)', marginBottom: '4px' }}>Title</label>
-                <input
-                  value={editTitle}
-                  onChange={(e) => setEditTitle(e.target.value)}
-                  placeholder="Book title"
-                  className="w-full rounded-lg text-sm"
-                  style={{
-                    backgroundColor: 'var(--bg-input)',
-                    border: '1px solid var(--border-primary)',
-                    color: 'var(--text-primary)',
-                    padding: '8px 12px',
-                  }}
-                  autoFocus
-                />
+              <div className="flex-1 overflow-y-auto" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div>
+                  <label className="block text-xs font-medium" style={{ color: 'var(--text-secondary)', marginBottom: '4px' }}>Title</label>
+                  <input
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    placeholder="Book title"
+                    className="w-full rounded-lg text-sm"
+                    style={{ backgroundColor: 'var(--bg-input)', border: '1px solid var(--border-primary)', color: 'var(--text-primary)', padding: '8px 12px' }}
+                    autoFocus
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium" style={{ color: 'var(--text-secondary)', marginBottom: '4px' }}>Author</label>
+                  <input
+                    value={editAuthor}
+                    onChange={(e) => setEditAuthor(e.target.value)}
+                    placeholder="Author name"
+                    className="w-full rounded-lg text-sm"
+                    style={{ backgroundColor: 'var(--bg-input)', border: '1px solid var(--border-primary)', color: 'var(--text-primary)', padding: '8px 12px' }}
+                  />
+                </div>
+
+                {/* Genre list */}
+                <div>
+                  <label className="block text-xs font-medium" style={{ color: 'var(--text-secondary)', marginBottom: '6px' }}>Genre</label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', maxHeight: '180px', overflowY: 'auto', border: '1px solid var(--border-primary)', borderRadius: '8px', padding: '4px' }}>
+                    {genres.map((g) => (
+                      <button
+                        key={g.id}
+                        onClick={() => { setEditGenreId(g.id); setEditSubGenreId(''); setEditExpandedSubGenre(null); }}
+                        className="text-left text-xs rounded-md transition-colors"
+                        style={{
+                          padding: '6px 10px',
+                          backgroundColor: editGenreId === g.id ? 'var(--accent-subtle)' : 'transparent',
+                          color: editGenreId === g.id ? 'var(--accent)' : 'var(--text-primary)',
+                          fontWeight: editGenreId === g.id ? 600 : 400,
+                          border: 'none',
+                          cursor: 'pointer',
+                        }}
+                        onMouseEnter={(e) => { if (editGenreId !== g.id) e.currentTarget.style.backgroundColor = 'var(--bg-hover)'; }}
+                        onMouseLeave={(e) => { if (editGenreId !== g.id) e.currentTarget.style.backgroundColor = 'transparent'; }}
+                      >
+                        {g.name}
+                      </button>
+                    ))}
+                    <button
+                      onClick={() => { setEditGenreId('other'); setEditSubGenreId(''); setEditExpandedSubGenre(null); }}
+                      className="text-left text-xs rounded-md transition-colors"
+                      style={{
+                        padding: '6px 10px',
+                        backgroundColor: editGenreId === 'other' ? 'var(--accent-subtle)' : 'transparent',
+                        color: editGenreId === 'other' ? 'var(--accent)' : 'var(--text-primary)',
+                        fontWeight: editGenreId === 'other' ? 600 : 400,
+                        border: 'none',
+                        cursor: 'pointer',
+                      }}
+                      onMouseEnter={(e) => { if (editGenreId !== 'other') e.currentTarget.style.backgroundColor = 'var(--bg-hover)'; }}
+                      onMouseLeave={(e) => { if (editGenreId !== 'other') e.currentTarget.style.backgroundColor = 'transparent'; }}
+                    >
+                      Other
+                    </button>
+                  </div>
+                </div>
+
+                {/* Tense */}
+                <div>
+                  <label className="block text-xs font-medium" style={{ color: 'var(--text-secondary)', marginBottom: '4px' }}>Tense</label>
+                  <select
+                    value={editTense}
+                    onChange={(e) => setEditTense(e.target.value)}
+                    className="w-full rounded-lg text-sm"
+                    style={{ backgroundColor: 'var(--bg-input)', border: '1px solid var(--border-primary)', color: 'var(--text-primary)', padding: '8px 12px' }}
+                  >
+                    <option value="">Not decided yet</option>
+                    <option value="past">Past Tense</option>
+                    <option value="present">Present Tense</option>
+                  </select>
+                </div>
+
+                {/* Perspective */}
+                <div>
+                  <label className="block text-xs font-medium" style={{ color: 'var(--text-secondary)', marginBottom: '4px' }}>Perspective</label>
+                  <select
+                    value={editPerspective}
+                    onChange={(e) => setEditPerspective(e.target.value)}
+                    className="w-full rounded-lg text-sm"
+                    style={{ backgroundColor: 'var(--bg-input)', border: '1px solid var(--border-primary)', color: 'var(--text-primary)', padding: '8px 12px' }}
+                  >
+                    <option value="">Not decided yet</option>
+                    <option value="first">First Person</option>
+                    <option value="second">Second Person</option>
+                    <option value="third_limited">Third Person Limited</option>
+                    <option value="third_omniscient">Third Person Omniscient</option>
+                    <option value="multiple">Multiple POV</option>
+                  </select>
+                </div>
+
+                {/* Target Word Count */}
+                <div>
+                  <label className="block text-xs font-medium" style={{ color: 'var(--text-secondary)', marginBottom: '4px' }}>Target Word Count</label>
+                  <input
+                    value={editTargetWords}
+                    onChange={(e) => setEditTargetWords(e.target.value)}
+                    type="number"
+                    min="0"
+                    step="1000"
+                    className="w-full rounded-lg text-sm"
+                    style={{ backgroundColor: 'var(--bg-input)', border: '1px solid var(--border-primary)', color: 'var(--text-primary)', padding: '8px 12px' }}
+                  />
+                </div>
               </div>
-              <div>
-                <label className="block text-xs font-medium" style={{ color: 'var(--text-secondary)', marginBottom: '4px' }}>Author</label>
-                <input
-                  value={editAuthor}
-                  onChange={(e) => setEditAuthor(e.target.value)}
-                  placeholder="Author name"
-                  className="w-full rounded-lg text-sm"
-                  style={{
-                    backgroundColor: 'var(--bg-input)',
-                    border: '1px solid var(--border-primary)',
-                    color: 'var(--text-primary)',
-                    padding: '8px 12px',
-                  }}
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium" style={{ color: 'var(--text-secondary)', marginBottom: '4px' }}>Primary Genre</label>
-                <select
-                  value={editGenre}
-                  onChange={(e) => setEditGenre(e.target.value)}
-                  className="w-full rounded-lg text-sm"
-                  style={{
-                    backgroundColor: 'var(--bg-input)',
-                    border: '1px solid var(--border-primary)',
-                    color: 'var(--text-primary)',
-                    padding: '8px 12px',
-                  }}
+
+              <div className="flex gap-2 justify-end" style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid var(--border-primary)' }}>
+                <button
+                  onClick={() => setEditingBook(null)}
+                  className="rounded-lg text-xs font-medium hover-btn"
+                  style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-primary)', padding: '8px 16px' }}
                 >
-                  <option value="">Select genre...</option>
-                  <option value="Fantasy">Fantasy</option>
-                  <option value="Science Fiction">Science Fiction</option>
-                  <option value="Romance">Romance</option>
-                  <option value="Mystery">Mystery</option>
-                  <option value="Thriller">Thriller</option>
-                  <option value="Suspense">Suspense</option>
-                  <option value="Horror">Horror</option>
-                  <option value="Historical Fiction">Historical Fiction</option>
-                  <option value="Literary Fiction">Literary Fiction</option>
-                  <option value="Young Adult">Young Adult</option>
-                  <option value="Middle Grade">Middle Grade</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-medium" style={{ color: 'var(--text-secondary)', marginBottom: '4px' }}>Target Word Count</label>
-                <input
-                  value={editTargetWords}
-                  onChange={(e) => setEditTargetWords(e.target.value)}
-                  type="number"
-                  min="0"
-                  step="1000"
-                  className="w-full rounded-lg text-sm"
-                  style={{
-                    backgroundColor: 'var(--bg-input)',
-                    border: '1px solid var(--border-primary)',
-                    color: 'var(--text-primary)',
-                    padding: '8px 12px',
-                  }}
-                />
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveEditBook}
+                  disabled={!editTitle.trim()}
+                  className="rounded-lg text-xs font-medium hover-btn-primary"
+                  style={{ backgroundColor: 'var(--accent)', color: 'var(--text-inverse)', border: 'none', padding: '8px 16px', opacity: editTitle.trim() ? 1 : 0.5 }}
+                >
+                  Save
+                </button>
               </div>
             </div>
 
-            <div className="flex gap-2 justify-end" style={{ marginTop: '20px' }}>
-              <button
-                onClick={() => setEditingBook(null)}
-                className="rounded-lg text-xs font-medium hover-btn"
-                style={{
-                  backgroundColor: 'var(--bg-tertiary)',
-                  color: 'var(--text-primary)',
-                  border: '1px solid var(--border-primary)',
-                  padding: '8px 16px',
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSaveEditBook}
-                disabled={!editTitle.trim()}
-                className="rounded-lg text-xs font-medium hover-btn-primary"
-                style={{
-                  backgroundColor: 'var(--accent)',
-                  color: 'var(--text-inverse)',
-                  border: 'none',
-                  padding: '8px 16px',
-                  opacity: editTitle.trim() ? 1 : 0.5,
-                }}
-              >
-                Save
-              </button>
+            {/* Right Panel — Genre Detail */}
+            <div className="flex-1 overflow-y-auto" style={{ padding: '24px' }}>
+              {!editSelectedGenre && editGenreId !== 'other' ? (
+                <div className="flex flex-col items-center justify-center h-full" style={{ color: 'var(--text-tertiary)' }}>
+                  <BookOpen size={28} style={{ marginBottom: '10px', opacity: 0.4 }} />
+                  <p className="text-sm">Select a genre to see details</p>
+                </div>
+              ) : editGenreId === 'other' ? (
+                <div className="flex flex-col items-center justify-center h-full" style={{ color: 'var(--text-tertiary)' }}>
+                  <BookOpen size={28} style={{ marginBottom: '10px', opacity: 0.4 }} />
+                  <p className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Other</p>
+                  <p className="text-xs" style={{ marginTop: '6px', textAlign: 'center', maxWidth: '280px' }}>
+                    Your genre isn't listed? No problem — the AI will adapt based on your brainstorm content. You can always change this later.
+                  </p>
+                </div>
+              ) : editSelectedGenre && (
+                <div>
+                  <h4 className="text-sm font-semibold" style={{ color: 'var(--text-primary)', marginBottom: '8px' }}>{editSelectedGenre.name}</h4>
+                  <p className="text-xs" style={{ color: 'var(--text-secondary)', lineHeight: '1.6', marginBottom: '16px' }}>{editSelectedGenre.description}</p>
+
+                  {/* Word count ranges */}
+                  <div className="flex gap-4" style={{ marginBottom: '20px' }}>
+                    <div className="rounded-lg" style={{ backgroundColor: 'var(--bg-tertiary)', padding: '10px 14px', flex: 1 }}>
+                      <div className="text-xs" style={{ color: 'var(--text-tertiary)', marginBottom: '2px' }}>Novel Length</div>
+                      <div className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                        {formatWC(editSelectedGenre.novel_word_count_min)}–{formatWC(editSelectedGenre.novel_word_count_max)} words
+                      </div>
+                    </div>
+                    <div className="rounded-lg" style={{ backgroundColor: 'var(--bg-tertiary)', padding: '10px 14px', flex: 1 }}>
+                      <div className="text-xs" style={{ color: 'var(--text-tertiary)', marginBottom: '2px' }}>Chapter Length</div>
+                      <div className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                        {formatWC(editSelectedGenre.chapter_word_count_min)}–{formatWC(editSelectedGenre.chapter_word_count_max)} words
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Sub-genres */}
+                  {editSelectedGenre.sub_genres.length > 0 && (
+                    <div>
+                      <label className="block text-xs font-medium" style={{ color: 'var(--text-secondary)', marginBottom: '8px' }}>
+                        Sub-genre <span style={{ fontWeight: 400, color: 'var(--text-tertiary)' }}>(optional)</span>
+                      </label>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                        {editSelectedGenre.sub_genres.map((sg) => (
+                          <div key={sg.id}>
+                            <button
+                              onClick={() => {
+                                if (editSubGenreId === sg.id) { setEditSubGenreId(''); setEditExpandedSubGenre(null); }
+                                else { setEditSubGenreId(sg.id); setEditExpandedSubGenre(sg.id); }
+                              }}
+                              className="flex items-center gap-2 w-full text-left text-xs rounded-md transition-colors"
+                              style={{
+                                padding: '6px 10px',
+                                backgroundColor: editSubGenreId === sg.id ? 'var(--accent-subtle)' : 'transparent',
+                                color: editSubGenreId === sg.id ? 'var(--accent)' : 'var(--text-primary)',
+                                fontWeight: editSubGenreId === sg.id ? 600 : 400,
+                                border: 'none',
+                                cursor: 'pointer',
+                              }}
+                              onMouseEnter={(e) => { if (editSubGenreId !== sg.id) e.currentTarget.style.backgroundColor = 'var(--bg-hover)'; }}
+                              onMouseLeave={(e) => { if (editSubGenreId !== sg.id) e.currentTarget.style.backgroundColor = 'transparent'; }}
+                            >
+                              <ChevronRight size={12} style={{ transform: editExpandedSubGenre === sg.id ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s', flexShrink: 0 }} />
+                              {sg.name}
+                            </button>
+                            {editExpandedSubGenre === sg.id && (
+                              <div className="text-xs" style={{ color: 'var(--text-tertiary)', padding: '2px 10px 8px 28px', lineHeight: '1.5' }}>
+                                {sg.description}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                        <button
+                          onClick={() => {
+                            if (editSubGenreId === 'other') { setEditSubGenreId(''); setEditExpandedSubGenre(null); }
+                            else { setEditSubGenreId('other'); setEditExpandedSubGenre(null); }
+                          }}
+                          className="flex items-center gap-2 w-full text-left text-xs rounded-md transition-colors"
+                          style={{
+                            padding: '6px 10px',
+                            backgroundColor: editSubGenreId === 'other' ? 'var(--accent-subtle)' : 'transparent',
+                            color: editSubGenreId === 'other' ? 'var(--accent)' : 'var(--text-primary)',
+                            fontWeight: editSubGenreId === 'other' ? 600 : 400,
+                            border: 'none',
+                            cursor: 'pointer',
+                          }}
+                          onMouseEnter={(e) => { if (editSubGenreId !== 'other') e.currentTarget.style.backgroundColor = 'var(--bg-hover)'; }}
+                          onMouseLeave={(e) => { if (editSubGenreId !== 'other') e.currentTarget.style.backgroundColor = 'transparent'; }}
+                        >
+                          <ChevronRight size={12} style={{ opacity: 0 }} />
+                          Other
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

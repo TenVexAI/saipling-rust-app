@@ -3,10 +3,12 @@ mod commands;
 mod context;
 mod agent;
 mod watcher;
+mod data;
 
 use commands::{
     project, book, filesystem, draft, attachment, chapter, matter, agent as agent_cmd, config, models, export,
 };
+use data::genres;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -81,6 +83,8 @@ pub fn run() {
             models::get_models_config_path,
             // Export
             export::export_book,
+            // Genres
+            genres::get_genres,
             // File watcher
             project::start_file_watcher,
         ])
