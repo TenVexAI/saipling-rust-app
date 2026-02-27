@@ -33,6 +33,10 @@
       "icons/128x128@2x.png",
       "icons/icon.ico",
       "icons/Square150x150Logo.png"
-    ]
+    ],
+    "resources": {
+      "binaries/*": "binaries/",
+      "resources/export-templates/**/*": "export-templates/"
+    }
   }
 }

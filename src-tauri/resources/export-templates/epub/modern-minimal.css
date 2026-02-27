@@ -1,0 +1,157 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   sAIpling ePub Template: Modern Minimal
+   Contemporary fiction styling — paragraph spacing instead of indent,
+   clean chapter titles, generous whitespace.
+   Works well for literary fiction, memoirs, and essays.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* ── Root & Body ──────────────────────────────────────────────────────────── */
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: Georgia, "Book Antiqua", serif;
+  font-size: 1em;
+  line-height: 1.7;
+  color: #222;
+  background: transparent;
+  text-align: left;          /* Left-aligned, not justified — modern feel */
+  -webkit-hyphens: none;
+  hyphens: none;
+  orphans: 2;
+  widows: 2;
+}
+
+/* ── Paragraphs — space between, no indent ────────────────────────────────── */
+p {
+  margin: 0 0 0.8em 0;
+  padding: 0;
+  text-indent: 0;
+}
+
+/* ── Headings ─────────────────────────────────────────────────────────────── */
+h1 {
+  font-family: Georgia, serif;
+  font-size: 1.6em;
+  font-weight: normal;
+  text-align: left;
+  margin: 4em 0 1.5em 0;
+  padding: 0 0 0.4em 0;
+  border-bottom: 1px solid #ddd;
+  page-break-before: always;
+  break-before: always;
+  color: #111;
+}
+
+h2 {
+  font-family: Georgia, serif;
+  font-size: 1em;
+  font-weight: normal;
+  font-style: italic;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  font-size: 0.8em;
+  color: #888;
+  margin: 2.5em 0 2em 0;
+}
+
+h3 {
+  font-size: 1em;
+  font-weight: bold;
+  margin: 2em 0 0.5em 0;
+  color: #333;
+}
+
+/* ── Scene breaks ─────────────────────────────────────────────────────────── */
+hr {
+  border: none;
+  text-align: center;
+  margin: 2em 0;
+}
+
+hr::after {
+  content: "—";
+  font-size: 1em;
+  color: #bbb;
+  letter-spacing: 0.2em;
+}
+
+/* ── Block quotes ─────────────────────────────────────────────────────────── */
+blockquote {
+  margin: 1em 0 1em 1.5em;
+  padding: 0;
+  color: #444;
+  font-size: 0.97em;
+  line-height: 1.65;
+}
+
+blockquote p {
+  margin-bottom: 0.5em;
+}
+
+/* ── Emphasis ─────────────────────────────────────────────────────────────── */
+em { font-style: italic; }
+strong { font-weight: bold; }
+
+/* ── Title page ───────────────────────────────────────────────────────────── */
+.title-page {
+  text-align: left;
+  margin: 5em 0;
+}
+
+.title-page .book-title {
+  font-size: 2.2em;
+  font-weight: normal;
+  line-height: 1.2;
+  color: #111;
+  margin: 0 0 0.3em 0;
+}
+
+.title-page .book-subtitle {
+  font-size: 1.1em;
+  font-style: italic;
+  color: #666;
+  margin-bottom: 2em;
+}
+
+.title-page .book-author {
+  font-size: 0.9em;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: #555;
+  margin-top: 1.5em;
+}
+
+/* ── Dedication / Epigraph ────────────────────────────────────────────────── */
+.dedication {
+  font-style: italic;
+  color: #555;
+  margin: 5em 0;
+  line-height: 1.9;
+}
+
+.epigraph {
+  margin: 4em 0;
+  color: #555;
+  font-style: italic;
+}
+
+.epigraph p {
+  margin-bottom: 0.3em;
+}
+
+.epigraph .attribution {
+  font-style: normal;
+  font-size: 0.85em;
+  color: #888;
+  margin-top: 0.8em;
+}
+
+/* ── Images ───────────────────────────────────────────────────────────────── */
+img {
+  max-width: 100%;
+  height: auto;
+}

@@ -83,6 +83,8 @@ pub fn run() {
             models::get_models_config,
             models::get_models_config_path,
             // Export
+            export::check_pandoc,
+            export::reveal_export_folder,
             export::export_book,
             // Genres
             genres::get_genres,

@@ -1,0 +1,85 @@
+%% ─────────────────────────────────────────────────────────────────────────────
+%% sAIpling Export Template: Classic Novel (LaTeX / XeLaTeX)
+%% Traditional book layout using the `memoir` class.
+%% Compile with: xelatex or lualatex
+%% ─────────────────────────────────────────────────────────────────────────────
+\documentclass[12pt, $if(papersize)$$papersize$$else$letterpaper$endif$, openright, twoside]{memoir}
+
+%% ── Fonts (XeLaTeX / LuaLaTeX) ────────────────────────────────────────────
+\usepackage{fontspec}
+\setmainfont[
+  Ligatures=TeX,
+  Numbers=OldStyle,
+]{$if(mainfont)$$mainfont$$else$Palatino Linotype$endif$}
+
+%% ── Geometry ──────────────────────────────────────────────────────────────
+\setlrmarginsandblock{1.25in}{1in}{*}
+\setulmarginsandblock{1in}{1.1in}{*}
+\checkandfixthelayout
+
+%% ── Chapter style: Classic ────────────────────────────────────────────────
+\chapterstyle{veelo}         % Clean built-in memoir chapter style
+\setlength{\beforechapskip}{2.5in}
+\setlength{\afterchapskip}{0.6in}
+
+%% ── Section / subsection ─────────────────────────────────────────────────
+\setsecheadstyle{\centering\normalfont\itshape}
+\setsubsecheadstyle{\normalfont\bfseries}
+
+%% ── Running headers ───────────────────────────────────────────────────────
+\pagestyle{ruled}
+\nouppercaseheads
+
+%% ── Paragraph style ───────────────────────────────────────────────────────
+\setlength{\parindent}{1.5em}
+\setlength{\parskip}{0pt}
+\abnormalparskip{0pt}
+\setSingleSpace{1.15}
+\SingleSpacing    % memoir equivalent of single-space with appropriate leading
+
+%% ── Hyphenation & justification ───────────────────────────────────────────
+\usepackage{microtype}
+\usepackage[english]{babel}
+
+%% ── Scene-break ornament ──────────────────────────────────────────────────
+\usepackage{adforn}
+\newcommand{\scenebreak}{%
+  \medskip\begin{center}\adforn{18}\end{center}\medskip%
+}
+
+%% ── Block quotes ──────────────────────────────────────────────────────────
+\AtBeginEnvironment{quote}{\small\itshape}
+
+%% ── Pandoc compatibility ─────────────────────────────────────────────────
+\usepackage{hyperref}
+\hypersetup{hidelinks}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{booktabs}
+
+$if(highlighting-macros)$
+$highlighting-macros$
+$endif$
+
+%% ── Tight list fix ───────────────────────────────────────────────────────
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+
+\begin{document}
+
+%% ── Half-title / title page ───────────────────────────────────────────────
+$if(title)$
+\thispagestyle{empty}
+\begin{vplace}[0.3]
+  \begin{center}
+    {\large\itshape $title$}\\[1em]
+    $if(author)${\normalsize $author$}$endif$
+  \end{center}
+\end{vplace}
+\clearpage
+$endif$
+
+%% ── Body ──────────────────────────────────────────────────────────────────
+$body$
+
+\end{document}

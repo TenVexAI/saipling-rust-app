@@ -1,0 +1,137 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   sAIpling ePub Template: Clean Reader
+   Maximally compatible across e-readers (Kindle, Kobo, Apple Books, etc.)
+   Uses system serif fonts, respects reader font-size settings.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* ── Root & Body ──────────────────────────────────────────────────────────── */
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1em;          /* Respect reader's font-size setting */
+  line-height: 1.6;
+  color: #000;
+  background: transparent; /* Respect reader's background/night mode */
+  text-align: justify;
+  -webkit-hyphens: auto;
+  hyphens: auto;
+  orphans: 2;
+  widows: 2;
+}
+
+/* ── Paragraphs ───────────────────────────────────────────────────────────── */
+p {
+  margin: 0;
+  padding: 0;
+  text-indent: 1.5em;
+}
+
+/* First paragraph of a chapter — no indent */
+h1 + p,
+h2 + p,
+h3 + p,
+.chapter-start p:first-of-type {
+  text-indent: 0;
+}
+
+/* ── Headings ─────────────────────────────────────────────────────────────── */
+h1 {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.5em;
+  font-weight: normal;
+  text-align: center;
+  margin: 3em 0 2em 0;
+  padding: 0;
+  page-break-before: always;
+  break-before: always;
+}
+
+h2 {
+  font-size: 1em;
+  font-weight: normal;
+  font-style: italic;
+  text-align: center;
+  margin: 2em 0 1.5em 0;
+}
+
+h3 {
+  font-size: 1em;
+  font-weight: bold;
+  margin: 1.5em 0 0.5em 0;
+}
+
+/* ── Scene breaks (hr) ────────────────────────────────────────────────────── */
+hr {
+  border: none;
+  text-align: center;
+  margin: 1.5em 0;
+}
+
+hr::after {
+  content: "· · ·";
+  font-size: 0.9em;
+  color: #666;
+  letter-spacing: 0.3em;
+}
+
+/* ── Block quotes ─────────────────────────────────────────────────────────── */
+blockquote {
+  margin: 1em 1.5em;
+  padding: 0;
+  font-style: italic;
+}
+
+blockquote p {
+  text-indent: 0;
+}
+
+/* ── Emphasis ─────────────────────────────────────────────────────────────── */
+em { font-style: italic; }
+strong { font-weight: bold; }
+
+/* ── Title page ───────────────────────────────────────────────────────────── */
+.title-page {
+  text-align: center;
+  margin: 4em 0;
+}
+
+.title-page .book-title {
+  font-size: 1.8em;
+  font-weight: normal;
+  margin-bottom: 0.5em;
+}
+
+.title-page .book-author {
+  font-size: 1.1em;
+  margin-top: 0.5em;
+}
+
+/* ── Front/Back matter ────────────────────────────────────────────────────── */
+.dedication {
+  text-align: center;
+  font-style: italic;
+  margin: 4em auto;
+  max-width: 80%;
+}
+
+.epigraph {
+  margin: 3em 2em;
+  font-style: italic;
+}
+
+.epigraph .attribution {
+  text-align: right;
+  font-style: normal;
+  font-size: 0.9em;
+  margin-top: 0.5em;
+}
+
+/* ── Accessibility ────────────────────────────────────────────────────────── */
+img {
+  max-width: 100%;
+  height: auto;
+}

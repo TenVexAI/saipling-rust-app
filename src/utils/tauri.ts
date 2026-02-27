@@ -279,5 +279,23 @@ export const listTemplates = () =>
   invoke<string[]>('list_templates');
 
 // ─── Export ───
-export const exportBook = (projectDir: string, bookId: string, format: string, options: Record<string, unknown>, outputPath: string) =>
-  invoke<string>('export_book', { projectDir, bookId, format, options, outputPath });
+
+export const checkPandoc = () =>
+  invoke<boolean>('check_pandoc');
+
+export const revealExportFolder = (projectDir: string, bookId: string) =>
+  invoke<void>('reveal_export_folder', { projectDir, bookId });
+
+export const exportBook = (
+  projectDir: string,
+  bookId: string,
+  format: string,
+  options: {
+    include_front_matter: boolean;
+    include_back_matter: boolean;
+    include_chapter_headings: boolean;
+    page_size: string;
+    template: string;
+  },
+  outputPath: string,
+) => invoke<string>('export_book', { projectDir, bookId, format, options, outputPath });
