@@ -1,7 +1,9 @@
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::path::PathBuf;
 use chrono::{DateTime, Utc};
 use crate::error::AppError;
+use super::templates::load_template;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BookRef {
@@ -113,25 +115,12 @@ pub fn create_project(
     let project_json = directory.join("project.json");
     std::fs::write(&project_json, serde_json::to_string_pretty(&metadata)?)?;
 
-    // Create overview/brainstorm.md with frontmatter template
+    // Create overview/brainstorm.md using template system
+    let body = load_template(directory.clone(), "brainstorm-project".to_string(), HashMap::new())
+        .unwrap_or_else(|_| "# Project Brainstorm\n\nWrite freely below.\n\n---\n\n".to_string());
     let brainstorm_content = format!(
-        "---\ntype: brainstorm\nscope: series\nsubject: project\ncreated: {}\nmodified: {}\nstatus: empty\n---\n\n\
-# Project Brainstorm\n\n\
-This is your space to brain-dump everything about your project — the big ideas,\n\
-the vague feelings, the \"what if\" questions, the scenes you can already see in\n\
-your head. Don't worry about structure or consistency here. Just get your ideas\n\
-down.\n\n\
-Think about:\n\
-- What's the core idea that excites you?\n\
-- What kind of story is this? (series, standalone, universe?)\n\
-- What genre(s) does it live in?\n\
-- What tone or feeling are you going for?\n\
-- Any characters, settings, or scenes that are already forming?\n\
-- What themes or questions do you want to explore?\n\
-- What books, movies, or stories inspire this project?\n\n\
-Write freely below — this document is your starting point, not your final answer.\n\n\
----\n\n",
-        date_str, date_str
+        "---\ntype: brainstorm\nscope: series\nsubject: project\ncreated: {}\nmodified: {}\nstatus: empty\n---\n\n{}",
+        date_str, date_str, body
     );
     std::fs::write(
         directory.join("overview/brainstorm.md"),
@@ -252,25 +241,14 @@ pub fn create_book_dirs(
         serde_json::to_string_pretty(&book_meta)?,
     )?;
 
-    // Create book overview brainstorm.md
+    // Create book overview brainstorm.md using template system
     let scope = book_id;
+    let project_dir = book_dir.parent().and_then(|p| p.parent()).unwrap_or(book_dir).to_path_buf();
+    let body = load_template(project_dir, "brainstorm-book".to_string(), HashMap::new())
+        .unwrap_or_else(|_| "# Book Brainstorm\n\nWrite freely below.\n\n---\n\n".to_string());
     let brainstorm_content = format!(
-        "---\ntype: brainstorm\nscope: {}\nsubject: book\ncreated: {}\nmodified: {}\nstatus: empty\n---\n\n\
-# Book Brainstorm\n\n\
-This is your space to brain-dump everything about this specific book. If you've\n\
-already created a project overview, think about what makes THIS book unique within\n\
-the larger project.\n\n\
-Think about:\n\
-- What's the core story of this book?\n\
-- Who is the main character and what do they want?\n\
-- What's the central conflict or problem?\n\
-- Where and when does this book take place?\n\
-- How does this book fit into the larger series (if applicable)?\n\
-- What should the reader feel by the end?\n\
-- Any specific scenes, moments, or images you already have in mind?\n\n\
-Write freely below.\n\n\
----\n\n",
-        scope, date_str, date_str
+        "---\ntype: brainstorm\nscope: {}\nsubject: book\ncreated: {}\nmodified: {}\nstatus: empty\n---\n\n{}",
+        scope, date_str, date_str, body
     );
     std::fs::write(
         book_dir.join("overview/brainstorm.md"),

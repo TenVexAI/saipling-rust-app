@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Globe, FolderOpen, FileText, ChevronRight, ChevronDown, Folder, Plus, X } from 'lucide-react';
+import { Globe, FolderOpen, FileText, ChevronRight, ChevronDown, Folder, Plus, X, Check } from 'lucide-react';
 import { useProjectStore } from '../../stores/projectStore';
-import { listDirectory, createDirectory, writeFile } from '../../utils/tauri';
+import { listDirectory, createDirectory, writeFile, loadTemplate, readFile } from '../../utils/tauri';
 import type { FileEntry } from '../../types/project';
 
 interface WorldFolder {
@@ -65,7 +65,9 @@ export function WorldBrowser() {
   const projectDir = useProjectStore((s) => s.projectDir);
   const setActiveFile = useProjectStore((s) => s.setActiveFile);
   const [folders, setFolders] = useState<WorldFolder[]>([]);
+  const [entryExists, setEntryExists] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
+  const refresh = useProjectStore((s) => s.refreshCounter);
   const [showNewSection, setShowNewSection] = useState(false);
   const [customName, setCustomName] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -107,7 +109,27 @@ export function WorldBrowser() {
 
   useEffect(() => {
     loadWorld();
-  }, [loadWorld]);
+  }, [loadWorld, refresh]);
+
+  // Check which entries have entry.md
+  useEffect(() => {
+    if (folders.length === 0) return;
+    const checkEntries = async () => {
+      const result: Record<string, boolean> = {};
+      for (const folder of folders) {
+        for (const entry of folder.entries) {
+          try {
+            await readFile(`${entry.path}\\entry.md`);
+            result[entry.path] = true;
+          } catch {
+            result[entry.path] = false;
+          }
+        }
+      }
+      setEntryExists(result);
+    };
+    checkEntries();
+  }, [folders, refresh]);
 
   useEffect(() => {
     if (!showNewSection) return;
@@ -166,7 +188,13 @@ export function WorldBrowser() {
         modified: now,
         status: 'empty',
       };
-      const body = `# World Entry Brainstorm \u2014 ${name}\n\nDump everything you know about this element of your world. Remember: every\nworld-building detail should ultimately serve your story \u2014 connecting to\ncharacters, conflict, or theme.\n\nThink about:\n- What is it and how does it work?\n- What are its rules and limitations?\n- How does it affect daily life in your world?\n- How does it create conflict or story possibilities?\n- What's its history \u2014 how did it come to exist?\n- How do different characters or groups relate to it?\n\nWrite freely below.\n\n---\n\n`;
+      // Try category-specific template, fall back to generic
+      let body: string;
+      try {
+        body = await loadTemplate(projectDir!, `world-${newEntryFolder.slug}`, { name });
+      } catch {
+        body = await loadTemplate(projectDir!, 'world-generic', { name });
+      }
       await writeFile(brainstormPath, frontmatter, body);
       loadWorld();
       setActiveFile(brainstormPath);
@@ -350,20 +378,45 @@ export function WorldBrowser() {
                   </div>
 
                   {folder.expanded && folder.entries.length > 0 && (
-                    <div style={{ paddingLeft: '24px', marginTop: '4px', display: 'flex', flexDirection: 'column', gap: '1px' }}>
-                      {folder.entries.map((entry) => (
-                        <button
-                          key={entry.path}
-                          onClick={() => setActiveFile(`${entry.path}\\brainstorm.md`)}
-                          className="flex items-center gap-2 w-full text-left text-xs rounded-md transition-colors"
-                          style={{ padding: '5px 10px', color: 'var(--text-primary)' }}
-                          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--bg-hover)')}
-                          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-                        >
-                          <FileText size={12} style={{ color: 'var(--text-tertiary)', flexShrink: 0 }} />
-                          <span className="truncate">{entry.name.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}</span>
-                        </button>
-                      ))}
+                    <div style={{ paddingLeft: '24px', marginTop: '4px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                      {folder.entries.map((entry) => {
+                        const entryName = entry.name.replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
+                        const hasEntry = entryExists[entry.path] ?? false;
+                        return (
+                          <button
+                            key={entry.path}
+                            onClick={() => setActiveFile(`${entry.path}\\brainstorm.md`)}
+                            className="flex items-center gap-2 w-full text-left text-xs rounded-md transition-all"
+                            style={{
+                              color: 'var(--text-primary)',
+                              background: 'none',
+                              border: '1px solid transparent',
+                              cursor: 'pointer',
+                              padding: '6px 10px',
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.borderColor = 'var(--accent)';
+                              e.currentTarget.style.backgroundColor = 'var(--bg-hover)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.borderColor = 'transparent';
+                              e.currentTarget.style.backgroundColor = 'transparent';
+                            }}
+                          >
+                            {hasEntry ? (
+                              <Check size={12} style={{ color: 'var(--color-success)', flexShrink: 0 }} />
+                            ) : (
+                              <FileText size={12} style={{ color: 'var(--text-tertiary)', flexShrink: 0 }} />
+                            )}
+                            <span className="truncate">{entryName}</span>
+                            {hasEntry && (
+                              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded" style={{ backgroundColor: 'rgba(var(--success-rgb, 46,160,67), 0.15)', color: 'var(--color-success)', marginLeft: 'auto', flexShrink: 0 }}>
+                                Entry
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
                     </div>
                   )}
                 </div>

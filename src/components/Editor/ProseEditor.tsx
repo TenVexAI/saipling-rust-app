@@ -11,6 +11,11 @@ import { EditorToolbar } from './EditorToolbar';
 import { FrontmatterPanel } from './FrontmatterPanel';
 import { InlineAIToolbar } from './InlineAIToolbar';
 import { BrainstormToolbar } from './BrainstormToolbar';
+import { SeedPhaseToolbar } from './SeedPhaseToolbar';
+import { RootPhaseToolbar } from './RootPhaseToolbar';
+import { SproutPhaseToolbar } from './SproutPhaseToolbar';
+import { CharacterToolbar } from './CharacterToolbar';
+import { WorldEntryToolbar } from './WorldEntryToolbar';
 import { useEditorStore } from '../../stores/editorStore';
 import { useProjectStore } from '../../stores/projectStore';
 import { readFile, writeFile } from '../../utils/tauri';
@@ -37,6 +42,11 @@ export function ProseEditor({ filePath }: ProseEditorProps) {
   const autoSaveTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const isBrainstormFile = /[\\/]overview[\\/]/.test(filePath);
+  const isSeedPhaseFile = /[\\/]phase-1-seed[\\/]/.test(filePath);
+  const isRootPhaseFile = /[\\/]phase-2-root[\\/]/.test(filePath);
+  const isSproutPhaseFile = /[\\/]phase-3-sprout[\\/]/.test(filePath);
+  const isCharacterFile = /[\\/]characters[\\/][^\\/]+[\\/]/.test(filePath);
+  const isWorldEntryFile = /[\\/]world[\\/][^\\/]+[\\/][^\\/]+[\\/]/.test(filePath);
 
   const editor = useEditor({
     extensions: [
@@ -307,6 +317,11 @@ export function ProseEditor({ filePath }: ProseEditorProps) {
       )}
 
       {!focusMode && isBrainstormFile && <BrainstormToolbar currentFilePath={filePath} />}
+      {!focusMode && isSeedPhaseFile && <SeedPhaseToolbar currentFilePath={filePath} />}
+      {!focusMode && isRootPhaseFile && <RootPhaseToolbar currentFilePath={filePath} />}
+      {!focusMode && isSproutPhaseFile && <SproutPhaseToolbar currentFilePath={filePath} />}
+      {!focusMode && isCharacterFile && <CharacterToolbar currentFilePath={filePath} />}
+      {!focusMode && isWorldEntryFile && <WorldEntryToolbar currentFilePath={filePath} />}
       {!focusMode && <FrontmatterPanel frontmatter={frontmatter} />}
       {!focusMode && <EditorToolbar editor={editor} />}
 

@@ -1,7 +1,9 @@
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::path::PathBuf;
 use chrono::Utc;
 use crate::error::AppError;
+use super::templates::load_template;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MatterEntry {
@@ -19,24 +21,38 @@ const BACK_MATTER_TYPES: &[&str] = &[
     "epilogue", "afterword", "acknowledgments", "about-the-author",
 ];
 
-fn matter_template(subtype: &str, book_id: &str, is_front: bool) -> String {
+fn matter_template(project_dir: &PathBuf, subtype: &str, book_id: &str, is_front: bool) -> String {
     let now = Utc::now().format("%Y-%m-%d");
     let kind = if is_front { "front-matter" } else { "back-matter" };
-    let title = subtype.replace('-', " ");
-    let title_case: String = title.split_whitespace()
-        .map(|w| {
-            let mut c = w.chars();
-            match c.next() {
-                None => String::new(),
-                Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
-            }
-        })
-        .collect::<Vec<_>>()
-        .join(" ");
+
+    // Try to load template body from the template system
+    let template_name = format!("{}-{}", kind, subtype);
+    let variables: HashMap<String, String> = [
+        ("year".to_string(), Utc::now().format("%Y").to_string()),
+        ("author".to_string(), String::new()),
+        ("title".to_string(), String::new()),
+    ].into_iter().collect();
+
+    let body = load_template(project_dir.clone(), template_name, variables)
+        .unwrap_or_else(|_| {
+            // Fallback: simple title
+            let title = subtype.replace('-', " ");
+            let title_case: String = title.split_whitespace()
+                .map(|w| {
+                    let mut c = w.chars();
+                    match c.next() {
+                        None => String::new(),
+                        Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
+                    }
+                })
+                .collect::<Vec<_>>()
+                .join(" ");
+            format!("# {}\n\n", title_case)
+        });
 
     format!(
-        "---\ntype: {}\nsubtype: {}\nbook: {}\ncreated: {}\nmodified: {}\n---\n\n# {}\n\n",
-        kind, subtype, book_id, now, now, title_case
+        "---\ntype: {}\nsubtype: {}\nbook: {}\ncreated: {}\nmodified: {}\n---\n\n{}",
+        kind, subtype, book_id, now, now, body
     )
 }
 
@@ -53,7 +69,7 @@ pub fn create_front_matter(
     let path = matter_dir.join(&filename);
 
     if !path.exists() {
-        std::fs::write(&path, matter_template(&subtype, &book_id, true))?;
+        std::fs::write(&path, matter_template(&project_dir, &subtype, &book_id, true))?;
     }
 
     // Update book.json
@@ -81,7 +97,7 @@ pub fn create_back_matter(
 
     let path = matter_dir.join(&filename);
     if !path.exists() {
-        std::fs::write(&path, matter_template(&subtype, &book_id, false))?;
+        std::fs::write(&path, matter_template(&project_dir, &subtype, &book_id, false))?;
     }
 
     update_matter_in_book_json(&project_dir, &book_id, &subtype, "back_matter", true)?;

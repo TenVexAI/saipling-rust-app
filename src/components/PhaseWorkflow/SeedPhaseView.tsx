@@ -1,73 +1,91 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Check, Circle, Loader2, Info } from 'lucide-react';
+import { Check, Circle, Loader2, Info, FileText } from 'lucide-react';
 import { useProjectStore } from '../../stores/projectStore';
-import { readFile } from '../../utils/tauri';
+import { readFile, writeFile, loadTemplate } from '../../utils/tauri';
 import { openHelpWindow } from '../../utils/helpWindow';
 import { PhaseIcon } from './PhaseIcon';
+import { SEED_ELEMENTS } from './seedElements';
 
-const SEED_ELEMENTS = [
-  { key: 'premise', label: 'Premise', description: 'The core "what if" of your story' },
-  { key: 'theme', label: 'Theme', description: 'The central message or question explored' },
-  { key: 'protagonist', label: 'Protagonist', description: 'Who the story follows and their defining flaw' },
-  { key: 'conflict', label: 'Central Conflict', description: 'The main obstacle testing the protagonist' },
-  { key: 'world', label: 'World', description: 'The setting and its rules' },
-  { key: 'promise', label: 'Emotional Promise', description: 'How readers should feel at the end' },
-];
-
-interface FoundationData {
-  [key: string]: string | undefined;
-}
-
-function parseFoundationBody(body: string): FoundationData {
-  const data: FoundationData = {};
-  let currentKey = '';
-  const lines = body.split('\n');
-  for (const line of lines) {
-    const heading = line.match(/^##\s+(.+)/);
-    if (heading) {
-      currentKey = heading[1].toLowerCase().replace(/\s+/g, '_').replace(/[^a-z_]/g, '');
-      data[currentKey] = '';
-    } else if (currentKey) {
-      data[currentKey] = ((data[currentKey] || '') + '\n' + line).trim();
-    }
-  }
-  return data;
+interface ElementStatus {
+  hasBrainstorm: boolean;
+  hasDraft: boolean;
+  brainstormPreview: string;
 }
 
 export function SeedPhaseView() {
   const projectDir = useProjectStore((s) => s.projectDir);
   const activeBookId = useProjectStore((s) => s.activeBookId);
   const setActiveFile = useProjectStore((s) => s.setActiveFile);
-  const [foundation, setFoundation] = useState<FoundationData>({});
+  const refresh = useProjectStore((s) => s.refreshCounter);
+  const [statuses, setStatuses] = useState<Record<string, ElementStatus>>({});
   const [loading, setLoading] = useState(true);
-  const [selectedElement, setSelectedElement] = useState<string | null>(null);
 
-  const foundationPath = projectDir && activeBookId
-    ? `${projectDir}\\books\\${activeBookId}\\foundation\\story-foundation.md`
+  const seedDir = projectDir && activeBookId
+    ? `${projectDir}\\books\\${activeBookId}\\phase-1-seed`
     : null;
 
-  const loadFoundation = useCallback(async () => {
-    if (!foundationPath) return;
+  const loadStatuses = useCallback(async () => {
+    if (!seedDir || !projectDir) return;
     setLoading(true);
-    try {
-      const content = await readFile(foundationPath);
-      setFoundation(parseFoundationBody(content.body));
-    } catch {
-      setFoundation({});
+    const result: Record<string, ElementStatus> = {};
+    for (const el of SEED_ELEMENTS) {
+      const elDir = `${seedDir}\\${el.slug}`;
+      const brainstormPath = `${elDir}\\brainstorm.md`;
+      const draftPath = `${elDir}\\draft.md`;
+      let hasBrainstorm = false;
+      let hasDraft = false;
+      let brainstormPreview = '';
+      try {
+        const content = await readFile(brainstormPath);
+        hasBrainstorm = true;
+        // Get a preview from the body (skip template headings)
+        const lines = content.body.split('\n').filter((l: string) => !l.startsWith('#') && !l.startsWith('**') && !l.startsWith('---') && l.trim().length > 0);
+        brainstormPreview = lines.slice(0, 3).join(' ').slice(0, 200);
+      } catch { /* doesn't exist yet */ }
+      try {
+        await readFile(draftPath);
+        hasDraft = true;
+      } catch { /* doesn't exist yet */ }
+      result[el.key] = { hasBrainstorm, hasDraft, brainstormPreview };
     }
+    setStatuses(result);
     setLoading(false);
-  }, [foundationPath]);
+  }, [seedDir, projectDir]);
 
   useEffect(() => {
-    loadFoundation();
-  }, [loadFoundation]);
+    loadStatuses();
+  }, [loadStatuses, refresh]);
 
-  const getElementStatus = (key: string): 'empty' | 'filled' => {
-    const val = foundation[key];
-    return val && val.trim().length > 0 ? 'filled' : 'empty';
+  const handleElementClick = async (el: typeof SEED_ELEMENTS[0]) => {
+    if (!seedDir || !projectDir || !activeBookId) return;
+    const elDir = `${seedDir}\\${el.slug}`;
+    const brainstormPath = `${elDir}\\brainstorm.md`;
+
+    // Create brainstorm.md from template if it doesn't exist
+    const status = statuses[el.key];
+    if (!status?.hasBrainstorm) {
+      try {
+        const now = new Date().toISOString().slice(0, 10);
+        const frontmatter: Record<string, unknown> = {
+          type: 'brainstorm',
+          scope: activeBookId,
+          subject: 'seed-element',
+          element: el.slug,
+          created: now,
+          modified: now,
+          status: 'empty',
+        };
+        const body = await loadTemplate(projectDir, el.template, {});
+        await writeFile(brainstormPath, frontmatter, body);
+        await loadStatuses();
+      } catch (e) {
+        console.error('Failed to create seed brainstorm:', e);
+      }
+    }
+    setActiveFile(brainstormPath);
   };
 
-  const filledCount = SEED_ELEMENTS.filter(e => getElementStatus(e.key) === 'filled').length;
+  const filledCount = SEED_ELEMENTS.filter(e => statuses[e.key]?.hasDraft).length;
 
   return (
     <div className="flex flex-col h-full overflow-hidden" style={{ backgroundColor: 'var(--bg-primary)' }}>
@@ -105,12 +123,12 @@ export function SeedPhaseView() {
             }} />
           </div>
           <span className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
-            {filledCount}/6
+            {filledCount}/6 drafted
           </span>
         </div>
       </div>
 
-      {/* Content */}
+      {/* Element Cards */}
       <div className="flex-1 overflow-y-auto" style={{ padding: '20px 28px' }}>
         {loading ? (
           <div className="flex items-center justify-center" style={{ padding: '40px 0' }}>
@@ -119,42 +137,59 @@ export function SeedPhaseView() {
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px' }}>
             {SEED_ELEMENTS.map((el) => {
-              const status = getElementStatus(el.key);
-              const isSelected = selectedElement === el.key;
+              const status = statuses[el.key] || { hasBrainstorm: false, hasDraft: false, brainstormPreview: '' };
               return (
                 <button
                   key={el.key}
-                  onClick={() => {
-                    setSelectedElement(isSelected ? null : el.key);
-                    if (foundationPath) setActiveFile(foundationPath);
-                  }}
-                  className="text-left rounded-lg hover-btn"
+                  onClick={() => handleElementClick(el)}
+                  className="text-left rounded-lg transition-all"
                   style={{
-                    backgroundColor: isSelected ? 'var(--accent-subtle)' : 'var(--bg-elevated)',
-                    border: `1px solid ${isSelected ? 'var(--accent)' : 'var(--border-primary)'}`,
+                    backgroundColor: 'var(--bg-elevated)',
+                    border: '1.5px solid var(--border-primary)',
                     padding: '16px',
+                    cursor: 'pointer',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = 'var(--accent)';
+                    e.currentTarget.style.boxShadow = '0 2px 12px rgba(0,0,0,0.12)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = 'var(--border-primary)';
+                    e.currentTarget.style.boxShadow = 'none';
                   }}
                 >
                   <div className="flex items-center gap-2" style={{ marginBottom: '6px' }}>
-                    {status === 'filled' ? (
+                    {status.hasDraft ? (
                       <Check size={14} style={{ color: 'var(--color-success)' }} />
+                    ) : status.hasBrainstorm ? (
+                      <FileText size={14} style={{ color: 'var(--accent)' }} />
                     ) : (
                       <Circle size={14} style={{ color: 'var(--text-tertiary)' }} />
                     )}
                     <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
                       {el.label}
                     </span>
+                    {status.hasDraft && (
+                      <span className="text-[10px] font-medium px-1.5 py-0.5 rounded" style={{ backgroundColor: 'rgba(var(--success-rgb, 46,160,67), 0.15)', color: 'var(--color-success)' }}>
+                        Drafted
+                      </span>
+                    )}
+                    {status.hasBrainstorm && !status.hasDraft && (
+                      <span className="text-[10px] font-medium px-1.5 py-0.5 rounded" style={{ backgroundColor: 'var(--accent-subtle)', color: 'var(--accent)' }}>
+                        Brainstormed
+                      </span>
+                    )}
                   </div>
                   <p className="text-xs" style={{ color: 'var(--text-tertiary)', marginBottom: '8px' }}>
                     {el.description}
                   </p>
-                  {status === 'filled' ? (
-                    <p className="text-xs line-clamp-3" style={{ color: 'var(--text-secondary)' }}>
-                      {foundation[el.key]}
+                  {status.brainstormPreview ? (
+                    <p className="text-xs line-clamp-2" style={{ color: 'var(--text-secondary)' }}>
+                      {status.brainstormPreview}
                     </p>
                   ) : (
                     <p className="text-xs italic" style={{ color: 'var(--text-tertiary)' }}>
-                      Not yet defined — ask Claude to help
+                      Click to start brainstorming
                     </p>
                   )}
                 </button>
@@ -169,10 +204,9 @@ export function SeedPhaseView() {
             How to use the Seed Phase
           </p>
           <p className="text-xs" style={{ color: 'var(--text-tertiary)', lineHeight: '1.6' }}>
-            Tell Claude about the story you want to write in the AI Chat panel. It can be as rough as a feeling
-            or as specific as a full plot. Claude will help you develop each of the six core elements one at a time,
-            offering options for you to approve, edit, or refine. You can also write elements directly by opening
-            the story foundation file.
+            Click any element to open its brainstorm document in the editor. Write your ideas, then use the AI Chat panel to
+            refine them with Claude. When your brainstorm is ready, use the <strong style={{ color: 'var(--text-secondary)' }}>Generate</strong> button
+            in the editor toolbar to have Claude produce a polished draft.
           </p>
         </div>
       </div>

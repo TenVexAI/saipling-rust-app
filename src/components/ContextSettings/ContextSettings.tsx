@@ -393,7 +393,9 @@ interface ContextFileTreeItemProps {
 function ContextFileTreeItem({
   entry, depth, contextSettings, onContextChange, onEdit, onOpenExplorer, onDelete, expandFolder,
 }: ContextFileTreeItemProps) {
-  const shouldAutoExpand = expandFolder ? entry.is_dir && entry.path.replace(/\\/g, '/').includes(expandFolder.replace(/\\/g, '/')) : false;
+  const normalizedExpand = expandFolder?.replace(/\\/g, '/') ?? '';
+  const normalizedEntry = entry.path.replace(/\\/g, '/');
+  const shouldAutoExpand = expandFolder ? entry.is_dir && (normalizedExpand === normalizedEntry || normalizedExpand.startsWith(normalizedEntry + '/')) : false;
   const [expanded, setExpanded] = useState(shouldAutoExpand);
   const [children, setChildren] = useState<FileEntry[]>([]);
   const [loaded, setLoaded] = useState(false);

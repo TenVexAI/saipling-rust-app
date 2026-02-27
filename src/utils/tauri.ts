@@ -267,6 +267,17 @@ export const reindexProject = (projectDir: string) =>
 export const clearIndex = (projectDir: string) =>
   invoke<void>('clear_index', { projectDir });
 
+// ─── Templates ───
+
+export const loadTemplate = (
+  projectDir: string,
+  templateName: string,
+  variables: Record<string, string> = {},
+) => invoke<string>('load_template', { projectDir, templateName, variables });
+
+export const listTemplates = () =>
+  invoke<string[]>('list_templates');
+
 // ─── Export ───
 export const exportBook = (projectDir: string, bookId: string, format: string, options: Record<string, unknown>, outputPath: string) =>
   invoke<string>('export_book', { projectDir, bookId, format, options, outputPath });

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Users, FileText, Plus, Link2, X } from 'lucide-react';
+import { Users, FileText, Plus, Link2, X, Check } from 'lucide-react';
 import { useProjectStore } from '../../stores/projectStore';
-import { listDirectory, createDirectory, writeFile } from '../../utils/tauri';
+import { listDirectory, createDirectory, writeFile, loadTemplate, readFile } from '../../utils/tauri';
 import type { FileEntry } from '../../types/project';
 
 export function CharacterList() {
@@ -9,7 +9,9 @@ export function CharacterList() {
   const setActiveFile = useProjectStore((s) => s.setActiveFile);
   const [characters, setCharacters] = useState<FileEntry[]>([]);
   const [relationships, setRelationships] = useState<FileEntry | null>(null);
+  const [profileExists, setProfileExists] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
+  const refresh = useProjectStore((s) => s.refreshCounter);
   const [showNewModal, setShowNewModal] = useState(false);
   const [newCharName, setNewCharName] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -36,7 +38,25 @@ export function CharacterList() {
 
   useEffect(() => {
     loadCharacters();
-  }, [loadCharacters]);
+  }, [loadCharacters, refresh]);
+
+  // Check which characters have profile.md
+  useEffect(() => {
+    if (characters.length === 0) return;
+    const checkProfiles = async () => {
+      const result: Record<string, boolean> = {};
+      for (const char of characters) {
+        try {
+          await readFile(`${char.path}\\profile.md`);
+          result[char.name] = true;
+        } catch {
+          result[char.name] = false;
+        }
+      }
+      setProfileExists(result);
+    };
+    checkProfiles();
+  }, [characters, refresh]);
 
   const handleOpenNewModal = () => {
     setNewCharName('');
@@ -64,7 +84,7 @@ export function CharacterList() {
         modified: now,
         status: 'empty',
       };
-      const body = `# Character Brainstorm — ${name}\n\nDump everything you know or feel about this character. Don't worry about filling\nin every detail — just capture what's alive in your imagination right now.\n\nThink about:\n- Who is this person at their core?\n- What do they want more than anything? (their conscious desire)\n- What do they actually need? (often different from what they want)\n- What's their biggest flaw or blind spot?\n- What happened in their past that shaped who they are today?\n- How do they talk? What makes their voice distinctive?\n- What are their key relationships?\n- What role do they play in the story?\n- How will they change by the end?\n\nWrite freely below.\n\n---\n\n`;
+      const body = await loadTemplate(projectDir!, 'brainstorm-character', { name });
       await writeFile(brainstormPath, frontmatter, body);
       await loadCharacters();
       setActiveFile(brainstormPath);
@@ -143,48 +163,62 @@ export function CharacterList() {
                 <p className="text-xs" style={{ marginTop: '4px' }}>Characters live in the <code>characters/</code> directory</p>
               </div>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '10px' }}>
-                {characters.map((char) => (
-                  <button
-                    key={char.path}
-                    onClick={() => setActiveFile(`${char.path}\\brainstorm.md`)}
-                    className="flex items-start gap-3 text-left rounded-xl transition-all"
-                    style={{
-                      padding: '14px',
-                      border: '1px solid var(--border-primary)',
-                      backgroundColor: 'var(--bg-elevated)',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.borderColor = 'var(--accent)';
-                      e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.borderColor = 'var(--border-primary)';
-                      e.currentTarget.style.boxShadow = 'none';
-                    }}
-                  >
-                    <div
-                      className="flex items-center justify-center shrink-0 rounded-full text-xs font-bold"
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '10px' }}>
+                {characters.map((char) => {
+                  const hasProfile = profileExists[char.name] ?? false;
+                  return (
+                    <button
+                      key={char.path}
+                      onClick={() => setActiveFile(`${char.path}\\brainstorm.md`)}
+                      className="flex items-start gap-3 text-left rounded-xl transition-all"
                       style={{
-                        width: '32px',
-                        height: '32px',
-                        backgroundColor: 'var(--accent-subtle)',
-                        color: 'var(--accent)',
+                        padding: '14px',
+                        border: '1px solid var(--border-primary)',
+                        backgroundColor: 'var(--bg-elevated)',
+                        cursor: 'pointer',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = 'var(--accent)';
+                        e.currentTarget.style.boxShadow = '0 2px 12px rgba(0,0,0,0.12)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor = 'var(--border-primary)';
+                        e.currentTarget.style.boxShadow = 'none';
                       }}
                     >
-                      {formatName(char.name).charAt(0)}
-                    </div>
-                    <div className="min-w-0">
-                      <span className="text-sm font-medium block truncate" style={{ color: 'var(--text-primary)' }}>
-                        {formatName(char.name)}
-                      </span>
-                      <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                        <FileText size={10} style={{ display: 'inline', marginRight: '4px' }} />
-                        Character brainstorm
-                      </span>
-                    </div>
-                  </button>
-                ))}
+                      <div
+                        className="flex items-center justify-center shrink-0 rounded-full text-xs font-bold"
+                        style={{
+                          width: '32px',
+                          height: '32px',
+                          backgroundColor: 'var(--accent-subtle)',
+                          color: 'var(--accent)',
+                        }}
+                      >
+                        {formatName(char.name).charAt(0)}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium block truncate" style={{ color: 'var(--text-primary)' }}>
+                            {formatName(char.name)}
+                          </span>
+                          {hasProfile && (
+                            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded" style={{ backgroundColor: 'rgba(var(--success-rgb, 46,160,67), 0.15)', color: 'var(--color-success)' }}>
+                              Profile
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                          {hasProfile ? (
+                            <><Check size={10} style={{ display: 'inline', marginRight: '4px', color: 'var(--color-success)' }} />Brainstorm + Profile</>
+                          ) : (
+                            <><FileText size={10} style={{ display: 'inline', marginRight: '4px' }} />Brainstorm</>
+                          )}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             )}
           </>

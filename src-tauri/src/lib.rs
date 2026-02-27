@@ -7,7 +7,7 @@ mod data;
 
 use commands::{
     project, book, filesystem, draft, attachment, chapter, matter, agent as agent_cmd, config, models, export,
-    vector_search as vs_cmd,
+    vector_search as vs_cmd, templates,
 };
 use data::genres;
 
@@ -93,6 +93,9 @@ pub fn run() {
             vs_cmd::get_index_status,
             vs_cmd::reindex_project,
             vs_cmd::clear_index,
+            // Templates
+            templates::load_template,
+            templates::list_templates,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
