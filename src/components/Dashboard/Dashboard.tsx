@@ -9,6 +9,7 @@ import { SaiplingDashLogo } from './SaiplingDashLogo';
 import { PhaseIcon } from '../PhaseWorkflow/PhaseIcon';
 import { EditProjectModal } from './EditProjectModal';
 import { DeleteProjectModal } from './DeleteProjectModal';
+import { DeleteBookModal } from './DeleteBookModal';
 import { GettingStartedModal } from './GettingStartedModal';
 import type { BookMetadata } from '../../types/project';
 import { PHASES } from '../../types/sapling';
@@ -102,6 +103,7 @@ export function Dashboard() {
   const [genres, setGenres] = useState<Genre[]>([]);
   const [expandedSubGenre, setExpandedSubGenre] = useState<string | null>(null);
   const [editExpandedSubGenre, setEditExpandedSubGenre] = useState<string | null>(null);
+  const [deletingBook, setDeletingBook] = useState<{ id: string; title: string } | null>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
   const refreshCounter = useProjectStore((s) => s.refreshCounter);
 
@@ -472,10 +474,18 @@ export function Dashboard() {
                     >
                       <Pencil size={13} />
                     </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setDeletingBook({ id: book.id, title: book.title }); }}
+                      className="flex items-center justify-center rounded hover-icon-danger"
+                      style={{ color: 'var(--text-tertiary)', background: 'none', border: 'none', cursor: 'pointer', padding: '3px' }}
+                      title="Delete book"
+                    >
+                      <Trash2 size={13} />
+                    </button>
                   </div>
 
                   {/* Title + icon */}
-                  <div className="flex items-center gap-2" style={{ marginBottom: '10px', paddingRight: '100px' }}>
+                  <div className="flex items-center gap-2" style={{ marginBottom: '10px', paddingRight: '140px' }}>
                     <BookOpen size={18} style={{ color: 'var(--accent)', flexShrink: 0 }} />
                     <span className="font-semibold text-sm truncate" style={{ color: 'var(--text-primary)' }}>
                       {book.title}
@@ -539,6 +549,23 @@ export function Dashboard() {
       )}
       {showDeleteModal && (
         <DeleteProjectModal onClose={() => setShowDeleteModal(false)} />
+      )}
+      {deletingBook && (
+        <DeleteBookModal
+          bookId={deletingBook.id}
+          bookTitle={deletingBook.title}
+          onClose={() => setDeletingBook(null)}
+          onDeleted={() => {
+            const currentBooks = project?.books || [];
+            const remaining = currentBooks.filter((b) => b.id !== deletingBook.id);
+            useProjectStore.getState().updateBooks(remaining);
+            if (activeBookId === deletingBook.id) {
+              const nextBook = remaining.length > 0 ? remaining[0].id : null;
+              useProjectStore.getState().setActiveBook(nextBook);
+            }
+            loadBookData();
+          }}
+        />
       )}
       {showGettingStarted && overviewChecked && !overviewPath && (
         <GettingStartedModal

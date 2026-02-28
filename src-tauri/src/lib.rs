@@ -30,6 +30,7 @@ pub fn run() {
             book::create_book,
             book::get_book_metadata,
             book::update_book_metadata,
+            book::delete_book,
             book::reorder_books,
             // File system
             filesystem::reveal_in_explorer,

@@ -105,6 +105,34 @@ pub fn update_book_metadata(
 }
 
 #[tauri::command]
+pub fn delete_book(project_dir: PathBuf, book_id: String) -> Result<(), AppError> {
+    let project_json_path = project_dir.join("project.json");
+    let mut project_data: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&project_json_path)?)?;
+
+    // Remove book ref from project.json
+    if let Some(books) = project_data.get_mut("books").and_then(|v| v.as_array_mut()) {
+        books.retain(|b| b.get("id").and_then(|v| v.as_str()) != Some(&book_id));
+    }
+
+    // Clear active_book_id if it was pointing to the deleted book
+    if project_data.get("active_book_id").and_then(|v| v.as_str()) == Some(&book_id) {
+        project_data["active_book_id"] = serde_json::Value::Null;
+    }
+
+    project_data["modified"] = serde_json::Value::String(Utc::now().to_rfc3339());
+    std::fs::write(&project_json_path, serde_json::to_string_pretty(&project_data)?)?;
+
+    // Delete the book directory
+    let book_dir = project_dir.join("books").join(&book_id);
+    if book_dir.exists() {
+        std::fs::remove_dir_all(&book_dir)?;
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
 pub fn reorder_books(project_dir: PathBuf, book_ids: Vec<String>) -> Result<(), AppError> {
     let project_json_path = project_dir.join("project.json");
     let mut project_data: serde_json::Value =

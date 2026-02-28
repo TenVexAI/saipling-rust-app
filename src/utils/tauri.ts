@@ -44,6 +44,9 @@ export const getBookMetadata = (projectDir: string, bookId: string) =>
 export const updateBookMetadata = (projectDir: string, bookId: string, metadata: BookMetadata) =>
   invoke<void>('update_book_metadata', { projectDir, bookId, metadata });
 
+export const deleteBook = (projectDir: string, bookId: string) =>
+  invoke<void>('delete_book', { projectDir, bookId });
+
 export const reorderBooks = (projectDir: string, bookIds: string[]) =>
   invoke<void>('reorder_books', { projectDir, bookIds });
 
