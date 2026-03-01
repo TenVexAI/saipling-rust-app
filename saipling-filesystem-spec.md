@@ -1055,7 +1055,7 @@ generated_from:
 [Single sentence — the elevator pitch]
 
 ## Story Foundation
-[2–4 paragraphs synthesizing all 6 core elements into a cohesive narrative.
+[3–5 paragraphs synthesizing all 6 core elements into a cohesive narrative.
 This is not a list of elements — it is a unified summary that captures the
 story's DNA. It should read as a compelling description of the story that
 naturally integrates the premise, theme, protagonist, central conflict,

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useProjectStore } from '../../stores/projectStore';
 import { useAIStore } from '../../stores/aiStore';
-import { listDirectory, createBook, getBookWordCount, getBookTotalDocWords, getBookMetadata, updateBookMetadata, getGenres } from '../../utils/tauri';
+import { listDirectory, createBook, getBookWordCount, getBookTotalDocWords, getBookMetadata, updateBookMetadata, getGenres, readFile } from '../../utils/tauri';
 import type { Genre } from '../../utils/tauri';
 import { saveProjectChat } from '../../utils/projectChat';
 import { BookOpen, Plus, Lightbulb, LogOut, Pencil, Trash2, Check, ArrowRight, X, ChevronRight } from 'lucide-react';
@@ -22,47 +22,40 @@ interface BookCardData {
   currentPhase: string;
   hasOverview: boolean;
   meta: BookMetadata | null;
+  logline: string;
 }
 
-const PHASE_NAMES: Record<string, string> = {
-  'phase-1-seed': 'Seed',
-  'phase-2-root': 'Root',
-  'phase-3-sprout': 'Sprout',
-  'phase-4-flourish': 'Flourish',
-  'phase-5-bloom': 'Bloom',
-};
+const PHASE_ORDER: Phase[] = ['seed', 'root', 'sprout', 'flourish', 'bloom'];
 
-const PHASE_ORDER = ['phase-1-seed', 'phase-2-root', 'phase-3-sprout', 'phase-4-flourish', 'phase-5-bloom'];
+const PHASE_LABELS: Record<Phase, string> = {
+  seed: 'Seed',
+  root: 'Root',
+  sprout: 'Sprout',
+  flourish: 'Flourish',
+  bloom: 'Bloom',
+};
 
 function getCurrentPhase(phaseProgress: Record<string, { status: string }>): string {
   for (let i = PHASE_ORDER.length - 1; i >= 0; i--) {
     const p = phaseProgress[PHASE_ORDER[i]];
     if (p && p.status === 'complete') {
-      return PHASE_ORDER[i + 1] ? PHASE_NAMES[PHASE_ORDER[i + 1]] : 'Complete';
+      return PHASE_ORDER[i + 1] ? PHASE_LABELS[PHASE_ORDER[i + 1]] : 'Complete';
     }
     if (p && p.status === 'in_progress') {
-      return PHASE_NAMES[PHASE_ORDER[i]];
+      return PHASE_LABELS[PHASE_ORDER[i]];
     }
   }
   return 'Seed';
 }
 
-const PHASE_ID_MAP: Record<string, Phase> = {
-  'phase-1-seed': 'seed',
-  'phase-2-root': 'root',
-  'phase-3-sprout': 'sprout',
-  'phase-4-flourish': 'flourish',
-  'phase-5-bloom': 'bloom',
-};
-
 function getCurrentPhaseId(phaseProgress: Record<string, { status: string }>): Phase | null {
   for (let i = PHASE_ORDER.length - 1; i >= 0; i--) {
     const p = phaseProgress[PHASE_ORDER[i]];
     if (p && p.status === 'complete') {
-      return PHASE_ORDER[i + 1] ? PHASE_ID_MAP[PHASE_ORDER[i + 1]] : null;
+      return PHASE_ORDER[i + 1] ?? null;
     }
     if (p && p.status === 'in_progress') {
-      return PHASE_ID_MAP[PHASE_ORDER[i]];
+      return PHASE_ORDER[i];
     }
   }
   return 'seed';
@@ -184,15 +177,25 @@ export function Dashboard() {
           hasOverview = entries.some((e) => e.name === 'overview.md');
         } catch { /* no overview dir */ }
         const rawPhase = getCurrentPhase(meta.phase_progress as Record<string, { status: string }>);
+        // Load logline if seed phase is complete
+        let logline = '';
+        const seedStatus = (meta.phase_progress as Record<string, { status: string }>)['seed'];
+        if (seedStatus?.status === 'complete') {
+          try {
+            const loglineContent = await readFile(`${projectDir}\\books\\${book.id}\\phase-1-seed\\logline.md`);
+            logline = loglineContent.body.trim();
+          } catch { /* no logline yet */ }
+        }
         data[book.id] = {
           sceneWords: wc.book_total,
           totalDocWords: totalWords,
           currentPhase: !hasOverview && rawPhase === 'Seed' ? 'Brainstorm' : rawPhase,
           hasOverview,
           meta,
+          logline,
         };
       } catch {
-        data[book.id] = { sceneWords: 0, totalDocWords: 0, currentPhase: 'Brainstorm', hasOverview: false, meta: null };
+        data[book.id] = { sceneWords: 0, totalDocWords: 0, currentPhase: 'Brainstorm', hasOverview: false, meta: null, logline: '' };
       }
     }
     setBookCardData(data);
@@ -503,11 +506,18 @@ export function Dashboard() {
                   </div>
 
                   {/* Title + icon */}
-                  <div className="flex items-center gap-2" style={{ marginBottom: '10px', paddingRight: '140px' }}>
-                    <BookOpen size={18} style={{ color: 'var(--accent)', flexShrink: 0 }} />
-                    <span className="font-semibold text-sm truncate" style={{ color: 'var(--text-primary)' }}>
-                      {book.title}
-                    </span>
+                  <div style={{ marginBottom: '10px', paddingRight: '140px' }}>
+                    <div className="flex items-center gap-2">
+                      <BookOpen size={18} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+                      <span className="font-semibold text-sm truncate" style={{ color: 'var(--text-primary)' }}>
+                        {book.title}
+                      </span>
+                    </div>
+                    {data?.logline && (
+                      <p className="text-xs" style={{ color: 'var(--text-tertiary)', marginTop: '4px', paddingLeft: '26px', lineHeight: '1.5' }}>
+                        {data.logline}
+                      </p>
+                    )}
                   </div>
 
                   {/* Token estimate + word count */}

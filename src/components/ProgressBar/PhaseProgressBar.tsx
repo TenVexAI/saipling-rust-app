@@ -15,7 +15,7 @@ function getPhaseStatus(
 
 function StatusIcon({ status }: { status: PhaseStatus }) {
   if (status === 'complete') {
-    return <span style={{ color: 'var(--color-success)' }}>✓</span>;
+    return <span style={{ color: 'var(--accent)' }}>●</span>;
   }
   if (status === 'in_progress') {
     return <span style={{ color: 'var(--color-magenta)' }}>◐</span>;

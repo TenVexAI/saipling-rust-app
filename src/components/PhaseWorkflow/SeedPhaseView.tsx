@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Check, Circle, Loader2, Info, FileText, Sparkles } from 'lucide-react';
+import { Check, Circle, Loader2, Info, FileText, Sparkles, ExternalLink } from 'lucide-react';
 import { useProjectStore } from '../../stores/projectStore';
-import { readFile, writeFile, loadTemplate } from '../../utils/tauri';
+import { readFile, writeFile, loadTemplate, getBookMetadata, updateBookMetadata } from '../../utils/tauri';
 import { openHelpWindow } from '../../utils/helpWindow';
+import { useGenerate } from '../../hooks/useGenerate';
+import { extractDraftBody } from '../../utils/applyParser';
 import { PhaseIcon } from './PhaseIcon';
 import { SEED_ELEMENTS } from './seedElements';
 
@@ -18,6 +20,8 @@ export function SeedPhaseView() {
   const refresh = useProjectStore((s) => s.refreshCounter);
   const [statuses, setStatuses] = useState<Record<string, ElementStatus>>({});
   const [loading, setLoading] = useState(true);
+  const [hasStoryFoundation, setHasStoryFoundation] = useState(false);
+  const [loglineText, setLoglineText] = useState('');
 
   const seedDir = projectDir && activeBookId
     ? `${projectDir}\\books\\${activeBookId}\\phase-1-seed`
@@ -44,6 +48,23 @@ export function SeedPhaseView() {
       result[el.key] = { hasBrainstorm, hasDraft };
     }
     setStatuses(result);
+
+    // Check for phase deliverables
+    const loglinePath = `${seedDir}\\logline.md`;
+    const foundationPath = `${seedDir}\\story-foundation.md`;
+    let foundFoundation = false;
+    try {
+      const loglineContent = await readFile(loglinePath);
+      setLoglineText(loglineContent.body.trim());
+    } catch {
+      setLoglineText('');
+    }
+    try {
+      await readFile(foundationPath);
+      foundFoundation = true;
+    } catch { /* doesn't exist yet */ }
+    setHasStoryFoundation(foundFoundation);
+
     setLoading(false);
   }, [seedDir, projectDir]);
 
@@ -87,6 +108,33 @@ export function SeedPhaseView() {
     setActiveFile(brainstormPath);
   };
 
+  const filledCount = SEED_ELEMENTS.filter(e => statuses[e.key]?.hasDraft).length;
+  const allDrafted = filledCount === 6;
+  const phaseComplete = hasStoryFoundation;
+
+  // When story foundation is created, mark seed phase complete + root as in_progress
+  useEffect(() => {
+    if (!hasStoryFoundation || !projectDir || !activeBookId) return;
+    (async () => {
+      try {
+        const meta = await getBookMetadata(projectDir, activeBookId);
+        const pp = { ...meta.phase_progress };
+        const seedProgress = pp['seed'] || { status: 'not_started' };
+        if (seedProgress.status === 'complete') return; // already done
+        pp['seed'] = { ...seedProgress, status: 'complete', completed_at: new Date().toISOString() };
+        if (!pp['root'] || pp['root'].status === 'not_started') {
+          pp['root'] = { status: 'in_progress' };
+        }
+        const updated = { ...meta, phase_progress: pp };
+        await updateBookMetadata(projectDir, activeBookId, updated);
+        // Refresh activeBookMeta in the store so phase bar + dashboard update
+        useProjectStore.getState().setActiveBook(activeBookId, updated);
+      } catch (e) {
+        console.error('Failed to update phase progress:', e);
+      }
+    })();
+  }, [hasStoryFoundation, projectDir, activeBookId]);
+
   // Find the first element in order that doesn't have a draft yet
   const [showGuide, setShowGuide] = useState(false);
   const [guideDismissed, setGuideDismissed] = useState(false);
@@ -101,14 +149,64 @@ export function SeedPhaseView() {
   }, [statuses, loading, guideDismissed]);
 
   useEffect(() => {
-    if (nextElement && !loading) {
+    if (!loading && !guideDismissed && (nextElement || (allDrafted && !hasStoryFoundation))) {
       setShowGuide(true);
     } else {
       setShowGuide(false);
     }
-  }, [nextElement, loading]);
+  }, [nextElement, loading, guideDismissed, allDrafted, hasStoryFoundation]);
 
-  const filledCount = SEED_ELEMENTS.filter(e => statuses[e.key]?.hasDraft).length;
+  // Story Foundation generation
+  const { phase: genPhase, plan: genPlan, error: genError, startGenerate, confirmGenerate, cancelGenerate, reset: resetGen } = useGenerate();
+
+  const handleGenerateFoundation = async () => {
+    if (!seedDir || !projectDir || !activeBookId) return;
+    const foundationPath = `${seedDir}\\story-foundation.md`;
+    const now = new Date().toISOString().slice(0, 10);
+    await startGenerate({
+      skill: 'seed_developer',
+      scope: { book: activeBookId },
+      message: `All 6 core seed elements have been drafted. Please synthesize them into the final Seed Phase deliverables:\n\n1. **Logline** — A single compelling sentence (or at most two) that captures the entire story. This is the elevator pitch.\n\n2. **Story Foundation** — 3–5 paragraphs that weave all 6 elements together into a cohesive narrative summary. This is NOT a section-by-section relisting — it is a unified synthesis that captures the story's DNA, naturally integrating the premise, theme, protagonist, central conflict, story world, and emotional promise.\n\nFormat your response as:\n\n## Logline\n[the logline]\n\n## Story Foundation\n[the synthesis paragraphs]`,
+      outputPath: foundationPath,
+      frontmatter: {
+        type: 'story-foundation',
+        scope: activeBookId,
+        phase: 'seed',
+        created: now,
+        modified: now,
+        status: 'generated',
+        generated_from: SEED_ELEMENTS.map(el => `books/${activeBookId}/phase-1-seed/${el.slug}/draft.md`),
+      },
+      parseResponse: (raw: string) => {
+        // Extract the body, then also write logline.md as a side effect
+        const body = extractDraftBody(raw);
+        // Try to extract logline section
+        const loglineMatch = body.match(/##\s*Logline\s*\n+([\s\S]*?)(?=\n##|$)/);
+        if (loglineMatch && seedDir && activeBookId) {
+          const loglineBody = loglineMatch[1].trim().replace(/\n---\s*$/, '').trim();
+          const loglinePath = `${seedDir}\\logline.md`;
+          writeFile(loglinePath, {
+            type: 'logline',
+            scope: activeBookId,
+            phase: 'seed',
+            created: now,
+            modified: now,
+            status: 'generated',
+            generated_from: [
+              `books/${activeBookId}/phase-1-seed/premise/draft.md`,
+              `books/${activeBookId}/phase-1-seed/central-conflict/draft.md`,
+              `books/${activeBookId}/phase-1-seed/protagonist/draft.md`,
+            ],
+          }, loglineBody).catch(e => console.error('Failed to write logline:', e));
+        }
+        return body;
+      },
+    });
+  };
+
+  const handleConfirmFoundation = async () => {
+    await confirmGenerate();
+  };
 
   return (
     <div className="flex flex-col h-full overflow-hidden" style={{ backgroundColor: 'var(--bg-primary)' }}>
@@ -138,15 +236,15 @@ export function SeedPhaseView() {
         <div className="flex items-center gap-2" style={{ marginTop: '12px' }}>
           <div style={{ flex: 1, height: '4px', backgroundColor: 'var(--bg-tertiary)', borderRadius: '2px', overflow: 'hidden' }}>
             <div style={{
-              width: `${(filledCount / 6) * 100}%`,
+              width: `${phaseComplete ? 100 : (filledCount / 6) * 100}%`,
               height: '100%',
-              backgroundColor: 'var(--accent)',
+              backgroundColor: phaseComplete ? 'var(--color-success)' : 'var(--accent)',
               borderRadius: '2px',
               transition: 'width 0.3s',
             }} />
           </div>
-          <span className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
-            {filledCount}/6 drafted
+          <span className="text-xs font-medium" style={{ color: phaseComplete ? 'var(--color-success)' : 'var(--text-tertiary)' }}>
+            {phaseComplete ? 'Complete' : `${filledCount}/6 drafted`}
           </span>
         </div>
       </div>
@@ -215,26 +313,134 @@ export function SeedPhaseView() {
           </div>
         )}
 
-        {/* Guidance */}
-        <div className="rounded-lg" style={{ marginTop: '24px', padding: '16px', backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-primary)' }}>
-          <p className="text-xs font-medium" style={{ color: 'var(--text-secondary)', marginBottom: '6px' }}>
-            How to use the Seed Phase
-          </p>
-          <p className="text-xs" style={{ color: 'var(--text-tertiary)', lineHeight: '1.6' }}>
-            Click any element to open its brainstorm document in the editor. Write your ideas, then use the AI Chat panel to
-            refine them with Claude. When your brainstorm is ready, use the <strong style={{ color: 'var(--text-secondary)' }}>Generate</strong> button
-            in the editor toolbar to have Claude produce a polished draft.
-          </p>
+        {/* Guidance / Foundation Card */}
+        <div className="rounded-lg" style={{ marginTop: '24px', padding: '16px', backgroundColor: 'var(--bg-elevated)', border: `1px solid ${phaseComplete ? 'var(--color-success)' : 'var(--border-primary)'}` }}>
+          {phaseComplete ? (
+            /* State 3: Foundation generated — show logline + open buttons */
+            <>
+              <p className="text-xs font-medium" style={{ color: 'var(--color-success)', marginBottom: '10px' }}>
+                Seed Phase Complete
+              </p>
+              {loglineText && (
+                <div style={{ marginBottom: '12px' }}>
+                  <p className="text-xs" style={{ color: 'var(--text-tertiary)', marginBottom: '4px' }}>Logline</p>
+                  <div className="flex items-start gap-2">
+                    <p className="text-xs flex-1" style={{ color: 'var(--text-secondary)', lineHeight: '1.6', fontStyle: 'italic' }}>
+                      {loglineText}
+                    </p>
+                    <button
+                      onClick={() => seedDir && setActiveFile(`${seedDir}\\logline.md`)}
+                      className="shrink-0 flex items-center justify-center rounded hover-icon"
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-tertiary)', padding: '2px' }}
+                      title="Open logline"
+                    >
+                      <ExternalLink size={13} />
+                    </button>
+                  </div>
+                </div>
+              )}
+              <button
+                onClick={() => seedDir && setActiveFile(`${seedDir}\\story-foundation.md`)}
+                className="flex items-center gap-1.5 text-xs font-medium rounded-md hover-btn-primary"
+                style={{ backgroundColor: 'var(--accent)', color: 'var(--text-inverse)', border: 'none', padding: '6px 14px', cursor: 'pointer' }}
+              >
+                <FileText size={12} />
+                Story Foundation
+              </button>
+            </>
+          ) : allDrafted ? (
+            /* State 2: All 6 drafted — show generate button */
+            <>
+              <p className="text-xs font-medium" style={{ color: 'var(--accent)', marginBottom: '6px' }}>
+                All 6 Core Elements Drafted
+              </p>
+              <p className="text-xs" style={{ color: 'var(--text-tertiary)', lineHeight: '1.6', marginBottom: '12px' }}>
+                Claude will read all 6 of your drafted elements and synthesize them into a <strong style={{ color: 'var(--text-secondary)' }}>Story Foundation</strong> — a
+                cohesive narrative summary that captures your story's DNA — along with a distilled <strong style={{ color: 'var(--text-secondary)' }}>Logline</strong>.
+                These become the primary alignment context for all subsequent phases.
+              </p>
+              <div className="flex items-center gap-2">
+                {genPhase === 'idle' && (
+                  <button
+                    onClick={handleGenerateFoundation}
+                    className="flex items-center gap-1.5 text-xs font-medium rounded-md hover-btn-primary"
+                    style={{ backgroundColor: 'var(--accent)', color: 'var(--text-inverse)', border: 'none', padding: '6px 14px', cursor: 'pointer' }}
+                  >
+                    <Sparkles size={12} />
+                    Generate Story Foundation
+                  </button>
+                )}
+                {genPhase === 'planning' && (
+                  <span className="flex items-center gap-1.5 text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
+                    <Loader2 size={12} className="animate-spin" /> Planning...
+                  </span>
+                )}
+                {genPhase === 'confirming' && genPlan && (
+                  <>
+                    <button
+                      onClick={handleConfirmFoundation}
+                      className="flex items-center gap-1.5 text-xs font-medium rounded-md"
+                      style={{ backgroundColor: 'var(--color-success)', color: '#fff', border: 'none', padding: '6px 14px', cursor: 'pointer' }}
+                    >
+                      <Check size={12} />
+                      Confirm ({genPlan.estimated_cost})
+                    </button>
+                    <button
+                      onClick={cancelGenerate}
+                      className="flex items-center gap-1.5 text-xs font-medium rounded-md hover-btn"
+                      style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)', border: '1px solid var(--border-primary)', padding: '5px 12px', cursor: 'pointer' }}
+                    >
+                      Cancel
+                    </button>
+                  </>
+                )}
+                {genPhase === 'generating' && (
+                  <span className="flex items-center gap-1.5 text-xs font-medium" style={{ color: 'var(--accent)' }}>
+                    <Loader2 size={12} className="animate-spin" /> Generating...
+                  </span>
+                )}
+                {genPhase === 'done' && (
+                  <span className="flex items-center gap-1.5 text-xs font-medium" style={{ color: 'var(--color-success)' }}>
+                    <Check size={12} /> Done!
+                  </span>
+                )}
+                {genError && (
+                  <button onClick={resetGen} className="text-xs" style={{ color: 'var(--color-error)', background: 'none', border: 'none', cursor: 'pointer' }} title={genError}>
+                    Error — click to retry
+                  </button>
+                )}
+              </div>
+            </>
+          ) : (
+            /* State 1: Still drafting — show guidance */
+            <>
+              <p className="text-xs font-medium" style={{ color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                How to use the Seed Phase
+              </p>
+              <p className="text-xs" style={{ color: 'var(--text-tertiary)', lineHeight: '1.6' }}>
+                Click any element to open its brainstorm document in the editor. Write your ideas, then use the AI Chat panel to
+                refine them with Claude. When your brainstorm is ready, use the <strong style={{ color: 'var(--text-secondary)' }}>Generate</strong> button
+                in the editor toolbar to have Claude produce a polished draft.
+              </p>
+            </>
+          )}
         </div>
       </div>
       {/* Guided workflow modal */}
-      {showGuide && nextElement && (
+      {showGuide && (nextElement || (allDrafted && !hasStoryFoundation)) && (
         <SeedGuideModal
           element={nextElement}
           statuses={statuses}
+          allDrafted={allDrafted && !hasStoryFoundation}
           onStart={() => {
             setShowGuide(false);
-            handleElementClick(nextElement);
+            if (nextElement) {
+              handleElementClick(nextElement);
+            }
+          }}
+          onGenerateFoundation={() => {
+            setShowGuide(false);
+            handleGenerateFoundation();
           }}
           onDismiss={() => {
             setShowGuide(false);
@@ -249,15 +455,16 @@ export function SeedPhaseView() {
 /* ─── Guided Workflow Modal ─── */
 
 interface SeedGuideModalProps {
-  element: typeof SEED_ELEMENTS[0];
+  element: typeof SEED_ELEMENTS[0] | null;
   statuses: Record<string, ElementStatus>;
+  allDrafted: boolean;
   onStart: () => void;
+  onGenerateFoundation: () => void;
   onDismiss: () => void;
 }
 
-function SeedGuideModal({ element, statuses, onStart, onDismiss }: SeedGuideModalProps) {
+function SeedGuideModal({ element, statuses, allDrafted, onStart, onGenerateFoundation, onDismiss }: SeedGuideModalProps) {
   const completedCount = SEED_ELEMENTS.filter(e => statuses[e.key]?.hasDraft).length;
-
 
   return (
     <div
@@ -280,7 +487,7 @@ function SeedGuideModal({ element, statuses, onStart, onDismiss }: SeedGuideModa
         <div className="flex items-center gap-2" style={{ marginBottom: '16px' }}>
           <Sparkles size={18} style={{ color: 'var(--accent)' }} />
           <h2 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-            {completedCount === 0 ? 'Start Your Story Foundation' : `Next Up — ${element.label}`}
+            {allDrafted ? 'Generate Story Foundation' : completedCount === 0 ? 'Start Your Story Foundation' : `Next Up — ${element?.label}`}
           </h2>
         </div>
 
@@ -301,16 +508,30 @@ function SeedGuideModal({ element, statuses, onStart, onDismiss }: SeedGuideModa
           ))}
         </div>
 
-        <p className="text-xs" style={{ color: 'var(--text-secondary)', lineHeight: '1.6', marginBottom: '12px' }}>
-          {completedCount === 0 ? (
-            <>The Seed Phase walks you through 6 core story elements, starting with the <strong style={{ color: 'var(--text-primary)' }}>{element.label}</strong> — {element.description.toLowerCase()}.&nbsp;Each element builds on the last.</>
-          ) : (
-            <>You've completed <strong style={{ color: 'var(--text-primary)' }}>{completedCount} of 6</strong> elements.&nbsp;The next element is <strong style={{ color: 'var(--text-primary)' }}>{element.label}</strong> — {element.description.toLowerCase()}.</>
-          )}
-        </p>
-        <p className="text-xs" style={{ color: 'var(--text-secondary)', lineHeight: '1.6', marginBottom: '20px' }}>
-          You'll brainstorm ideas first, then use the AI to generate a polished draft.
-        </p>
+        {allDrafted ? (
+          <>
+            <p className="text-xs" style={{ color: 'var(--text-secondary)', lineHeight: '1.6', marginBottom: '12px' }}>
+              All <strong style={{ color: 'var(--text-primary)' }}>6 core elements</strong> are drafted! Claude can now synthesize them
+              into a cohesive <strong style={{ color: 'var(--text-primary)' }}>Story Foundation</strong> and a distilled <strong style={{ color: 'var(--text-primary)' }}>Logline</strong>.
+            </p>
+            <p className="text-xs" style={{ color: 'var(--text-secondary)', lineHeight: '1.6', marginBottom: '20px' }}>
+              The Story Foundation becomes the primary alignment context for all subsequent phases of your book.
+            </p>
+          </>
+        ) : (
+          <>
+            <p className="text-xs" style={{ color: 'var(--text-secondary)', lineHeight: '1.6', marginBottom: '12px' }}>
+              {completedCount === 0 && element ? (
+                <>The Seed Phase walks you through 6 core story elements, starting with the <strong style={{ color: 'var(--text-primary)' }}>{element.label}</strong> — {element.description.toLowerCase()}.&nbsp;Each element builds on the last.</>
+              ) : element ? (
+                <>You've completed <strong style={{ color: 'var(--text-primary)' }}>{completedCount} of 6</strong> elements.&nbsp;The next element is <strong style={{ color: 'var(--text-primary)' }}>{element.label}</strong> — {element.description.toLowerCase()}.</>
+              ) : null}
+            </p>
+            <p className="text-xs" style={{ color: 'var(--text-secondary)', lineHeight: '1.6', marginBottom: '20px' }}>
+              You'll brainstorm ideas first, then use the AI to generate a polished draft.
+            </p>
+          </>
+        )}
 
         <div className="flex gap-2 justify-end">
           <button
@@ -326,19 +547,35 @@ function SeedGuideModal({ element, statuses, onStart, onDismiss }: SeedGuideModa
           >
             Not Now
           </button>
-          <button
-            onClick={onStart}
-            className="rounded-lg text-xs font-medium hover-btn-primary"
-            style={{
-              backgroundColor: 'var(--accent)',
-              color: 'var(--text-inverse)',
-              border: 'none',
-              padding: '8px 16px',
-              cursor: 'pointer',
-            }}
-          >
-            {statuses[element.key]?.hasBrainstorm ? 'Open Brainstorm' : 'Start Brainstorming'}
-          </button>
+          {allDrafted ? (
+            <button
+              onClick={onGenerateFoundation}
+              className="rounded-lg text-xs font-medium hover-btn-primary"
+              style={{
+                backgroundColor: 'var(--accent)',
+                color: 'var(--text-inverse)',
+                border: 'none',
+                padding: '8px 16px',
+                cursor: 'pointer',
+              }}
+            >
+              Generate Story Foundation
+            </button>
+          ) : element && (
+            <button
+              onClick={onStart}
+              className="rounded-lg text-xs font-medium hover-btn-primary"
+              style={{
+                backgroundColor: 'var(--accent)',
+                color: 'var(--text-inverse)',
+                border: 'none',
+                padding: '8px 16px',
+                cursor: 'pointer',
+              }}
+            >
+              {statuses[element.key]?.hasBrainstorm ? 'Open Brainstorm' : 'Start Brainstorming'}
+            </button>
+          )}
         </div>
       </div>
     </div>
