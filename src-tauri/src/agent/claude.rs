@@ -130,7 +130,7 @@ pub async fn stream_claude(
 
     let request = ClaudeRequest {
         model: model.to_string(),
-        max_tokens: 8192,
+        max_tokens: 128000,
         system: system_prompt.to_string(),
         messages,
         stream: true,

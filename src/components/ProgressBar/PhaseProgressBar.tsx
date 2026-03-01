@@ -1,5 +1,7 @@
+import { useEffect } from 'react';
 import { useProjectStore } from '../../stores/projectStore';
 import { useAIStore } from '../../stores/aiStore';
+import { getBookMetadata } from '../../utils/tauri';
 import { PHASES } from '../../types/sapling';
 import type { Phase, PhaseStatus } from '../../types/sapling';
 
@@ -34,9 +36,21 @@ const PHASE_SKILLS: Record<Phase, string> = {
 
 export function PhaseProgressBar() {
   const activeBookMeta = useProjectStore((s) => s.activeBookMeta);
+  const activeBookId = useProjectStore((s) => s.activeBookId);
+  const projectDir = useProjectStore((s) => s.projectDir);
   const activePhase = useProjectStore((s) => s.activePhase);
   const setActivePhase = useProjectStore((s) => s.setActivePhase);
   const setActiveSkill = useAIStore((s) => s.setActiveSkill);
+
+  // Auto-load book metadata if missing (e.g. navigated from Dashboard without going through BookView)
+  useEffect(() => {
+    if (activeBookMeta || !activeBookId || !projectDir) return;
+    getBookMetadata(projectDir, activeBookId).then((meta) => {
+      if (useProjectStore.getState().activeBookId === activeBookId) {
+        useProjectStore.getState().setActiveBook(activeBookId, meta);
+      }
+    }).catch(() => {});
+  }, [activeBookMeta, activeBookId, projectDir]);
 
   const handlePhaseClick = (phaseId: Phase) => {
     setActivePhase(phaseId);

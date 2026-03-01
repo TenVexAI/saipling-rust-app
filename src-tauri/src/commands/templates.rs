@@ -62,7 +62,7 @@ fn bundled_templates() -> HashMap<&'static str, &'static str> {
     m.insert("beat-17-final-decision", include_str!("../../defaults/templates/beat-17-final-decision.md"));
     m.insert("beat-18-climactic-confrontation", include_str!("../../defaults/templates/beat-18-climactic-confrontation.md"));
     m.insert("beat-19-resolution", include_str!("../../defaults/templates/beat-19-resolution.md"));
-    m.insert("beat-20-new-equilibrium", include_str!("../../defaults/templates/beat-20-new-equilibrium.md"));
+    m.insert("beat-20-transformed-reality", include_str!("../../defaults/templates/beat-20-transformed-reality.md"));
     m.insert("beat-21-closing-image", include_str!("../../defaults/templates/beat-21-closing-image.md"));
 
     // Phase 3 Sprout journey stages (8)
