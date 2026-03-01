@@ -74,17 +74,8 @@ pub fn start_watcher(app: tauri::AppHandle, project_dir: PathBuf) -> Result<(), 
     // Keep watcher alive by leaking it (it lives for the app's lifetime)
     std::mem::forget(watcher);
 
-    // Start the background indexer task for vector search (only if enabled)
-    let vs_enabled = crate::commands::config::get_config()
-        .map(|c| c.vector_search.enabled)
-        .unwrap_or(false);
-    if vs_enabled {
-        if let Ok(handle) = tokio::runtime::Handle::try_current() {
-            let app_clone = app;
-            let dir_clone = project_dir;
-            handle.spawn(background_indexer_loop(app_clone, dir_clone));
-        }
-    }
+    // Always start the background indexer task — it checks config on every tick
+    tauri::async_runtime::spawn(background_indexer_loop(app, project_dir));
 
     Ok(())
 }
@@ -95,6 +86,7 @@ pub fn start_watcher(app: tauri::AppHandle, project_dir: PathBuf) -> Result<(), 
 async fn background_indexer_loop(app: tauri::AppHandle, project_dir: PathBuf) {
     const TICK_INTERVAL: Duration = Duration::from_secs(10);
     const QUIET_PERIOD: Duration = Duration::from_secs(120); // 2 minutes
+    let mut startup_scan_done = false;
 
     loop {
         tokio::time::sleep(TICK_INTERVAL).await;
@@ -104,8 +96,31 @@ async fn background_indexer_loop(app: tauri::AppHandle, project_dir: PathBuf) {
             Ok(c) => c,
             Err(_) => continue,
         };
-        if !config.vector_search.enabled || config.vector_search.embedding_api_key_encrypted.is_empty() {
+        if !config.vector_search.enabled
+            || !config.vector_search.auto_index
+            || config.vector_search.embedding_api_key_encrypted.is_empty()
+        {
             continue;
+        }
+
+        // On first eligible tick, scan for files that exist but aren't indexed yet
+        if !startup_scan_done {
+            startup_scan_done = true;
+            if let Ok(conn) = crate::context::vector::db::open_index(&project_dir) {
+                let _ = crate::context::vector::db::init_schema(&conn);
+                if let Ok(indexed) = crate::context::vector::db::get_all_indexed_paths(&conn) {
+                    let all_files = crate::context::vector::indexer::collect_indexable_files(&project_dir);
+                    if let Ok(mut pending) = PENDING_FILES.lock() {
+                        for rel_path in all_files {
+                            if !indexed.contains(&rel_path) {
+                                let abs_path = project_dir.join(rel_path.replace('/', "\\"))
+                                    .to_string_lossy().to_string();
+                                pending.insert(abs_path, Instant::now() - QUIET_PERIOD);
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         // Process deleted files immediately

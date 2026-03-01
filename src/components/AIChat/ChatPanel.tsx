@@ -269,7 +269,7 @@ export function ChatPanel({ width }: ChatPanelProps) {
       <ContextSummary files={contextFiles} totalTokens={contextTokens} />
 
       {/* Messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto overflow-x-hidden">
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-center" style={{ padding: '0 24px' }}>
             <SaiplingChatLogo size={100} className="mb-3" />

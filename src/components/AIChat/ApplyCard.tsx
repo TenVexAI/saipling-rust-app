@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { FileText, Check, Pencil, X } from 'lucide-react';
+import { FileText, Check, Eye, X } from 'lucide-react';
 import type { ApplyBlock } from '../../types/ai';
 import { useProjectStore } from '../../stores/projectStore';
 import { writeFile } from '../../utils/tauri';
 import { parseFrontmatter } from '../../utils/markdown';
+import { ApplyEditModal } from './ApplyEditModal';
 
 interface ApplyCardProps {
   block: ApplyBlock;
@@ -12,6 +13,7 @@ interface ApplyCardProps {
 export function ApplyCard({ block }: ApplyCardProps) {
   const projectDir = useProjectStore((s) => s.projectDir);
   const [status, setStatus] = useState<'pending' | 'applied' | 'discarded'>('pending');
+  const [showEditor, setShowEditor] = useState(false);
 
   const actionLabel = {
     create: 'Create',
@@ -26,6 +28,7 @@ export function ApplyCard({ block }: ApplyCardProps) {
       const fullPath = `${projectDir}\\${block.target.replace(/\//g, '\\\\')}`;
       const { frontmatter, body } = parseFrontmatter(block.content);
       await writeFile(fullPath, frontmatter, body);
+      useProjectStore.getState().bumpRefresh();
       setStatus('applied');
     } catch (e) {
       console.error('Failed to apply:', e);
@@ -39,11 +42,12 @@ export function ApplyCard({ block }: ApplyCardProps) {
   if (status === 'applied') {
     return (
       <div
-        className="flex items-center gap-2 p-3 rounded-lg mt-2 text-xs"
+        className="flex items-center gap-2 p-3 mt-2 text-xs"
         style={{
           backgroundColor: 'var(--bg-tertiary)',
           border: '1px solid var(--color-success)',
           color: 'var(--color-success)',
+          borderRadius: '6px',
         }}
       >
         <Check size={14} />
@@ -55,11 +59,12 @@ export function ApplyCard({ block }: ApplyCardProps) {
   if (status === 'discarded') {
     return (
       <div
-        className="flex items-center gap-2 p-3 rounded-lg mt-2 text-xs opacity-50"
+        className="flex items-center gap-2 p-3 mt-2 text-xs opacity-50"
         style={{
           backgroundColor: 'var(--bg-tertiary)',
           border: '1px solid var(--border-primary)',
           color: 'var(--text-tertiary)',
+          borderRadius: '6px',
         }}
       >
         <X size={14} />
@@ -70,10 +75,11 @@ export function ApplyCard({ block }: ApplyCardProps) {
 
   return (
     <div
-      className="rounded-lg mt-2 overflow-hidden"
+      className="mt-2 overflow-hidden"
       style={{
         border: '1px solid var(--border-primary)',
         backgroundColor: 'var(--bg-elevated)',
+        borderRadius: '6px',
       }}
     >
       <div
@@ -103,32 +109,48 @@ export function ApplyCard({ block }: ApplyCardProps) {
       >
         <button
           onClick={handleApply}
-          className="flex items-center gap-1.5 px-3 py-1 rounded text-xs font-medium"
-          style={{ backgroundColor: 'var(--color-success)', color: '#fff' }}
+          className="apply-card-btn flex items-center gap-1.5 py-1.5 text-xs font-medium"
+          style={{ backgroundColor: 'var(--color-success)', color: '#fff', borderRadius: '4px', paddingLeft: '6px', paddingRight: '6px' }}
         >
           <Check size={12} />
           Apply
         </button>
         <button
-          className="flex items-center gap-1.5 px-3 py-1 rounded text-xs font-medium"
+          onClick={() => setShowEditor(true)}
+          className="apply-card-btn-secondary flex items-center gap-1.5 py-1.5 text-xs font-medium"
           style={{
             backgroundColor: 'var(--bg-tertiary)',
             color: 'var(--text-secondary)',
             border: '1px solid var(--border-primary)',
+            borderRadius: '4px',
+            paddingLeft: '6px',
+            paddingRight: '6px',
           }}
         >
-          <Pencil size={12} />
-          Edit First
+          <Eye size={12} />
+          View & Edit
         </button>
         <button
           onClick={handleDiscard}
-          className="flex items-center gap-1.5 px-3 py-1 rounded text-xs font-medium"
-          style={{ color: 'var(--text-tertiary)' }}
+          className="apply-card-btn-ghost flex items-center gap-1.5 py-1.5 text-xs font-medium"
+          style={{ color: 'var(--text-tertiary)', borderRadius: '4px', paddingLeft: '6px', paddingRight: '6px' }}
         >
           <X size={12} />
           Discard
         </button>
       </div>
+
+      {showEditor && (
+        <ApplyEditModal
+          target={block.target}
+          content={block.content}
+          onClose={() => setShowEditor(false)}
+          onApplied={() => {
+            setShowEditor(false);
+            setStatus('applied');
+          }}
+        />
+      )}
     </div>
   );
 }

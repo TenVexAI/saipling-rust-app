@@ -8,6 +8,7 @@ import { trackCost } from '../../utils/projectCost';
 import { calculateCost } from '../../utils/modelPricing';
 import { BEATS } from '../../types/sapling';
 import { ANCHOR_BEATS } from '../PhaseWorkflow/beatHelpers';
+import { extractDraftBody } from '../../utils/applyParser';
 import type { AgentPlan } from '../../types/ai';
 
 interface RootPhaseToolbarProps {
@@ -120,7 +121,7 @@ export function RootPhaseToolbar({ currentFilePath }: RootPhaseToolbarProps) {
       };
 
       try {
-        await writeFile(draftPath, genFrontmatter, event.payload.full_text.trim());
+        await writeFile(draftPath, genFrontmatter, extractDraftBody(event.payload.full_text));
         useProjectStore.getState().bumpRefresh();
         setHasDraft(true);
         setActiveFile(draftPath);

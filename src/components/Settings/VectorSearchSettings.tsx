@@ -35,6 +35,13 @@ export function VectorSearchSettings() {
     loadIndexStatus();
   }, [loadConfig, loadIndexStatus]);
 
+  // Poll index status while settings panel is open
+  useEffect(() => {
+    if (!projectDir) return;
+    const interval = setInterval(loadIndexStatus, 15000);
+    return () => clearInterval(interval);
+  }, [projectDir, loadIndexStatus]);
+
   const updateVectorConfig = async (updates: Partial<AppConfig['vector_search']>) => {
     if (!config) return;
     const updated: AppConfig = {

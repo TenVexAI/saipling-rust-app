@@ -11,6 +11,7 @@ import { EditProjectModal } from './EditProjectModal';
 import { DeleteProjectModal } from './DeleteProjectModal';
 import { DeleteBookModal } from './DeleteBookModal';
 import { GettingStartedModal } from './GettingStartedModal';
+import { ContinueWorkingModal } from './ContinueWorkingModal';
 import type { BookMetadata } from '../../types/project';
 import { PHASES } from '../../types/sapling';
 import type { Phase } from '../../types/sapling';
@@ -104,6 +105,8 @@ export function Dashboard() {
   const [expandedSubGenre, setExpandedSubGenre] = useState<string | null>(null);
   const [editExpandedSubGenre, setEditExpandedSubGenre] = useState<string | null>(null);
   const [deletingBook, setDeletingBook] = useState<{ id: string; title: string } | null>(null);
+  const [showContinueModal, setShowContinueModal] = useState(false);
+  const [continueDismissed, setContinueDismissed] = useState(false);
   const titleInputRef = useRef<HTMLInputElement>(null);
   const refreshCounter = useProjectStore((s) => s.refreshCounter);
 
@@ -147,6 +150,21 @@ export function Dashboard() {
         setShowGettingStarted(true);
       });
   }, [projectDir]);
+
+  // Show "Continue Working" modal when both overviews exist and user hasn't dismissed
+  useEffect(() => {
+    if (
+      overviewChecked &&
+      overviewPath &&
+      activeBookHasOverview &&
+      activeBookId &&
+      bookCardData[activeBookId] &&
+      !continueDismissed &&
+      !showGettingStarted
+    ) {
+      setShowContinueModal(true);
+    }
+  }, [overviewChecked, overviewPath, activeBookHasOverview, activeBookId, bookCardData, continueDismissed, showGettingStarted]);
 
   // Fetch word counts + metadata for each book
   const loadBookData = useCallback(async () => {
@@ -576,6 +594,39 @@ export function Dashboard() {
           onDismiss={() => setShowGettingStarted(false)}
         />
       )}
+      {showContinueModal && activeBookId && (() => {
+        const data = bookCardData[activeBookId];
+        const phaseId = data?.meta
+          ? getCurrentPhaseId(data.meta.phase_progress as Record<string, { status: string }>)
+          : null;
+        if (!phaseId) return null;
+        const phaseInfo = PHASES.find((p) => p.id === phaseId);
+        if (!phaseInfo) return null;
+        const bookTitle = project?.books.find((b) => b.id === activeBookId)?.title ?? 'Active Book';
+        return (
+          <ContinueWorkingModal
+            phaseInfo={phaseInfo}
+            phaseId={phaseId}
+            bookTitle={bookTitle}
+            onGoToPhase={() => {
+              setShowContinueModal(false);
+              setActivePhase(phaseId);
+            }}
+            onAddCharacter={() => {
+              setShowContinueModal(false);
+              useProjectStore.getState().setActiveView('characters');
+            }}
+            onAddWorldEntry={() => {
+              setShowContinueModal(false);
+              useProjectStore.getState().setActiveView('world');
+            }}
+            onDismiss={() => {
+              setShowContinueModal(false);
+              setContinueDismissed(true);
+            }}
+          />
+        );
+      })()}
 
       {/* New Book Modal — Two-Panel */}
       {showNewBook && (() => {

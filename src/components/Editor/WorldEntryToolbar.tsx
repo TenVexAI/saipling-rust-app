@@ -6,6 +6,7 @@ import { useAIStore } from '../../stores/aiStore';
 import { readFile, agentPlan, agentExecute, agentCancel, writeFile } from '../../utils/tauri';
 import { trackCost } from '../../utils/projectCost';
 import { calculateCost } from '../../utils/modelPricing';
+import { extractDraftBody } from '../../utils/applyParser';
 import type { AgentPlan } from '../../types/ai';
 
 interface WorldEntryToolbarProps {
@@ -111,7 +112,7 @@ export function WorldEntryToolbar({ currentFilePath }: WorldEntryToolbarProps) {
       };
 
       try {
-        await writeFile(entryPath, genFrontmatter, event.payload.full_text.trim());
+        await writeFile(entryPath, genFrontmatter, extractDraftBody(event.payload.full_text));
         useProjectStore.getState().bumpRefresh();
         setHasEntry(true);
         setActiveFile(entryPath);

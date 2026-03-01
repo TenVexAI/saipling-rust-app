@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Check, Circle, Loader2, Info, FileText } from 'lucide-react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { Check, Circle, Loader2, Info, FileText, Sparkles } from 'lucide-react';
 import { useProjectStore } from '../../stores/projectStore';
 import { readFile, writeFile, loadTemplate } from '../../utils/tauri';
 import { openHelpWindow } from '../../utils/helpWindow';
@@ -9,7 +9,6 @@ import { SEED_ELEMENTS } from './seedElements';
 interface ElementStatus {
   hasBrainstorm: boolean;
   hasDraft: boolean;
-  brainstormPreview: string;
 }
 
 export function SeedPhaseView() {
@@ -34,19 +33,15 @@ export function SeedPhaseView() {
       const draftPath = `${elDir}\\draft.md`;
       let hasBrainstorm = false;
       let hasDraft = false;
-      let brainstormPreview = '';
       try {
-        const content = await readFile(brainstormPath);
+        await readFile(brainstormPath);
         hasBrainstorm = true;
-        // Get a preview from the body (skip template headings)
-        const lines = content.body.split('\n').filter((l: string) => !l.startsWith('#') && !l.startsWith('**') && !l.startsWith('---') && l.trim().length > 0);
-        brainstormPreview = lines.slice(0, 3).join(' ').slice(0, 200);
       } catch { /* doesn't exist yet */ }
       try {
         await readFile(draftPath);
         hasDraft = true;
       } catch { /* doesn't exist yet */ }
-      result[el.key] = { hasBrainstorm, hasDraft, brainstormPreview };
+      result[el.key] = { hasBrainstorm, hasDraft };
     }
     setStatuses(result);
     setLoading(false);
@@ -60,9 +55,16 @@ export function SeedPhaseView() {
     if (!seedDir || !projectDir || !activeBookId) return;
     const elDir = `${seedDir}\\${el.slug}`;
     const brainstormPath = `${elDir}\\brainstorm.md`;
+    const draftPath = `${elDir}\\draft.md`;
+    const status = statuses[el.key];
+
+    // If a draft exists, open it
+    if (status?.hasDraft) {
+      setActiveFile(draftPath);
+      return;
+    }
 
     // Create brainstorm.md from template if it doesn't exist
-    const status = statuses[el.key];
     if (!status?.hasBrainstorm) {
       try {
         const now = new Date().toISOString().slice(0, 10);
@@ -84,6 +86,27 @@ export function SeedPhaseView() {
     }
     setActiveFile(brainstormPath);
   };
+
+  // Find the first element in order that doesn't have a draft yet
+  const [showGuide, setShowGuide] = useState(false);
+  const [guideDismissed, setGuideDismissed] = useState(false);
+
+  const nextElement = useMemo(() => {
+    if (loading || guideDismissed) return null;
+    for (const el of SEED_ELEMENTS) {
+      const s = statuses[el.key];
+      if (!s?.hasDraft) return el;
+    }
+    return null; // all drafted
+  }, [statuses, loading, guideDismissed]);
+
+  useEffect(() => {
+    if (nextElement && !loading) {
+      setShowGuide(true);
+    } else {
+      setShowGuide(false);
+    }
+  }, [nextElement, loading]);
 
   const filledCount = SEED_ELEMENTS.filter(e => statuses[e.key]?.hasDraft).length;
 
@@ -137,7 +160,7 @@ export function SeedPhaseView() {
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px' }}>
             {SEED_ELEMENTS.map((el) => {
-              const status = statuses[el.key] || { hasBrainstorm: false, hasDraft: false, brainstormPreview: '' };
+              const status = statuses[el.key] || { hasBrainstorm: false, hasDraft: false };
               return (
                 <button
                   key={el.key}
@@ -183,15 +206,9 @@ export function SeedPhaseView() {
                   <p className="text-xs" style={{ color: 'var(--text-tertiary)', marginBottom: '8px' }}>
                     {el.description}
                   </p>
-                  {status.brainstormPreview ? (
-                    <p className="text-xs line-clamp-2" style={{ color: 'var(--text-secondary)' }}>
-                      {status.brainstormPreview}
-                    </p>
-                  ) : (
-                    <p className="text-xs italic" style={{ color: 'var(--text-tertiary)' }}>
-                      Click to start brainstorming
-                    </p>
-                  )}
+                  <p className="text-xs italic" style={{ color: status.hasDraft ? 'var(--color-success)' : 'var(--text-tertiary)' }}>
+                    {status.hasDraft ? 'Click to edit draft' : 'Click to start brainstorming'}
+                  </p>
                 </button>
               );
             })}
@@ -208,6 +225,120 @@ export function SeedPhaseView() {
             refine them with Claude. When your brainstorm is ready, use the <strong style={{ color: 'var(--text-secondary)' }}>Generate</strong> button
             in the editor toolbar to have Claude produce a polished draft.
           </p>
+        </div>
+      </div>
+      {/* Guided workflow modal */}
+      {showGuide && nextElement && (
+        <SeedGuideModal
+          element={nextElement}
+          statuses={statuses}
+          onStart={() => {
+            setShowGuide(false);
+            handleElementClick(nextElement);
+          }}
+          onDismiss={() => {
+            setShowGuide(false);
+            setGuideDismissed(true);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ─── Guided Workflow Modal ─── */
+
+interface SeedGuideModalProps {
+  element: typeof SEED_ELEMENTS[0];
+  statuses: Record<string, ElementStatus>;
+  onStart: () => void;
+  onDismiss: () => void;
+}
+
+function SeedGuideModal({ element, statuses, onStart, onDismiss }: SeedGuideModalProps) {
+  const completedCount = SEED_ELEMENTS.filter(e => statuses[e.key]?.hasDraft).length;
+
+
+  return (
+    <div
+      className="fixed inset-0 flex items-center justify-center"
+      style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000 }}
+      onClick={onDismiss}
+    >
+      <div
+        className="rounded-xl"
+        style={{
+          backgroundColor: 'var(--bg-elevated)',
+          border: '1px solid var(--border-primary)',
+          padding: '28px',
+          maxWidth: '460px',
+          width: '90%',
+          boxShadow: 'var(--shadow-lg)',
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center gap-2" style={{ marginBottom: '16px' }}>
+          <Sparkles size={18} style={{ color: 'var(--accent)' }} />
+          <h2 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+            {completedCount === 0 ? 'Start Your Story Foundation' : `Next Up — ${element.label}`}
+          </h2>
+        </div>
+
+        <div className="flex items-center gap-1" style={{ marginBottom: '16px' }}>
+          {SEED_ELEMENTS.map((el) => (
+            <div
+              key={el.key}
+              style={{
+                flex: 1,
+                height: '4px',
+                borderRadius: '2px',
+                backgroundColor: statuses[el.key]?.hasDraft
+                  ? 'var(--color-success)'
+                  : 'var(--border-primary)',
+                transition: 'background-color 0.3s',
+              }}
+            />
+          ))}
+        </div>
+
+        <p className="text-xs" style={{ color: 'var(--text-secondary)', lineHeight: '1.6', marginBottom: '12px' }}>
+          {completedCount === 0 ? (
+            <>The Seed Phase walks you through 6 core story elements, starting with the <strong style={{ color: 'var(--text-primary)' }}>{element.label}</strong> — {element.description.toLowerCase()}.&nbsp;Each element builds on the last.</>
+          ) : (
+            <>You've completed <strong style={{ color: 'var(--text-primary)' }}>{completedCount} of 6</strong> elements.&nbsp;The next element is <strong style={{ color: 'var(--text-primary)' }}>{element.label}</strong> — {element.description.toLowerCase()}.</>
+          )}
+        </p>
+        <p className="text-xs" style={{ color: 'var(--text-secondary)', lineHeight: '1.6', marginBottom: '20px' }}>
+          You'll brainstorm ideas first, then use the AI to generate a polished draft.
+        </p>
+
+        <div className="flex gap-2 justify-end">
+          <button
+            onClick={onDismiss}
+            className="rounded-lg text-xs font-medium hover-btn"
+            style={{
+              backgroundColor: 'var(--bg-tertiary)',
+              color: 'var(--text-primary)',
+              border: '1px solid var(--border-primary)',
+              padding: '8px 16px',
+              cursor: 'pointer',
+            }}
+          >
+            Not Now
+          </button>
+          <button
+            onClick={onStart}
+            className="rounded-lg text-xs font-medium hover-btn-primary"
+            style={{
+              backgroundColor: 'var(--accent)',
+              color: 'var(--text-inverse)',
+              border: 'none',
+              padding: '8px 16px',
+              cursor: 'pointer',
+            }}
+          >
+            {statuses[element.key]?.hasBrainstorm ? 'Open Brainstorm' : 'Start Brainstorming'}
+          </button>
         </div>
       </div>
     </div>

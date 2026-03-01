@@ -6,6 +6,7 @@ import { useAIStore } from '../../stores/aiStore';
 import { readFile, agentPlan, agentExecute, agentCancel, writeFile } from '../../utils/tauri';
 import { trackCost } from '../../utils/projectCost';
 import { calculateCost } from '../../utils/modelPricing';
+import { extractDraftBody } from '../../utils/applyParser';
 import type { AgentPlan } from '../../types/ai';
 
 interface CharacterToolbarProps {
@@ -108,7 +109,7 @@ export function CharacterToolbar({ currentFilePath }: CharacterToolbarProps) {
       };
 
       try {
-        await writeFile(profilePath, genFrontmatter, event.payload.full_text.trim());
+        await writeFile(profilePath, genFrontmatter, extractDraftBody(event.payload.full_text));
         useProjectStore.getState().bumpRefresh();
         setHasProfile(true);
         setActiveFile(profilePath);

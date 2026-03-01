@@ -13,10 +13,10 @@ max_context_tokens = 40000
 
 [context.when_book]
 include = [
-    "{book}/phase-1-seed/story-foundation.md",
-    "{book}/phase-2-root/story-structure-outline.md",
-    "{book}/phase-3-sprout/**/journey-map.md",
-    "{book}/phase-3-sprout/relationship-dynamics.md",
+    "{book}/overview/overview.md",
+    "{book}/phase-1-seed/**/draft.md",
+    "{book}/phase-2-root/**/draft.md",
+    "{book}/phase-3-sprout/**/draft.md",
 ]
 
 [context.optional]

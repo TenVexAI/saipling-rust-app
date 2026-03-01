@@ -14,6 +14,7 @@ max_context_tokens = 30000
 [context.when_book]
 include = [
     "{book}/overview/overview.md",
+    "{book}/phase-1-seed/**/brainstorm.md",
     "{book}/phase-1-seed/**/draft.md",
 ]
 
@@ -49,7 +50,7 @@ Guidelines:
   Does the world create unique pressure on the protagonist?
 
 When producing completed or revised elements, use the saipling-apply format
-to make them directly applicable to the story-foundation.md file.
+to make them directly applicable to the element's draft file.
 
 {genre_context}
 {existing_foundation_context}

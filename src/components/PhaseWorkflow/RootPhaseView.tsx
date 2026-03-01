@@ -219,7 +219,7 @@ export function RootPhaseView() {
             {/* Tip */}
             <div className="rounded-lg" style={{ marginTop: '8px', padding: '16px', backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-primary)' }}>
               <p className="text-xs" style={{ color: 'var(--text-tertiary)', lineHeight: '1.6' }}>
-                Click any beat to open its brainstorm document. Start with the anchor beats — Inciting Incident,
+                Click any beat to open its brainstorm document. If you're stuck, start with the anchor beats — Inciting Incident,
                 Midpoint Shift, Climactic Confrontation, and Closing Image. When a brainstorm is ready, click
                 <strong style={{ color: 'var(--text-secondary)' }}> Generate</strong> to have Claude produce a polished draft.
               </p>

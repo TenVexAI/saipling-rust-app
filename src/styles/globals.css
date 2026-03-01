@@ -88,6 +88,34 @@ img, a {
   color: var(--color-error) !important;
 }
 
+/* ApplyCard buttons */
+.apply-card-btn {
+  transition: filter 0.15s ease;
+  cursor: pointer;
+}
+.apply-card-btn:hover:not(:disabled) {
+  filter: brightness(1.15);
+}
+
+.apply-card-btn-secondary {
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+  cursor: pointer;
+}
+.apply-card-btn-secondary:hover:not(:disabled) {
+  background-color: var(--bg-hover) !important;
+  border-color: var(--accent) !important;
+  color: var(--text-primary) !important;
+}
+
+.apply-card-btn-ghost {
+  transition: background-color 0.15s ease, color 0.15s ease;
+  cursor: pointer;
+}
+.apply-card-btn-ghost:hover:not(:disabled) {
+  background-color: var(--bg-hover) !important;
+  color: var(--text-secondary) !important;
+}
+
 /* Sidebar nav items: icon color change only on hover */
 .hover-sidebar {
   transition: color 0.15s ease;

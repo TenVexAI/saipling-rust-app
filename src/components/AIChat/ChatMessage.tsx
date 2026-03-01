@@ -38,9 +38,9 @@ export function ChatMessage({ message }: ChatMessageProps) {
         {isUser ? <User size={14} /> : <Bot size={14} />}
       </div>
 
-      <div className="flex-1 min-w-0 text-sm" style={{ color: isUser ? 'var(--text-secondary)' : 'var(--text-primary)' }}>
+      <div className="flex-1 min-w-0 text-sm" style={{ color: isUser ? 'var(--text-secondary)' : 'var(--text-primary)', overflowWrap: 'break-word', wordBreak: 'break-word' }}>
         {textContent && (
-          <div className="prose-sm max-w-none">
+          <div className="prose-sm max-w-none" style={{ overflowWrap: 'break-word' }}>
             <ReactMarkdown remarkPlugins={[remarkGfm]}>
               {textContent}
             </ReactMarkdown>

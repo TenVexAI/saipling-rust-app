@@ -195,6 +195,17 @@ pub fn get_index_stats(conn: &Connection) -> Result<(u32, u32, Option<String>, f
     Ok((total_files, total_chunks, last_indexed, total_cost))
 }
 
+/// Get all currently indexed file paths.
+pub fn get_all_indexed_paths(conn: &Connection) -> Result<std::collections::HashSet<String>, AppError> {
+    let mut stmt = conn.prepare("SELECT file_path FROM indexed_files")?;
+    let rows = stmt.query_map([], |row| row.get::<_, String>(0))?;
+    let mut set = std::collections::HashSet::new();
+    for row in rows {
+        set.insert(row?);
+    }
+    Ok(set)
+}
+
 /// Get all chunk hashes for a file, keyed by chunk_index.
 pub fn get_chunk_hashes(conn: &Connection, file_path: &str) -> Result<std::collections::HashMap<u32, String>, AppError> {
     let mut stmt = conn.prepare("SELECT chunk_index, content_hash FROM chunks WHERE file_path = ?1")?;

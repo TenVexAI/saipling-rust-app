@@ -5,6 +5,7 @@ import { useProjectStore } from '../stores/projectStore';
 import { useAIStore } from '../stores/aiStore';
 import { trackCost } from '../utils/projectCost';
 import { calculateCost } from '../utils/modelPricing';
+import { extractDraftBody } from '../utils/applyParser';
 import type { AgentPlan, ContextScope } from '../types/ai';
 
 export type GeneratePhase = 'idle' | 'planning' | 'confirming' | 'generating' | 'done';
@@ -78,7 +79,7 @@ export function useGenerate(): UseGenerateReturn {
 
       // Parse and write the generated content
       const rawText = event.payload.full_text;
-      const body = opts.parseResponse ? opts.parseResponse(rawText) : rawText.trim();
+      const body = opts.parseResponse ? opts.parseResponse(rawText) : extractDraftBody(rawText);
 
       try {
         await writeFile(opts.outputPath, opts.frontmatter, body);

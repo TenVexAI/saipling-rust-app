@@ -7,6 +7,7 @@ import { readFile, agentPlan, agentExecute, agentCancel, writeFile } from '../..
 import { trackCost } from '../../utils/projectCost';
 import { calculateCost } from '../../utils/modelPricing';
 import { SEED_ELEMENTS } from '../PhaseWorkflow/seedElements';
+import { extractDraftBody } from '../../utils/applyParser';
 import type { AgentPlan } from '../../types/ai';
 
 interface SeedPhaseToolbarProps {
@@ -120,7 +121,7 @@ export function SeedPhaseToolbar({ currentFilePath }: SeedPhaseToolbarProps) {
       };
 
       try {
-        await writeFile(draftPath, genFrontmatter, event.payload.full_text.trim());
+        await writeFile(draftPath, genFrontmatter, extractDraftBody(event.payload.full_text));
         useProjectStore.getState().bumpRefresh();
         setHasDraft(true);
         setActiveFile(draftPath);

@@ -40,6 +40,7 @@ export function ProseEditor({ filePath }: ProseEditorProps) {
   const frontmatterRef = useRef<Record<string, unknown>>({});
   const filePathRef = useRef(filePath);
   const autoSaveTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const savedAtRefreshRef = useRef(-1);
 
   const isBrainstormFile = /[\\/]overview[\\/]/.test(filePath);
   const isSeedPhaseFile = /[\\/]phase-1-seed[\\/]/.test(filePath);
@@ -183,13 +184,19 @@ export function ProseEditor({ filePath }: ProseEditorProps) {
     setLoading(false);
   }, [filePath, editor, markSaved]);
 
+  const refreshCounter = useProjectStore((s) => s.refreshCounter);
+
   useEffect(() => {
     filePathRef.current = filePath;
+    // Skip reload if this refresh was triggered by our own save
+    if (refreshCounter === savedAtRefreshRef.current) {
+      return;
+    }
     if (editor) {
       loadFile();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filePath, editor]);
+  }, [filePath, editor, refreshCounter]);
 
   // Save function — guarded against writing empty content over a non-empty file
   const saveFile = useCallback(async () => {
@@ -210,6 +217,7 @@ export function ProseEditor({ filePath }: ProseEditorProps) {
       await writeFile(filePathRef.current, frontmatterRef.current, markdown);
       markSaved();
       useProjectStore.getState().bumpRefresh();
+      savedAtRefreshRef.current = useProjectStore.getState().refreshCounter;
     } catch (e) {
       console.error('Save failed:', e);
       markSaved();
