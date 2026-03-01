@@ -753,6 +753,8 @@ export function Dashboard() {
                     <option value="">Not decided yet</option>
                     <option value="past">Past Tense</option>
                     <option value="present">Present Tense</option>
+                    <option value="mixed">Mixed (Past + Present)</option>
+                    <option value="other">Other</option>
                   </select>
                 </div>
 
@@ -767,10 +769,15 @@ export function Dashboard() {
                   >
                     <option value="">Not decided yet</option>
                     <option value="first">First Person</option>
-                    <option value="second">Second Person</option>
+                    <option value="first_multiple">First Person (Multiple)</option>
+                    <option value="third_close">Third Person Close</option>
+                    <option value="third_close_multiple">Third Person Close (Multiple)</option>
                     <option value="third_limited">Third Person Limited</option>
+                    <option value="third_limited_multiple">Third Person Limited (Multiple)</option>
                     <option value="third_omniscient">Third Person Omniscient</option>
-                    <option value="multiple">Multiple POV</option>
+                    <option value="second">Second Person</option>
+                    <option value="mixed">Mixed Perspectives</option>
+                    <option value="other">Other</option>
                   </select>
                 </div>
 
@@ -1026,6 +1033,8 @@ export function Dashboard() {
                     <option value="">Not decided yet</option>
                     <option value="past">Past Tense</option>
                     <option value="present">Present Tense</option>
+                    <option value="mixed">Mixed (Past + Present)</option>
+                    <option value="other">Other</option>
                   </select>
                 </div>
 
@@ -1040,10 +1049,15 @@ export function Dashboard() {
                   >
                     <option value="">Not decided yet</option>
                     <option value="first">First Person</option>
-                    <option value="second">Second Person</option>
+                    <option value="first_multiple">First Person (Multiple)</option>
+                    <option value="third_close">Third Person Close</option>
+                    <option value="third_close_multiple">Third Person Close (Multiple)</option>
                     <option value="third_limited">Third Person Limited</option>
+                    <option value="third_limited_multiple">Third Person Limited (Multiple)</option>
                     <option value="third_omniscient">Third Person Omniscient</option>
-                    <option value="multiple">Multiple POV</option>
+                    <option value="second">Second Person</option>
+                    <option value="mixed">Mixed Perspectives</option>
+                    <option value="other">Other</option>
                   </select>
                 </div>
 
