@@ -102,16 +102,26 @@ Use exactly this delimiter format for each beat:
 function executeBatch(
   planId: string,
   history: Message[],
+  onChunk?: (accumulated: string) => void,
 ): Promise<{ fullText: string; inputTokens: number; outputTokens: number; model: string }> {
   return new Promise((resolve, reject) => {
     let settled = false;
+    let accumulated = '';
     void (async () => {
       try {
+        const unlistenChunk = await listen<{ text: string }>(
+          `claude:chunk:${planId}`,
+          (event) => {
+            accumulated += event.payload.text;
+            onChunk?.(accumulated);
+          }
+        );
         const unlistenDone = await listen<{ full_text: string; input_tokens: number; output_tokens: number; model: string }>(
           `claude:done:${planId}`,
           (event) => {
             if (settled) return;
             settled = true;
+            unlistenChunk();
             unlistenDone();
             unlistenError();
             resolve({
@@ -127,6 +137,7 @@ function executeBatch(
           (event) => {
             if (settled) return;
             settled = true;
+            unlistenChunk();
             unlistenDone();
             unlistenError();
             reject(new Error(event.payload.error));
@@ -162,6 +173,7 @@ export function RootPhaseView() {
   const [suggestError, setSuggestError] = useState<string | null>(null);
   const [suggestMode, setSuggestMode] = useState<SuggestMode>('empty');
   const [writeProgress, setWriteProgress] = useState({ current: 0, total: 0 });
+  const [streamProgress, setStreamProgress] = useState({ beatsFound: 0, latestBeat: '' });
   const suggestPlanRef = useRef<AgentPlan | null>(null);
 
   const emptyBeatCount = BEATS.filter(b => !statuses[b.num]?.hasBrainstorm).length;
@@ -191,6 +203,7 @@ export function RootPhaseView() {
     const plan = suggestPlanRef.current;
     if (!plan || !projectDir || !activeBookId || !rootDir) return;
     setSuggestPhase('generating');
+    setStreamProgress({ beatsFound: 0, latestBeat: '' });
 
     const beatsToGenerate = suggestMode === 'all'
       ? [...BEATS]
@@ -204,7 +217,16 @@ export function RootPhaseView() {
     ];
 
     try {
-      const result = await executeBatch(plan.plan_id, history);
+      const result = await executeBatch(plan.plan_id, history, (accumulated) => {
+        const beatHeaders = [...accumulated.matchAll(/## BEAT (\d+):\s*([^\n]*)/g)];
+        if (beatHeaders.length > 0) {
+          const latest = beatHeaders[beatHeaders.length - 1];
+          setStreamProgress({
+            beatsFound: beatHeaders.length,
+            latestBeat: latest[2]?.trim() || `Beat ${latest[1]}`,
+          });
+        }
+      });
 
       // Track cost
       const cost = calculateCost(result.model, result.inputTokens, result.outputTokens);
@@ -644,7 +666,29 @@ export function RootPhaseView() {
                 <div className="flex flex-col items-center justify-center" style={{ padding: '32px 0' }}>
                   <Loader2 size={24} className="animate-spin" style={{ color: 'var(--accent)', marginBottom: '12px' }} />
                   <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>Generating beat suggestions...</p>
-                  <p className="text-xs" style={{ color: 'var(--text-tertiary)', marginTop: '4px' }}>This may take a minute for all 21 beats</p>
+                  {streamProgress.beatsFound > 0 ? (
+                    <>
+                      <p className="text-xs font-medium" style={{ color: 'var(--text-secondary)', marginTop: '8px' }}>
+                        {streamProgress.beatsFound} of {suggestMode === 'all' ? 21 : emptyBeatCount} beats drafted
+                      </p>
+                      <p className="text-xs" style={{ color: 'var(--text-tertiary)', marginTop: '2px' }}>
+                        Working on: {streamProgress.latestBeat}
+                      </p>
+                      <div style={{ width: '200px', height: '4px', backgroundColor: 'var(--bg-tertiary)', borderRadius: '2px', marginTop: '10px', overflow: 'hidden' }}>
+                        <div style={{
+                          width: `${(streamProgress.beatsFound / (suggestMode === 'all' ? 21 : emptyBeatCount)) * 100}%`,
+                          height: '100%',
+                          backgroundColor: 'var(--accent)',
+                          borderRadius: '2px',
+                          transition: 'width 0.3s',
+                        }} />
+                      </div>
+                    </>
+                  ) : (
+                    <p className="text-xs" style={{ color: 'var(--text-tertiary)', marginTop: '4px' }}>
+                      AI is analyzing your story context...
+                    </p>
+                  )}
                 </div>
               )}
 

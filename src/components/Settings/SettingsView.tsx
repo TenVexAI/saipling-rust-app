@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { getVersion } from '@tauri-apps/api/app';
 import { Key, Check, Loader2, Palette, Info, Bot, Pencil, Zap, ChevronRight, Settings } from 'lucide-react';
 import { emit } from '@tauri-apps/api/event';
 import { useThemeStore } from '../../stores/themeStore';
@@ -19,6 +20,7 @@ export function SettingsView() {
   const [hasKey, setHasKey] = useState(false);
   const [config, setConfig] = useState<AppConfig | null>(null);
   const [models, setModels] = useState<ModelEntry[]>([]);
+  const [appVersion, setAppVersion] = useState('');
 
   useEffect(() => {
     getConfig().then((c) => {
@@ -30,6 +32,7 @@ export function SettingsView() {
       setModels(mc.models);
       setModelsConfig(mc);
     }).catch(() => {});
+    getVersion().then(setAppVersion).catch(() => {});
   }, [setTheme]);
 
   const handleSaveKey = async () => {
@@ -313,7 +316,7 @@ export function SettingsView() {
 
       {/* App Version */}
       <div style={{ position: 'fixed', bottom: '36px', right: '16px' }}>
-        <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>SAiPLING v0.1.0</span>
+        <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>SAiPLING v{appVersion || '...'}</span>
       </div>
     </div>
   );

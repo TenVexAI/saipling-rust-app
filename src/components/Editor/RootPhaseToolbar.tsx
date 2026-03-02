@@ -3,7 +3,7 @@ import { Sparkles, ChevronDown, Settings2, Loader2, X } from 'lucide-react';
 import { listen } from '@tauri-apps/api/event';
 import { useProjectStore } from '../../stores/projectStore';
 import { useAIStore } from '../../stores/aiStore';
-import { readFile, agentPlan, agentExecute, agentCancel, writeFile } from '../../utils/tauri';
+import { agentPlan, agentExecute, agentCancel, writeFile, listDirectory } from '../../utils/tauri';
 import { trackCost } from '../../utils/projectCost';
 import { calculateCost } from '../../utils/modelPricing';
 import { BEATS } from '../../types/sapling';
@@ -30,6 +30,7 @@ export function RootPhaseToolbar({ currentFilePath }: RootPhaseToolbarProps) {
   const setContextExpandFolder = useProjectStore((s) => s.setContextExpandFolder);
   const [showDropdown, setShowDropdown] = useState(false);
   const [hasDraft, setHasDraft] = useState(false);
+  const [beatFiles, setBeatFiles] = useState<{ name: string; path: string }[]>([]);
 
   const [phase, setPhase] = useState<GeneratePhase>('idle');
   const [plan, setPlan] = useState<AgentPlan | null>(null);
@@ -55,19 +56,41 @@ export function RootPhaseToolbar({ currentFilePath }: RootPhaseToolbarProps) {
   const draftPath = beatDir ? `${beatDir}\\draft.md` : null;
   const currentFileName = currentFilePath.split(/[\\/]/).pop() || '';
 
-  const checkDraft = useCallback(async () => {
-    if (!draftPath) return;
+  const scanBeatFiles = useCallback(async () => {
+    if (!beatDir) return;
     try {
-      await readFile(draftPath);
-      setHasDraft(true);
+      const entries = await listDirectory(beatDir);
+      const files: { name: string; path: string }[] = [];
+      // Add brainstorm files in version order: brainstorm.md first, then brainstorm_v2.md, v3, etc.
+      const brainstormFiles = entries
+        .map(e => e.name)
+        .filter(n => /^brainstorm(_v\d+)?\.md$/.test(n))
+        .sort((a, b) => {
+          const vA = a === 'brainstorm.md' ? 1 : parseInt(a.match(/_v(\d+)/)?.[1] || '0', 10);
+          const vB = b === 'brainstorm.md' ? 1 : parseInt(b.match(/_v(\d+)/)?.[1] || '0', 10);
+          return vA - vB;
+        });
+      for (const name of brainstormFiles) {
+        files.push({ name, path: `${beatDir}\\${name}` });
+      }
+      // Add draft.md if it exists
+      const hasDraftFile = entries.some(e => e.name === 'draft.md');
+      if (hasDraftFile) {
+        files.push({ name: 'draft.md', path: `${beatDir}\\draft.md` });
+        setHasDraft(true);
+      } else {
+        setHasDraft(false);
+      }
+      setBeatFiles(files);
     } catch {
+      setBeatFiles([]);
       setHasDraft(false);
     }
-  }, [draftPath]);
+  }, [beatDir]);
 
   useEffect(() => {
-    checkDraft();
-  }, [checkDraft, currentFilePath]);
+    scanBeatFiles();
+  }, [scanBeatFiles, currentFilePath]);
 
   const handleGenerate = async () => {
     if (!projectDir || !bookId) return;
@@ -166,9 +189,10 @@ export function RootPhaseToolbar({ currentFilePath }: RootPhaseToolbarProps) {
 
   const isGenerating = phase === 'planning' || phase === 'generating';
 
-  const dropdownFiles: { name: string; path: string }[] = [];
-  if (brainstormPath) dropdownFiles.push({ name: 'brainstorm.md', path: brainstormPath });
-  if (hasDraft && draftPath) dropdownFiles.push({ name: 'draft.md', path: draftPath });
+  const dropdownFiles = beatFiles.length > 0 ? beatFiles : [
+    ...(brainstormPath ? [{ name: 'brainstorm.md', path: brainstormPath }] : []),
+    ...(hasDraft && draftPath ? [{ name: 'draft.md', path: draftPath }] : []),
+  ];
 
   return (
     <>
