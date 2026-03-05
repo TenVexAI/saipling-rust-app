@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Sparkles, ChevronDown, Settings2, Loader2, X } from 'lucide-react';
+import { Sparkles, ChevronDown, Settings2, Loader2, X, FilePlus } from 'lucide-react';
 import { listen } from '@tauri-apps/api/event';
 import { useProjectStore } from '../../stores/projectStore';
 import { useAIStore } from '../../stores/aiStore';
@@ -182,6 +182,32 @@ export function RootPhaseToolbar({ currentFilePath }: RootPhaseToolbarProps) {
     setPhase('idle');
   };
 
+  const handleCreateBlankDraft = async () => {
+    if (!draftPath || !bookId || !beatDirName || !beatNum) return;
+    const now = new Date().toISOString().slice(0, 10);
+    const frontmatter: Record<string, unknown> = {
+      type: 'beat-draft',
+      scope: bookId,
+      beat_number: beatNum,
+      beat_name: beatLabel,
+      act: beat?.act === 'I' ? 1 : beat?.act === 'II' ? 2 : 3,
+      is_anchor: isAnchor,
+      created: now,
+      modified: now,
+      status: 'manual',
+      generated_from: [`books/${bookId}/phase-2-root/${beatDirName}/brainstorm.md`],
+    };
+    try {
+      await writeFile(draftPath, frontmatter, '');
+      setHasDraft(true);
+      await scanBeatFiles();
+      setActiveFile(draftPath);
+      useProjectStore.getState().bumpRefresh();
+    } catch (e) {
+      setError(`Failed to create draft: ${String(e)}`);
+    }
+  };
+
   const handleContextSettings = () => {
     setActiveView('files');
     if (beatDir) setContextExpandFolder(beatDir);
@@ -219,6 +245,19 @@ export function RootPhaseToolbar({ currentFilePath }: RootPhaseToolbarProps) {
           {isGenerating ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
           {phase === 'planning' ? 'Planning...' : phase === 'generating' ? 'Generating...' : hasDraft ? 'Regenerate' : 'Generate'}
         </button>
+
+        {!hasDraft && (
+          <button
+            onClick={handleCreateBlankDraft}
+            disabled={isGenerating}
+            className="flex items-center gap-1.5 rounded-md text-xs font-medium hover-btn"
+            style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '5px 12px', border: '1px solid var(--border-primary)' }}
+            title="Create a blank draft to write manually"
+          >
+            <FilePlus size={13} />
+            New Draft
+          </button>
+        )}
 
         <div className="relative">
           <button
